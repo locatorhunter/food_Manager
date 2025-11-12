@@ -8,74 +8,84 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeAdminPage();
 });
 
-function initializeAdminPage() {
-    selectedHotelIds = StorageManager.getSelectedHotels();
-    displayHotelSelection();
-    setupHotelForm();
-    displayHotelsManagement();
-    setupMenuModal();
-    setupEditHotelForm();
-    setupDangerZone();
+async function initializeAdminPage() {
+    try {
+        selectedHotelIds = await StorageManager.getSelectedHotels();
+        await displayHotelSelection();
+        setupHotelForm();
+        await displayHotelsManagement();
+        setupMenuModal();
+        setupEditHotelForm();
+        setupDangerZone();
 
-    window.addEventListener('storageReset', () => {
-        selectedHotelIds = [];
-        displayHotelSelection();
-        displayHotelsManagement();
-    });
+        window.addEventListener('storageReset', () => {
+            selectedHotelIds = [];
+            displayHotelSelection();
+            displayHotelsManagement();
+        });
+    } catch (error) {
+        console.error('Error initializing admin page:', error);
+        showToast('Error loading admin page. Please refresh.', 'error');
+    }
 }
 
 // Display Hotel Selection (Checkboxes)
-function displayHotelSelection() {
-    const container = document.getElementById('hotelSelectionList');
-    const hotels = StorageManager.getHotels();
+async function displayHotelSelection() {
+    try {
+        const container = document.getElementById('hotelSelectionList');
+        const hotels = await StorageManager.getHotels();
 
-    if (hotels.length === 0) {
-        container.innerHTML = '<p class="empty-message">No hotels added yet. Add hotels first!</p>';
-        return;
+        if (hotels.length === 0) {
+            container.innerHTML = '<p class="empty-message">No hotels added yet. Add hotels first!</p>';
+            return;
+        }
+
+        let html = '<div class="hotel-selection-grid">';
+
+        hotels.forEach(hotel => {
+            const isChecked = selectedHotelIds.includes(hotel.id);
+            const menuItemsCount = hotel.menuItems ? hotel.menuItems.length : 0;
+            const availableItemsCount = hotel.menuItems ? hotel.menuItems.filter(item => item.available).length : 0;
+            const reviews = hotel.reviews ? `⭐${hotel.reviews}` : 'No rating';
+            const location = hotel.location || 'Location not set';
+
+            html += `
+                <div class="hotel-selection-card ${isChecked ? 'selected' : ''}">
+                    <div class="hotel-selection-header">
+                        <label class="hotel-checkbox-label">
+                            <input type="checkbox"
+                                   value="${hotel.id}"
+                                   ${isChecked ? 'checked' : ''}
+                                   onchange="toggleHotelSelection('${hotel.id}')">
+                            <span class="hotel-name">${getHotelTypeEmoji(hotel.type)} ${hotel.name}</span>
+                        </label>
+                        ${isChecked ? '<span class="selection-indicator">✓ Selected</span>' : ''}
+                    </div>
+
+                    <div class="hotel-details">
+                        <div class="hotel-stat">
+                            <span class="stat-label">Menu Items:</span>
+                            <span class="stat-value">${availableItemsCount}/${menuItemsCount} available</span>
+                        </div>
+                        <div class="hotel-stat">
+                            <span class="stat-label">Rating:</span>
+                            <span class="stat-value">${reviews}</span>
+                        </div>
+                        <div class="hotel-stat">
+                            <span class="stat-label">Location:</span>
+                            <span class="stat-value">${location}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        html += '</div>';
+        container.innerHTML = html;
+    } catch (error) {
+        console.error('Error displaying hotel selection:', error);
+        showToast('Error loading hotel selection.', 'error');
     }
-
-    let html = '<div class="hotel-selection-grid">';
-
-    hotels.forEach(hotel => {
-        const isChecked = selectedHotelIds.includes(hotel.id);
-        const menuItemsCount = hotel.menuItems ? hotel.menuItems.length : 0;
-        const availableItemsCount = hotel.menuItems ? hotel.menuItems.filter(item => item.available).length : 0;
-        const reviews = hotel.reviews ? `⭐${hotel.reviews}` : 'No rating';
-        const location = hotel.location || 'Location not set';
-
-        html += `
-            <div class="hotel-selection-card ${isChecked ? 'selected' : ''}">
-                <div class="hotel-selection-header">
-                    <label class="hotel-checkbox-label">
-                        <input type="checkbox"
-                               value="${hotel.id}"
-                               ${isChecked ? 'checked' : ''}
-                               onchange="toggleHotelSelection('${hotel.id}')">
-                        <span class="hotel-name">${getHotelTypeEmoji(hotel.type)} ${hotel.name}</span>
-                    </label>
-                    ${isChecked ? '<span class="selection-indicator">✓ Selected</span>' : ''}
-                </div>
-
-                <div class="hotel-details">
-                    <div class="hotel-stat">
-                        <span class="stat-label">Menu Items:</span>
-                        <span class="stat-value">${availableItemsCount}/${menuItemsCount} available</span>
-                    </div>
-                    <div class="hotel-stat">
-                        <span class="stat-label">Rating:</span>
-                        <span class="stat-value">${reviews}</span>
-                    </div>
-                    <div class="hotel-stat">
-                        <span class="stat-label">Location:</span>
-                        <span class="stat-value">${location}</span>
-                    </div>
-                </div>
-            </div>
-        `;
-    });
-
-    html += '</div>';
-    container.innerHTML = html;
 }
 
 function toggleHotelSelection(hotelId) {
@@ -98,7 +108,7 @@ function toggleHotelSelection(hotelId) {
 function setupHotelForm() {
     const hotelForm = document.getElementById('hotelForm');
 
-    hotelForm.addEventListener('submit', function(e) {
+    hotelForm.addEventListener('submit', async function(e) {
         e.preventDefault();
 
         const hotelName = sanitizeInput(document.getElementById('hotelName').value);
@@ -114,70 +124,81 @@ function setupHotelForm() {
             return;
         }
 
-        if (StorageManager.getHotels().some(h => h.name.toLowerCase() === hotelName.toLowerCase())) {
-            showToast('Hotel with this name already exists', 'error');
-            return;
+        try {
+            const hotels = await StorageManager.getHotels();
+            if (hotels.some(h => h.name.toLowerCase() === hotelName.toLowerCase())) {
+                showToast('Hotel with this name already exists', 'error');
+                return;
+            }
+
+            await StorageManager.addHotel({
+                name: hotelName,
+                reviews: null,
+                location: '',
+                type: hotelType,
+                menuItems: []
+            });
+            showToast('Hotel added successfully!');
+
+            hotelForm.reset();
+            displayHotelSelection();
+            displayHotelsManagement();
+        } catch (error) {
+            console.error('Error adding hotel:', error);
+            showToast('Error adding hotel. Please try again.', 'error');
         }
-
-        StorageManager.addHotel({
-            name: hotelName,
-            reviews: null,
-            location: '',
-            type: hotelType,
-            menuItems: []
-        });
-        showToast('Hotel added successfully!');
-
-        hotelForm.reset();
-        displayHotelSelection();
-        displayHotelsManagement();
     });
 }
 
 // Display Hotels Management
-function displayHotelsManagement() {
-    const container = document.getElementById('hotelsManagement');
-    const hotels = StorageManager.getHotels();
-    
-    if (hotels.length === 0) {
-        container.innerHTML = '<p class="empty-message">No hotels yet. Add your first hotel!</p>';
-        return;
+async function displayHotelsManagement() {
+    try {
+        const container = document.getElementById('hotelsManagement');
+        const hotels = await StorageManager.getHotels();
+
+        if (hotels.length === 0) {
+            container.innerHTML = '<p class="empty-message">No hotels yet. Add your first hotel!</p>';
+            return;
+        }
+
+        let html = '';
+
+        hotels.forEach(hotel => {
+            html += `
+                <div class="hotel-management-card">
+                    <div class="hotel-header">
+                        <div>
+                            <h3>${getHotelTypeEmoji(hotel.type)} ${hotel.name}</h3>
+                            ${selectedHotelIds.includes(hotel.id) ? '<span class="hotel-status selected">Selected for Today</span>' : '<span class="hotel-status not-selected">Not Selected</span>'}
+                        </div>
+                        <div>
+                            <button class="btn btn-info btn-small" onclick="editHotelDetails('${hotel.id}')">
+                                ✏️ Edit Details
+                            </button>
+                            <button class="btn btn-primary btn-small" onclick="openMenuModal('${hotel.id}')">
+                                + Add Menu Item
+                            </button>
+                            <button class="btn btn-secondary btn-small" onclick="openImportModal('${hotel.id}')">
+                                Import CSV
+                            </button>
+                            <button class="btn btn-danger btn-small" onclick="deleteHotel('${hotel.id}')">
+                                Delete Hotel
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="menu-items-container">
+                        ${displayHotelMenuItems(hotel)}
+                    </div>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+    } catch (error) {
+        console.error('Error displaying hotels management:', error);
+        showToast('Error loading hotels management.', 'error');
     }
-    
-    let html = '';
-    
-    hotels.forEach(hotel => {
-        html += `
-            <div class="hotel-management-card">
-                <div class="hotel-header">
-                    <div>
-                        <h3>${getHotelTypeEmoji(hotel.type)} ${hotel.name}</h3>
-                        ${selectedHotelIds.includes(hotel.id) ? '<span class="hotel-status selected">Selected for Today</span>' : '<span class="hotel-status not-selected">Not Selected</span>'}
-                    </div>
-                    <div>
-                        <button class="btn btn-info btn-small" onclick="editHotelDetails('${hotel.id}')">
-                            ✏️ Edit Details
-                        </button>
-                        <button class="btn btn-primary btn-small" onclick="openMenuModal('${hotel.id}')">
-                            + Add Menu Item
-                        </button>
-                        <button class="btn btn-secondary btn-small" onclick="openImportModal('${hotel.id}')">
-                            Import CSV
-                        </button>
-                        <button class="btn btn-danger btn-small" onclick="deleteHotel('${hotel.id}')">
-                            Delete Hotel
-                        </button>
-                    </div>
-                </div>
-                
-                <div class="menu-items-container">
-                    ${displayHotelMenuItems(hotel)}
-                </div>
-            </div>
-        `;
-    });
-    
-    container.innerHTML = html;
 }
 
 function displayHotelMenuItems(hotel) {
@@ -256,7 +277,7 @@ function setupMenuModal() {
         }
     });
 
-    form.addEventListener('submit', function(e) {
+    form.addEventListener('submit', async function(e) {
         console.log('menuItemForm submit triggered');
         e.preventDefault();
 
@@ -282,30 +303,35 @@ function setupMenuModal() {
 
         const itemPrice = parseFloat(itemPriceStr);
 
-        const hotel = StorageManager.getHotelById(hotelId);
-        console.log('hotel found:', hotel);
-        if (hotel.menuItems.some(item => item.name.toLowerCase() === itemName.toLowerCase())) {
-            console.log('validation failed: duplicate name');
-            showToast('Menu item with this name already exists for this hotel', 'error');
-            return;
+        try {
+            const hotel = await StorageManager.getHotelById(hotelId);
+            console.log('hotel found:', hotel);
+            if (hotel?.menuItems?.some(item => item.name.toLowerCase() === itemName.toLowerCase())) {
+                console.log('validation failed: duplicate name');
+                showToast('Menu item with this name already exists for this hotel', 'error');
+                return;
+            }
+
+            console.log('validation passed, adding item');
+            const menuItem = {
+                name: itemName,
+                price: itemPrice,
+                category: itemCategory,
+                available: itemAvailable
+            };
+
+            await StorageManager.addMenuItemToHotel(hotelId, menuItem);
+            showToast('Menu item added successfully!');
+
+            form.reset();
+            document.getElementById('itemAvailable').checked = true;
+            modal.style.display = 'none';
+
+            displayHotelsManagement();
+        } catch (error) {
+            console.error('Error adding menu item:', error);
+            showToast('Error adding menu item.', 'error');
         }
-
-        console.log('validation passed, adding item');
-        const menuItem = {
-            name: itemName,
-            price: itemPrice,
-            category: itemCategory,
-            available: itemAvailable
-        };
-
-        StorageManager.addMenuItemToHotel(hotelId, menuItem);
-        showToast('Menu item added successfully!');
-
-        form.reset();
-        document.getElementById('itemAvailable').checked = true;
-        modal.style.display = 'none';
-
-        displayHotelsManagement();
     });
 }
 
@@ -316,49 +342,69 @@ function openMenuModal(hotelId) {
     document.getElementById('itemAvailable').checked = true;
 }
 
-function toggleItemAvailability(hotelId, itemId) {
-    const hotel = StorageManager.getHotelById(hotelId);
-    const item = hotel.menuItems.find(i => i.id === itemId);
-    
-    if (item) {
-        StorageManager.updateMenuItem(hotelId, itemId, { available: !item.available });
-        showToast(`${item.name} is now ${!item.available ? 'available' : 'unavailable'}`);
-        displayHotelsManagement();
+async function toggleItemAvailability(hotelId, itemId) {
+    try {
+        const hotel = await StorageManager.getHotelById(hotelId);
+        const item = hotel?.menuItems?.find(i => i.id === itemId);
+
+        if (item) {
+            await StorageManager.updateMenuItem(hotelId, itemId, { available: !item.available });
+            showToast(`${item.name} is now ${!item.available ? 'available' : 'unavailable'}`);
+            displayHotelsManagement();
+        }
+    } catch (error) {
+        console.error('Error toggling item availability:', error);
+        showToast('Error updating item availability.', 'error');
     }
 }
 
-function deleteMenuItem(hotelId, itemId) {
-    const hotel = StorageManager.getHotelById(hotelId);
-    const item = hotel.menuItems.find(i => i.id === itemId);
+async function deleteMenuItem(hotelId, itemId) {
+    try {
+        const hotel = await StorageManager.getHotelById(hotelId);
+        const item = hotel?.menuItems?.find(i => i.id === itemId);
 
-    if (item && confirm(`Delete "${item.name}"?`)) {
-        StorageManager.deleteMenuItem(hotelId, itemId);
-        showToast('Menu item deleted!');
-        displayHotelsManagement();
+        if (item && confirm(`Delete "${item.name}"?`)) {
+            await StorageManager.deleteMenuItem(hotelId, itemId);
+            showToast('Menu item deleted!');
+            displayHotelsManagement();
+        }
+    } catch (error) {
+        console.error('Error deleting menu item:', error);
+        showToast('Error deleting menu item.', 'error');
     }
 }
 
-function removeItemImage(hotelId, itemId, imageIndex) {
-    const hotel = StorageManager.getHotelById(hotelId);
-    const item = hotel.menuItems.find(i => i.id === itemId);
+async function removeItemImage(hotelId, itemId, imageIndex) {
+    try {
+        const hotel = await StorageManager.getHotelById(hotelId);
+        const item = hotel?.menuItems?.find(i => i.id === itemId);
 
-    if (item && item.images && item.images[imageIndex]) {
-        item.images.splice(imageIndex, 1);
-        StorageManager.updateMenuItem(hotelId, itemId, { images: item.images });
-        showToast('Image removed!');
-        displayHotelsManagement();
+        if (item && item.images && item.images[imageIndex]) {
+            item.images.splice(imageIndex, 1);
+            await StorageManager.updateMenuItem(hotelId, itemId, { images: item.images });
+            showToast('Image removed!');
+            displayHotelsManagement();
+        }
+    } catch (error) {
+        console.error('Error removing image:', error);
+        showToast('Error removing image.', 'error');
     }
 }
 
-function deleteHotel(hotelId) {
-    const hotel = StorageManager.getHotelById(hotelId);
+async function deleteHotel(hotelId) {
+    try {
+        const hotel = await StorageManager.getHotelById(hotelId);
 
-    if (hotel && confirm(`Delete "${hotel.name}" and all its menu items?`)) {
-        StorageManager.deleteHotel(hotelId);
-        selectedHotelIds = selectedHotelIds.filter(id => id !== hotelId);
-        showToast('Hotel deleted!');
-        displayHotelSelection();
-        displayHotelsManagement();
+        if (hotel && confirm(`Delete "${hotel.name}" and all its menu items?`)) {
+            await StorageManager.deleteHotel(hotelId);
+            selectedHotelIds = selectedHotelIds.filter(id => id !== hotelId);
+            showToast('Hotel deleted!');
+            displayHotelSelection();
+            displayHotelsManagement();
+        }
+    } catch (error) {
+        console.error('Error deleting hotel:', error);
+        showToast('Error deleting hotel.', 'error');
     }
 }
 
@@ -440,17 +486,22 @@ function importCSV() {
     reader.readAsText(file);
 }
 
-function editHotelDetails(hotelId) {
-    const hotel = StorageManager.getHotelById(hotelId);
-    if (!hotel) return;
+async function editHotelDetails(hotelId) {
+    try {
+        const hotel = await StorageManager.getHotelById(hotelId);
+        if (!hotel) return;
 
-    document.getElementById('editHotelId').value = hotel.id;
-    document.getElementById('editHotelName').value = hotel.name;
-    document.getElementById('editHotelReviews').value = hotel.reviews || '';
-    document.getElementById('editHotelLocation').value = hotel.location || '';
-    document.getElementById('editHotelType').value = hotel.type || 'veg';
+        document.getElementById('editHotelId').value = hotel.id;
+        document.getElementById('editHotelName').value = hotel.name;
+        document.getElementById('editHotelReviews').value = hotel.reviews || '';
+        document.getElementById('editHotelLocation').value = hotel.location || '';
+        document.getElementById('editHotelType').value = hotel.type || 'veg';
 
-    document.getElementById('editHotelModal').style.display = 'flex';
+        document.getElementById('editHotelModal').style.display = 'flex';
+    } catch (error) {
+        console.error('Error loading hotel details:', error);
+        showToast('Error loading hotel details.', 'error');
+    }
 }
 
 function closeEditHotelModal() {
