@@ -6,6 +6,36 @@
     <meta name="description" content="Lunch Manager - Manage daily employee lunch orders">
     <title>Lunch Manager - Home</title>
     <link rel="stylesheet" href="css/style.css?v=1.0.0">
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
+        import { getDatabase, ref, set, get, onValue, push, update, remove } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js';
+
+        // Firebase configuration - Replace with your actual config
+        const firebaseConfig = {
+            apiKey: "AIzaSyCLzX2loYEmPjk0AgH0caHLFBso9yPYTCc",
+            authDomain: "foodmanager-19cbb.firebaseapp.com",
+            projectId: "foodmanager-19cbb",
+            storageBucket: "foodmanager-19cbb.firebasestorage.app",
+            messagingSenderId: "853074932493",
+            appId: "1:853074932493:web:779a3bd8e5e501cb86f644",
+            measurementId: "G-639Z6PMW6R"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        // Make Firebase available globally
+        window.firebaseDB = database;
+        window.firebaseRef = ref;
+        window.firebaseSet = set;
+        window.firebaseGet = get;
+        window.firebaseOnValue = onValue;
+        window.firebasePush = push;
+        window.firebaseUpdate = update;
+        window.firebaseRemove = remove;
+    </script>
 </head>
 <body>
     <nav id="navbar"></nav>

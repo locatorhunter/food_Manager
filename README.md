@@ -39,17 +39,51 @@ A modern, production-ready web application for managing daily employee lunch ord
 
 ### Prerequisites
 - Modern web browser with JavaScript enabled
-- No server required - runs entirely in the browser
+- Firebase account (for multi-device synchronization)
+
+### Firebase Setup
+1. Create a Firebase project at https://console.firebase.google.com/
+2. Enable Realtime Database
+3. Get your Firebase configuration
+4. Update the config in `index.html`:
+```javascript
+const firebaseConfig = {
+    apiKey: "your-api-key",
+    authDomain: "your-project.firebaseapp.com",
+    databaseURL: "https://your-project-default-rtdb.firebaseio.com",
+    projectId: "your-project",
+    storageBucket: "your-project.appspot.com",
+    messagingSenderId: "123456789",
+    appId: "your-app-id"
+};
+```
 
 ### Installation
 1. Clone or download the project files
-2. Open `index.html` in your web browser
-3. Start using the application immediately
+2. Set up Firebase configuration
+3. Open `index.html` in your web browser
+4. Start using the application immediately
 
 ### Quick Setup
 The application starts with a clean slate - no demo data included for production use.
 
-## 📖 Usage Guide
+## 🔄 Multi-Device Synchronization
+
+**Real-time data sharing across multiple systems:**
+
+- **Admin Setup**: Configure hotels and menus from any device
+- **Employee Access**: Place orders from any location/device
+- **Live Updates**: Changes appear instantly across all connected devices
+- **Central Database**: All data synchronized via Firebase Realtime Database
+- **Offline Resilience**: Local caching with automatic sync when online
+
+**Perfect for:**
+- Office lunch management across multiple locations
+- Team members using different devices
+- Real-time order tracking and updates
+- Centralized menu management
+
+##  Usage Guide
 
 ### For Employees
 1. **Home**: View available hotels and get started

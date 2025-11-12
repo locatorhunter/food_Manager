@@ -1,222 +1,351 @@
 // ========================================
 // Storage Management Utilities
-// Handles all localStorage operations
+// Handles Firebase database operations with real-time sync
 // ========================================
 
 const StorageManager = {
-    KEYS: {
-        HOTELS: 'lunchManager_hotels',
-        SELECTED_HOTELS: 'lunchManager_selectedHotels',
-        ORDERS: 'lunchManager_orders',
-        THEME: 'lunchManager_theme'
+    PATHS: {
+        HOTELS: 'hotels',
+        SELECTED_HOTELS: 'selectedHotels',
+        ORDERS: 'orders',
+        THEME: 'theme'
+    },
+
+    // Initialize real-time listeners
+    init() {
+        // Listen for hotels changes
+        const hotelsRef = firebaseRef(firebaseDB, this.PATHS.HOTELS);
+        firebaseOnValue(hotelsRef, (snapshot) => {
+            const data = snapshot.val() || {};
+            // Convert object to array and dispatch event
+            const hotels = Object.values(data);
+            window.dispatchEvent(new CustomEvent('hotelsUpdated', { detail: hotels }));
+        });
+
+        // Listen for orders changes
+        const ordersRef = firebaseRef(firebaseDB, this.PATHS.ORDERS);
+        firebaseOnValue(ordersRef, (snapshot) => {
+            const data = snapshot.val() || {};
+            const orders = Object.values(data);
+            window.dispatchEvent(new CustomEvent('orderAdded', { detail: orders }));
+            window.dispatchEvent(new CustomEvent('orderDeleted', { detail: orders }));
+        });
     },
     
     // ===== HOTEL MANAGEMENT =====
-    getHotels() {
+    async getHotels() {
         try {
-            const hotels = localStorage.getItem(this.KEYS.HOTELS);
-            return hotels ? JSON.parse(hotels) : [];
+            const hotelsRef = firebaseRef(firebaseDB, this.PATHS.HOTELS);
+            const snapshot = await firebaseGet(hotelsRef);
+            const data = snapshot.val() || {};
+            return Object.values(data);
         } catch (error) {
-            console.error('Error parsing hotels data:', error);
+            console.error('Error fetching hotels:', error);
             return [];
         }
     },
-    
-    setHotels(hotels) {
+
+    async setHotels(hotels) {
         try {
-            localStorage.setItem(this.KEYS.HOTELS, JSON.stringify(hotels));
+            const hotelsRef = firebaseRef(firebaseDB, this.PATHS.HOTELS);
+            const hotelsObject = {};
+            hotels.forEach(hotel => {
+                hotelsObject[hotel.id] = hotel;
+            });
+            await firebaseSet(hotelsRef, hotelsObject);
         } catch (error) {
-            console.error('Error saving hotels data:', error);
-            showToast('Error saving data. Storage may be full.', 'error');
-        }
-    },
-    
-    addHotel(hotelData) {
-        const hotels = this.getHotels();
-        hotelData.id = Date.now().toString() + '_' + Math.random().toString(36).substr(2, 9);
-        hotelData.menuItems = hotelData.menuItems || [];
-        hotels.push(hotelData);
-        this.setHotels(hotels);
-        return hotelData;
-    },
-    
-    updateHotel(hotelId, updates) {
-        const hotels = this.getHotels();
-        const index = hotels.findIndex(h => h.id === hotelId);
-        if (index !== -1) {
-            hotels[index] = { ...hotels[index], ...updates };
-            this.setHotels(hotels);
-        }
-    },
-    
-    deleteHotel(hotelId) {
-        const hotels = this.getHotels();
-        const filtered = hotels.filter(h => h.id !== hotelId);
-        this.setHotels(filtered);
-    },
-    
-    getHotelById(hotelId) {
-        return this.getHotels().find(h => h.id === hotelId);
-    },
-    
-    // ===== MENU ITEMS FOR HOTELS =====
-    addMenuItemToHotel(hotelId, menuItem) {
-        console.log('addMenuItemToHotel called with hotelId:', hotelId, 'menuItem:', menuItem);
-        const hotels = this.getHotels();
-        const hotel = hotels.find(h => h.id === hotelId);
-        console.log('Hotel found:', !!hotel, 'hotels count:', hotels.length);
-        if (hotel) {
-            menuItem.id = Date.now().toString() + '_' + Math.random().toString(36).substr(2, 9);
-            console.log('Assigned id:', menuItem.id);
-            hotel.menuItems.push(menuItem);
-            this.setHotels(hotels);
-            console.log('Menu item added, hotel now has', hotel.menuItems.length, 'items');
-        } else {
-            console.log('Hotel not found for id:', hotelId);
-        }
-    },
-    
-    updateMenuItem(hotelId, itemId, updates) {
-        const hotels = this.getHotels();
-        const hotel = hotels.find(h => h.id === hotelId);
-        if (hotel) {
-            const itemIndex = hotel.menuItems.findIndex(item => item.id === itemId);
-            if (itemIndex !== -1) {
-                hotel.menuItems[itemIndex] = { ...hotel.menuItems[itemIndex], ...updates };
-                this.setHotels(hotels);
-            }
-        }
-    },
-    
-    deleteMenuItem(hotelId, itemId) {
-        const hotels = this.getHotels();
-        const hotel = hotels.find(h => h.id === hotelId);
-        if (hotel) {
-            hotel.menuItems = hotel.menuItems.filter(item => item.id !== itemId);
-            this.setHotels(hotels);
+            console.error('Error saving hotels:', error);
+            showToast('Error saving data. Check connection.', 'error');
         }
     },
 
-    addImageToMenuItem(hotelId, itemId, imageData) {
-        const hotels = this.getHotels();
-        const hotel = hotels.find(h => h.id === hotelId);
-        if (hotel) {
-            const item = hotel.menuItems.find(item => item.id === itemId);
-            if (item) {
-                if (!item.images) item.images = [];
-                item.images.push(imageData);
-                this.setHotels(hotels);
+    async addHotel(hotelData) {
+        try {
+            hotelData.id = Date.now().toString() + '_' + Math.random().toString(36).substr(2, 9);
+            hotelData.menuItems = hotelData.menuItems || [];
+            const hotelRef = firebaseRef(firebaseDB, `${this.PATHS.HOTELS}/${hotelData.id}`);
+            await firebaseSet(hotelRef, hotelData);
+            return hotelData;
+        } catch (error) {
+            console.error('Error adding hotel:', error);
+            showToast('Error adding hotel.', 'error');
+            return null;
+        }
+    },
+
+    async updateHotel(hotelId, updates) {
+        try {
+            const hotelRef = firebaseRef(firebaseDB, `${this.PATHS.HOTELS}/${hotelId}`);
+            await firebaseUpdate(hotelRef, updates);
+        } catch (error) {
+            console.error('Error updating hotel:', error);
+            showToast('Error updating hotel.', 'error');
+        }
+    },
+
+    async deleteHotel(hotelId) {
+        try {
+            const hotelRef = firebaseRef(firebaseDB, `${this.PATHS.HOTELS}/${hotelId}`);
+            await firebaseRemove(hotelRef);
+        } catch (error) {
+            console.error('Error deleting hotel:', error);
+            showToast('Error deleting hotel.', 'error');
+        }
+    },
+
+    async getHotelById(hotelId) {
+        try {
+            const hotels = await this.getHotels();
+            return hotels.find(h => h.id === hotelId);
+        } catch (error) {
+            console.error('Error fetching hotel:', error);
+            return null;
+        }
+    },
+    
+    // ===== MENU ITEMS FOR HOTELS =====
+    async addMenuItemToHotel(hotelId, menuItem) {
+        try {
+            console.log('addMenuItemToHotel called with hotelId:', hotelId, 'menuItem:', menuItem);
+            const hotel = await this.getHotelById(hotelId);
+            if (hotel) {
+                menuItem.id = Date.now().toString() + '_' + Math.random().toString(36).substr(2, 9);
+                console.log('Assigned id:', menuItem.id);
+                hotel.menuItems = hotel.menuItems || [];
+                hotel.menuItems.push(menuItem);
+                await this.updateHotel(hotelId, { menuItems: hotel.menuItems });
+                console.log('Menu item added, hotel now has', hotel.menuItems.length, 'items');
+            } else {
+                console.log('Hotel not found for id:', hotelId);
             }
+        } catch (error) {
+            console.error('Error adding menu item:', error);
+            showToast('Error adding menu item.', 'error');
+        }
+    },
+
+    async updateMenuItem(hotelId, itemId, updates) {
+        try {
+            const hotel = await this.getHotelById(hotelId);
+            if (hotel && hotel.menuItems) {
+                const itemIndex = hotel.menuItems.findIndex(item => item.id === itemId);
+                if (itemIndex !== -1) {
+                    hotel.menuItems[itemIndex] = { ...hotel.menuItems[itemIndex], ...updates };
+                    await this.updateHotel(hotelId, { menuItems: hotel.menuItems });
+                }
+            }
+        } catch (error) {
+            console.error('Error updating menu item:', error);
+            showToast('Error updating menu item.', 'error');
+        }
+    },
+
+    async deleteMenuItem(hotelId, itemId) {
+        try {
+            const hotel = await this.getHotelById(hotelId);
+            if (hotel && hotel.menuItems) {
+                hotel.menuItems = hotel.menuItems.filter(item => item.id !== itemId);
+                await this.updateHotel(hotelId, { menuItems: hotel.menuItems });
+            }
+        } catch (error) {
+            console.error('Error deleting menu item:', error);
+            showToast('Error deleting menu item.', 'error');
+        }
+    },
+
+    async addImageToMenuItem(hotelId, itemId, imageData) {
+        try {
+            const hotel = await this.getHotelById(hotelId);
+            if (hotel && hotel.menuItems) {
+                const item = hotel.menuItems.find(item => item.id === itemId);
+                if (item) {
+                    if (!item.images) item.images = [];
+                    item.images.push(imageData);
+                    await this.updateHotel(hotelId, { menuItems: hotel.menuItems });
+                }
+            }
+        } catch (error) {
+            console.error('Error adding image to menu item:', error);
+            showToast('Error adding image.', 'error');
         }
     },
     
     // ===== SELECTED HOTELS FOR TODAY =====
-    getSelectedHotels() {
-        const today = new Date().toDateString();
-        const key = this.KEYS.SELECTED_HOTELS + '_' + today;
-        const selected = localStorage.getItem(key);
-        console.log('getSelectedHotels key:', key, 'value:', selected);
-        return selected ? JSON.parse(selected) : [];
-    },
-
-    setSelectedHotels(hotelIds) {
-        const today = new Date().toDateString();
-        const key = this.KEYS.SELECTED_HOTELS + '_' + today;
-        console.log('setSelectedHotels key:', key, 'hotelIds:', hotelIds);
-        localStorage.setItem(key, JSON.stringify(hotelIds));
-        window.dispatchEvent(new Event('hotelsUpdated'));
-    },
-    
-    getSelectedHotelsData() {
-        const selectedIds = this.getSelectedHotels();
-        const allHotels = this.getHotels();
-        return allHotels.filter(h => selectedIds.includes(h.id));
-    },
-    
-    // ===== ORDERS =====
-    getOrders() {
+    async getSelectedHotels() {
         try {
-            const orders = localStorage.getItem(this.KEYS.ORDERS);
-            return orders ? JSON.parse(orders) : [];
+            const today = new Date().toDateString();
+            const selectedRef = firebaseRef(firebaseDB, `${this.PATHS.SELECTED_HOTELS}/${today}`);
+            const snapshot = await firebaseGet(selectedRef);
+            const data = snapshot.val();
+            console.log('getSelectedHotels for', today, 'value:', data);
+            return data || [];
         } catch (error) {
-            console.error('Error parsing orders data:', error);
+            console.error('Error fetching selected hotels:', error);
             return [];
         }
     },
 
-    setOrders(orders) {
+    async setSelectedHotels(hotelIds) {
         try {
-            localStorage.setItem(this.KEYS.ORDERS, JSON.stringify(orders));
+            const today = new Date().toDateString();
+            console.log('setSelectedHotels for', today, 'hotelIds:', hotelIds);
+            const selectedRef = firebaseRef(firebaseDB, `${this.PATHS.SELECTED_HOTELS}/${today}`);
+            await firebaseSet(selectedRef, hotelIds);
+            // Event will be triggered by the real-time listener
         } catch (error) {
-            console.error('Error saving orders data:', error);
-            showToast('Error saving data. Storage may be full.', 'error');
+            console.error('Error saving selected hotels:', error);
+            showToast('Error saving selection.', 'error');
         }
-    },
-    
-    addOrder(order) {
-        const orders = this.getOrders();
-        order.id = Date.now().toString();
-        order.timestamp = new Date().toISOString();
-        order.date = new Date().toDateString();
-        order.completed = false; // Add completed status
-        orders.push(order);
-        this.setOrders(orders);
-        window.dispatchEvent(new Event('orderAdded'));
-        return order;
-    },
-    
-    getTodaysOrders() {
-        const today = new Date().toDateString();
-        return this.getOrders().filter(order => order.date === today);
-    },
-    
-    getOrdersByDateRange(startDate, endDate) {
-        const orders = this.getOrders();
-        return orders.filter(order => {
-            const orderDate = new Date(order.timestamp);
-            return orderDate >= startDate && orderDate <= endDate;
-        });
-    },
-    
-    deleteOrder(id) {
-        const orders = this.getOrders();
-        const filtered = orders.filter(order => order.id !== id);
-        this.setOrders(filtered);
-        window.dispatchEvent(new Event('orderDeleted'));
     },
 
-    updateOrderStatus(orderId, completed) {
-        const orders = this.getOrders();
-        const order = orders.find(o => o.id === orderId);
-        if (order) {
-            order.completed = completed;
-            this.setOrders(orders);
-            window.dispatchEvent(new Event('orderStatusUpdated'));
+    async getSelectedHotelsData() {
+        try {
+            const selectedIds = await this.getSelectedHotels();
+            const allHotels = await this.getHotels();
+            return allHotels.filter(h => selectedIds.includes(h.id));
+        } catch (error) {
+            console.error('Error fetching selected hotels data:', error);
+            return [];
         }
     },
     
-    clearAllOrders() {
-        localStorage.removeItem(this.KEYS.ORDERS);
-        window.dispatchEvent(new Event('orderDeleted'));
+    // ===== ORDERS =====
+    async getOrders() {
+        try {
+            const ordersRef = firebaseRef(firebaseDB, this.PATHS.ORDERS);
+            const snapshot = await firebaseGet(ordersRef);
+            const data = snapshot.val() || {};
+            return Object.values(data);
+        } catch (error) {
+            console.error('Error fetching orders:', error);
+            return [];
+        }
+    },
+
+    async setOrders(orders) {
+        try {
+            const ordersRef = firebaseRef(firebaseDB, this.PATHS.ORDERS);
+            const ordersObject = {};
+            orders.forEach(order => {
+                ordersObject[order.id] = order;
+            });
+            await firebaseSet(ordersRef, ordersObject);
+        } catch (error) {
+            console.error('Error saving orders:', error);
+            showToast('Error saving orders. Check connection.', 'error');
+        }
+    },
+
+    async addOrder(order) {
+        try {
+            order.id = Date.now().toString() + '_' + Math.random().toString(36).substr(2, 9);
+            order.timestamp = new Date().toISOString();
+            order.date = new Date().toDateString();
+            order.completed = false; // Add completed status
+            const orderRef = firebaseRef(firebaseDB, `${this.PATHS.ORDERS}/${order.id}`);
+            await firebaseSet(orderRef, order);
+            // Event will be triggered by real-time listener
+            return order;
+        } catch (error) {
+            console.error('Error adding order:', error);
+            showToast('Error placing order.', 'error');
+            return null;
+        }
+    },
+
+    async getTodaysOrders() {
+        try {
+            const today = new Date().toDateString();
+            const orders = await this.getOrders();
+            return orders.filter(order => order.date === today);
+        } catch (error) {
+            console.error('Error fetching today\'s orders:', error);
+            return [];
+        }
+    },
+
+    async getOrdersByDateRange(startDate, endDate) {
+        try {
+            const orders = await this.getOrders();
+            return orders.filter(order => {
+                const orderDate = new Date(order.timestamp);
+                return orderDate >= startDate && orderDate <= endDate;
+            });
+        } catch (error) {
+            console.error('Error fetching orders by date range:', error);
+            return [];
+        }
+    },
+
+    async deleteOrder(id) {
+        try {
+            const orderRef = firebaseRef(firebaseDB, `${this.PATHS.ORDERS}/${id}`);
+            await firebaseRemove(orderRef);
+            // Event will be triggered by real-time listener
+        } catch (error) {
+            console.error('Error deleting order:', error);
+            showToast('Error deleting order.', 'error');
+        }
+    },
+
+    async updateOrderStatus(orderId, completed) {
+        try {
+            const orderRef = firebaseRef(firebaseDB, `${this.PATHS.ORDERS}/${orderId}`);
+            await firebaseUpdate(orderRef, { completed });
+            // Event will be triggered by real-time listener
+        } catch (error) {
+            console.error('Error updating order status:', error);
+            showToast('Error updating order status.', 'error');
+        }
+    },
+
+    async clearAllOrders() {
+        try {
+            const ordersRef = firebaseRef(firebaseDB, this.PATHS.ORDERS);
+            await firebaseSet(ordersRef, {});
+            // Event will be triggered by real-time listener
+        } catch (error) {
+            console.error('Error clearing orders:', error);
+            showToast('Error clearing orders.', 'error');
+        }
     },
     
     // ===== THEME =====
-    getTheme() {
-        return localStorage.getItem(this.KEYS.THEME) || 'light';
+    async getTheme() {
+        try {
+            const themeRef = firebaseRef(firebaseDB, this.PATHS.THEME);
+            const snapshot = await firebaseGet(themeRef);
+            return snapshot.val() || 'light';
+        } catch (error) {
+            console.error('Error fetching theme:', error);
+            return 'light';
+        }
     },
-    
-    setTheme(theme) {
-        localStorage.setItem(this.KEYS.THEME, theme);
+
+    async setTheme(theme) {
+        try {
+            const themeRef = firebaseRef(firebaseDB, this.PATHS.THEME);
+            await firebaseSet(themeRef, theme);
+        } catch (error) {
+            console.error('Error saving theme:', error);
+        }
     },
-    
+
     // ===== RESET =====
-    resetAll() {
-        Object.values(this.KEYS).forEach(key => {
-            if (key !== this.KEYS.THEME) {
-                localStorage.removeItem(key);
+    async resetAll() {
+        try {
+            // Clear all Firebase data
+            const paths = [this.PATHS.HOTELS, this.PATHS.ORDERS, this.PATHS.SELECTED_HOTELS];
+            for (const path of paths) {
+                const ref = firebaseRef(firebaseDB, path);
+                await firebaseSet(ref, {});
             }
-        });
-        window.dispatchEvent(new Event('storageReset'));
+            // Keep theme
+            window.dispatchEvent(new Event('storageReset'));
+        } catch (error) {
+            console.error('Error resetting data:', error);
+            showToast('Error resetting data.', 'error');
+        }
     },
     
     // ===== STATISTICS =====
@@ -277,44 +406,58 @@ const StorageManager = {
     }
 };
 
-// Initialize demo data - removed for production deployment
-function initializeDemoData() {
-    // Clear any existing demo data for production deployment
-    const hotels = StorageManager.getHotels();
+// Initialize Firebase and clean up demo data
+async function initializeApp() {
+    try {
+        // Initialize Firebase listeners
+        StorageManager.init();
 
-    // Check if demo hotels exist and remove them
-    const demoHotelNames = ['Paradise Lunch Home', 'Spice Garden Restaurant'];
-    const hasDemoData = hotels.some(hotel => demoHotelNames.includes(hotel.name));
+        // Clear any existing demo data for production deployment
+        const hotels = await StorageManager.getHotels();
 
-    if (hasDemoData) {
-        console.log('Removing demo data for production deployment');
-        // Remove demo hotels
-        demoHotelNames.forEach(demoName => {
-            const demoHotel = hotels.find(h => h.name === demoName);
-            if (demoHotel) {
-                StorageManager.deleteHotel(demoHotel.id);
+        // Check if demo hotels exist and remove them
+        const demoHotelNames = ['Paradise Lunch Home', 'Spice Garden Restaurant'];
+        const hasDemoData = hotels.some(hotel => demoHotelNames.includes(hotel.name));
+
+        if (hasDemoData) {
+            console.log('Removing demo data for production deployment');
+            // Remove demo hotels
+            for (const demoName of demoHotelNames) {
+                const demoHotel = hotels.find(h => h.name === demoName);
+                if (demoHotel) {
+                    await StorageManager.deleteHotel(demoHotel.id);
+                }
             }
-        });
 
-        // Clear all orders (demo orders)
-        StorageManager.clearAllOrders();
+            // Clear all orders (demo orders)
+            await StorageManager.clearAllOrders();
 
-        // Clear selected hotels
-        const today = new Date().toDateString();
-        const selectedKey = StorageManager.KEYS.SELECTED_HOTELS + '_' + today;
-        localStorage.removeItem(selectedKey);
-
-        console.log('Demo data cleared successfully');
-    }
-
-    // Update existing hotels to have type if missing
-    const existingHotels = StorageManager.getHotels();
-    existingHotels.forEach(hotel => {
-        if (!hotel.type) {
-            StorageManager.updateHotel(hotel.id, { type: 'veg' });
+            console.log('Demo data cleared successfully');
         }
-    });
+
+        // Update existing hotels to have type if missing
+        const existingHotels = await StorageManager.getHotels();
+        for (const hotel of existingHotels) {
+            if (!hotel.type) {
+                await StorageManager.updateHotel(hotel.id, { type: 'veg' });
+            }
+        }
+
+        console.log('Lunch Manager initialized successfully');
+    } catch (error) {
+        console.error('Error initializing app:', error);
+        showToast('Error initializing app. Check connection.', 'error');
+    }
 }
 
-initializeDemoData();
+// Initialize when Firebase is ready
+document.addEventListener('DOMContentLoaded', () => {
+    // Wait for Firebase to be available
+    const checkFirebase = setInterval(() => {
+        if (window.firebaseDB && window.firebaseRef) {
+            clearInterval(checkFirebase);
+            initializeApp();
+        }
+    }, 100);
+});
 
