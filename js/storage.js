@@ -277,8 +277,12 @@ const StorageManager = {
     }
 };
 
-// Initialize demo data
+// Initialize demo data - removed for production deployment
 function initializeDemoData() {
+    // Demo data removed for production deployment
+    // Uncomment the code below if you want to add demo data for testing
+
+    /*
     // Fix missing IDs for existing menu items
     const hotels = StorageManager.getHotels();
     let needsSave = false;
@@ -319,38 +323,7 @@ function initializeDemoData() {
         ];
 
         demoHotels.forEach(hotel => {
-            // Add hotel without menuItems first, then add menuItems with proper IDs
-            const hotelData = { name: hotel.name, menuItems: [] };
-            // Add demo hotels with reviews and location
-            const demoHotels = [
-                {
-                    name: 'Paradise Lunch Home',
-                    reviews: 4.5,
-                    location: 'MG Road, Bangalore',
-                    menuItems: []
-                },
-                {
-                    name: 'Spice Garden Restaurant',
-                    reviews: 4.2,
-                    location: 'Brigade Road, Bangalore',
-                    menuItems: []
-                }
-            ];
-    
-            demoHotels.forEach(hotel => {
-                StorageManager.addHotel(hotel);
-            });
-            // Update existing hotels to have type if missing
-            const existingHotels = StorageManager.getHotels();
-            existingHotels.forEach(hotel => {
-                if (!hotel.type) {
-                    StorageManager.updateHotel(hotel.id, { type: 'veg' });
-                }
-            });
-            // Then add menu items
-            hotel.menuItems.forEach(item => {
-                StorageManager.addMenuItemToHotel(hotelData.id, item);
-            });
+            StorageManager.addHotel(hotel);
         });
 
         // Select first hotel by default
@@ -388,6 +361,15 @@ function initializeDemoData() {
             StorageManager.addOrder(order2);
         }
     }
+    */
+
+    // Update existing hotels to have type if missing
+    const existingHotels = StorageManager.getHotels();
+    existingHotels.forEach(hotel => {
+        if (!hotel.type) {
+            StorageManager.updateHotel(hotel.id, { type: 'veg' });
+        }
+    });
 }
 
 initializeDemoData();
