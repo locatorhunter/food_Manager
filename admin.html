@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lunch Manager - Admin</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <nav id="navbar"></nav>
+    <div id="banner"></div>
+    
+    <main class="container">
+        <h1>Admin Panel</h1>
+        
+        <section class="admin-section">
+            <!-- Select Hotels for Today -->
+            <div class="card">
+                <h2>🏨 Select Hotels for Today</h2>
+                <p class="card-description">Choose which restaurants will provide lunch today</p>
+                <div id="hotelSelectionList"></div>
+            </div>
+
+            <!-- Add New Hotel -->
+            <div class="card">
+                <h2>➕ Add New Hotel</h2>
+                <p class="card-description">Register a new restaurant to the system</p>
+                <form id="hotelForm">
+                    <div class="form-group">
+                        <label for="hotelName">Hotel Name</label>
+                        <input type="text" id="hotelName" placeholder="Enter restaurant name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="hotelType">Type</label>
+                        <select id="hotelType" required>
+                            <option value="veg">🥬 Vegetarian</option>
+                            <option value="non-veg">🍖 Non-Vegetarian</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Add Hotel</button>
+                </form>
+            </div>
+
+            <!-- Manage Hotels and Menus -->
+            <div class="card">
+                <h2>⚙️ Manage Hotels & Menus</h2>
+                <p class="card-description">Edit restaurant details and manage their menu items</p>
+                <div id="hotelsManagement"></div>
+
+                <!-- Edit Hotel Details Modal -->
+                <div id="editHotelModal" class="modal" style="display: none;">
+                    <div class="modal-content">
+                        <span class="modal-close" onclick="closeEditHotelModal()">&times;</span>
+                        <h2>Edit Hotel Details</h2>
+                        <form id="editHotelForm">
+                            <input type="hidden" id="editHotelId">
+                            <div class="form-group">
+                                <label for="editHotelName">Hotel Name</label>
+                                <input type="text" id="editHotelName" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="editHotelReviews">Google Reviews (1-5)</label>
+                                <input type="number" id="editHotelReviews" min="1" max="5" step="0.1" placeholder="4.5">
+                            </div>
+                            <div class="form-group">
+                                <label for="editHotelLocation">Location</label>
+                                <input type="text" id="editHotelLocation" placeholder="e.g., MG Road, Bangalore">
+                            </div>
+                            <div class="form-group">
+                                <label for="editHotelType">Type</label>
+                                <select id="editHotelType" required>
+                                    <option value="veg">🥬 Vegetarian</option>
+                                    <option value="non-veg">🍖 Non-Vegetarian</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Update Hotel</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Danger Zone -->
+            <div class="card danger-zone">
+                <h2>⚠️ Danger Zone</h2>
+                <p class="card-description">Irreversible actions - use with caution</p>
+                <button id="clearOrdersBtn" class="btn btn-danger">Clear All Orders</button>
+                <button id="resetAllBtn" class="btn btn-danger">Reset Everything</button>
+            </div>
+        </section>
+    </main>
+    
+    <footer>
+        <p>&copy; 2025 Lunch Manager. All rights reserved. | Developed by Vijay</p>
+    </footer>
+    
+    <!-- Modal for Adding Menu Items -->
+    <div id="menuModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="modal-close">&times;</span>
+            <h2>Add Menu Item</h2>
+            <form id="menuItemForm">
+                <input type="hidden" id="currentHotelId">
+                <div class="form-group">
+                    <label for="itemName">Item Name</label>
+                    <input type="text" id="itemName" placeholder="e.g., Chicken Biryani" required>
+                </div>
+                <div class="form-group">
+                    <label for="itemPrice">Price (₹)</label>
+                    <input type="number" id="itemPrice" placeholder="0" min="0" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label for="itemCategory">Category</label>
+                    <select id="itemCategory" required>
+                        <option value="">Select category</option>
+                        <option value="Main Course">Main Course</option>
+                        <option value="Rice">Rice</option>
+                        <option value="Bread">Bread</option>
+                        <option value="Curry">Curry</option>
+                        <option value="Beverage">Beverage</option>
+                        <option value="Dessert">Dessert</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="itemAvailable" checked>
+                        Available Today
+                    </label>
+                </div>
+                <button type="submit" class="btn btn-primary">Add Item</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal for Importing CSV -->
+    <div id="importModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="modal-close">&times;</span>
+            <h2>Import Menu Items from CSV</h2>
+            <p>CSV format: name,price,category,available<br>Example: Chicken Biryani,150,Main Course,true</p>
+            <input type="hidden" id="importHotelId">
+            <div class="form-group">
+                <label for="csvFile">Select CSV File</label>
+                <input type="file" id="csvFile" accept=".csv">
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button onclick="downloadCSVTemplate()" class="btn btn-secondary">Download Template</button>
+                <button onclick="importCSV()" class="btn btn-primary">Import Items</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/storage.js"></script>
+    <script src="js/common.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/admin.js"></script>
+</body>
+</html>

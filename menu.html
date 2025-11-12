@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lunch Manager - Menu</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <nav id="navbar"></nav>
+    <div id="banner"></div>
+    
+    <main class="container">
+        <h1>Today's Menu</h1>
+        
+        <section class="menu-section">
+            <!-- Compact Search and Filter Bar -->
+            <div class="menu-controls">
+                <div class="search-filter-bar">
+                    <div class="search-input-wrapper">
+                        <input type="text" id="menuSearch" placeholder="Search items...">
+                    </div>
+                    <div class="filter-select-wrapper">
+                        <select id="categoryFilter">
+                            <option value="">All Categories</option>
+                            <option value="Main Course">Main Course</option>
+                            <option value="Rice">Rice</option>
+                            <option value="Bread">Bread</option>
+                            <option value="Curry">Curry</option>
+                            <option value="Beverage">Beverage</option>
+                            <option value="Dessert">Dessert</option>
+                        </select>
+                    </div>
+                    <div class="size-select-wrapper">
+                        <select id="cardSize">
+                            <option value="small">Small Cards</option>
+                            <option value="medium" selected>Medium Cards</option>
+                            <option value="large">Large Cards</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div id="hotelsMenuContainer"></div>
+        </section>
+    </main>
+    
+    <footer>
+        <p>&copy; 2025 Lunch Manager. All rights reserved. | Developed by Vijay</p>
+    </footer>
+    
+    <!-- Item Modal -->
+    <div id="itemModal" class="modal" style="display: none;">
+        <div class="modal-content item-modal-content">
+            <span class="modal-close">&times;</span>
+            <div id="itemModalContent"></div>
+        </div>
+    </div>
+
+    <!-- Order Modal -->
+    <div id="orderModal" class="modal" style="display: none;">
+        <div class="modal-content order-modal-content">
+            <h2>Place Your Order</h2>
+            <div class="form-group">
+                <label for="orderEmployeeName">Your Name</label>
+                <input type="text" id="orderEmployeeName" placeholder="Enter your name" required>
+            </div>
+            <div class="order-summary-preview">
+                <p id="orderPreview"></p>
+            </div>
+            <div class="modal-actions">
+                <button id="confirmOrderBtn" class="btn btn-primary">Place Order</button>
+                <button id="cancelOrderBtn" class="btn btn-secondary">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/storage.js"></script>
+    <script src="js/common.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/menu.js"></script>
+</body>
+</html>
