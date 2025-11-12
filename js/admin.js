@@ -349,10 +349,13 @@ async function deleteMenuItem(hotelId, itemId) {
         const hotel = await StorageManager.getHotelById(hotelId);
         const item = hotel?.menuItems?.find(i => i.id === itemId);
 
-        if (item && confirm(`Delete "${item.name}"?`)) {
-            await StorageManager.deleteMenuItem(hotelId, itemId);
-            showToast('Menu item deleted!');
-            displayHotelsManagement();
+        if (item) {
+            const confirmed = await customConfirm(`Delete "${item.name}"?`, 'Confirm Delete');
+            if (confirmed) {
+                await StorageManager.deleteMenuItem(hotelId, itemId);
+                showToast('Menu item deleted!');
+                displayHotelsManagement();
+            }
         }
     } catch (error) {
         console.error('Error deleting menu item:', error);
@@ -381,12 +384,15 @@ async function deleteHotel(hotelId) {
     try {
         const hotel = await StorageManager.getHotelById(hotelId);
 
-        if (hotel && confirm(`Delete "${hotel.name}" and all its menu items?`)) {
-            await StorageManager.deleteHotel(hotelId);
-            selectedHotelIds = selectedHotelIds.filter(id => id !== hotelId);
-            showToast('Hotel deleted!');
-            displayHotelSelection();
-            displayHotelsManagement();
+        if (hotel) {
+            const confirmed = await customConfirm(`Delete "${hotel.name}" and all its menu items?`, 'Confirm Delete');
+            if (confirmed) {
+                await StorageManager.deleteHotel(hotelId);
+                selectedHotelIds = selectedHotelIds.filter(id => id !== hotelId);
+                showToast('Hotel deleted!');
+                displayHotelSelection();
+                displayHotelsManagement();
+            }
         }
     } catch (error) {
         console.error('Error deleting hotel:', error);
@@ -544,17 +550,20 @@ function setupEditHotelForm() {
     });
 }
 
-function setupDangerZone() {
-    document.getElementById('clearOrdersBtn').addEventListener('click', function() {
-        if (confirm('Clear all orders? This cannot be undone!')) {
+async function setupDangerZone() {
+    document.getElementById('clearOrdersBtn').addEventListener('click', async function() {
+        const confirmed = await customConfirm('Clear all orders? This cannot be undone!', 'Danger Zone');
+        if (confirmed) {
             StorageManager.clearAllOrders();
             showToast('All orders cleared!');
         }
     });
 
-    document.getElementById('resetAllBtn').addEventListener('click', function() {
-        if (confirm('Reset EVERYTHING? This will delete all data!')) {
-            if (confirm('Last chance! This is IRREVERSIBLE!')) {
+    document.getElementById('resetAllBtn').addEventListener('click', async function() {
+        const confirmed1 = await customConfirm('Reset EVERYTHING? This will delete all data!', 'Danger Zone');
+        if (confirmed1) {
+            const confirmed2 = await customConfirm('Last chance! This is IRREVERSIBLE!', 'Final Warning');
+            if (confirmed2) {
                 StorageManager.resetAll();
                 showToast('All data has been reset!');
                 location.reload();

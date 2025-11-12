@@ -489,8 +489,9 @@ async function toggleOrderStatus(orderId) {
     }
 }
 
-function deleteOrderFromDashboard(orderId) {
-    if (confirm('Delete this order?')) {
+async function deleteOrderFromDashboard(orderId) {
+    const confirmed = await customConfirm('Delete this order?', 'Confirm Delete');
+    if (confirmed) {
         StorageManager.deleteOrder(orderId);
         showToast('Order deleted!');
     }

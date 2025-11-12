@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lunch Manager - Dashboard</title>
-    <link rel="stylesheet" href="css/style.css?v=1.0.0">
+    <link rel="stylesheet" href="css/style.css?v=1.0.4">
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
@@ -137,19 +137,90 @@
         <p>&copy; 2025 Lunch Manager. All rights reserved. | Developed by Vijay</p>
     </footer>
     
+    <!-- Password Modal - Temporarily Hidden -->
+    <div id="passwordModal" class="modal" style="display: none;">
+        <div class="modal-content password-modal-content">
+            <div class="password-modal-header">
+                <h2>📊 Dashboard Access</h2>
+                <p class="password-subtitle">Please enter the dashboard password to continue</p>
+            </div>
+            <form id="passwordForm" class="password-form">
+                <div class="form-group">
+                    <label for="adminPassword">Password</label>
+                    <div class="password-input-wrapper">
+                        <input type="password" id="adminPassword" placeholder="Enter password" required autocomplete="current-password">
+                        <button type="button" class="password-toggle" id="passwordToggle">
+                            <span class="eye-icon">👁️</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="password-actions">
+                    <button type="submit" class="btn btn-primary btn-block">Access Dashboard</button>
+                    <button type="button" class="btn btn-secondary btn-block" onclick="goHome()">Back to Home</button>
+                </div>
+                <div id="passwordError" class="password-error" style="display: none;">
+                    <span class="error-icon">⚠️</span>
+                    Incorrect password. Please try again.
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
         // Password protection for Dashboard page
         const correctPassword = '1';
-        const enteredPassword = prompt('Enter Dashboard Password:');
 
-        if (enteredPassword !== correctPassword) {
-            alert('Incorrect password! Redirecting to home page.');
+        document.addEventListener('DOMContentLoaded', function() {
+            const passwordForm = document.getElementById('passwordForm');
+            const passwordInput = document.getElementById('adminPassword');
+            const passwordToggle = document.getElementById('passwordToggle');
+            const passwordError = document.getElementById('passwordError');
+            const passwordModal = document.getElementById('passwordModal');
+
+            // Toggle password visibility
+            passwordToggle.addEventListener('click', function() {
+                const type = passwordInput.type === 'password' ? 'text' : 'password';
+                passwordInput.type = type;
+                passwordToggle.querySelector('.eye-icon').textContent = type === 'password' ? '👁️' : '🙈';
+            });
+
+            // Handle form submission
+            passwordForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const enteredPassword = passwordInput.value.trim();
+
+                if (enteredPassword === correctPassword) {
+                    // Hide modal with animation
+                    passwordModal.style.opacity = '0';
+                    setTimeout(() => {
+                        passwordModal.style.display = 'none';
+                    }, 300);
+                } else {
+                    // Show error
+                    passwordError.style.display = 'block';
+                    passwordInput.value = '';
+                    passwordInput.focus();
+
+                    // Shake animation
+                    passwordModal.classList.add('shake');
+                    setTimeout(() => {
+                        passwordModal.classList.remove('shake');
+                    }, 500);
+                }
+            });
+
+            // Auto-focus password input
+            passwordInput.focus();
+        });
+
+        function goHome() {
             window.location.href = 'index.html';
         }
     </script>
-    <script src="js/storage.js?v=1.0.0"></script>
-    <script src="js/common.js?v=1.0.0"></script>
-    <script src="js/utils.js?v=1.0.0"></script>
-    <script src="js/dashboard.js?v=1.0.0"></script>
+    <script src="js/modal.js?v=1.0.3"></script>
+    <script src="js/storage.js?v=1.0.3"></script>
+    <script src="js/common.js?v=1.0.3"></script>
+    <script src="js/utils.js?v=1.0.3"></script>
+    <script src="js/dashboard.js?v=1.0.3"></script>
 </body>
 </html>

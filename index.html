@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Lunch Manager - Manage daily employee lunch orders">
     <title>Lunch Manager - Home</title>
-    <link rel="stylesheet" href="css/style.css?v=1.0.0">
+    <link rel="stylesheet" href="css/style.css?v=1.1.0">
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
@@ -38,41 +38,54 @@
 </head>
 <body>
     <nav id="navbar"></nav>
-    <div id="banner"></div>
 
-    <main class="container">
-        <section class="order-summary-section">
-            <div id="orderSummary"></div>
-        </section>
-
-        <section class="quick-actions">
-            <div class="action-buttons">
-                <a href="admin.html" class="btn btn-primary btn-large">
-                    <span class="btn-icon">👨‍💼</span>
-                    Admin Panel
-                </a>
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="hero-content">
+            <h1>Welcome to Lunch Manager</h1>
+            <p class="hero-subtitle">Delicious meals made simple. Order your lunch with ease and enjoy great food.</p>
+            <div class="hero-buttons">
                 <a href="menu.html" class="btn btn-primary btn-large">
                     <span class="btn-icon">🍽️</span>
-                    Place Order
+                    Order Now
                 </a>
-                <a href="dashboard.html" class="btn btn-secondary btn-large">
-                    <span class="btn-icon">📊</span>
-                    View Dashboard
+                <a href="#featured" class="btn btn-secondary btn-large">
+                    <span class="btn-icon">👁️</span>
+                    View Menu
                 </a>
             </div>
-        </section>
+        </div>
+        <!-- Floating Food Cards -->
+        <div class="floating-food-container">
+            <div class="floating-food food-1">🍕</div>
+            <div class="floating-food food-2">🍔</div>
+            <div class="floating-food food-3">🌮</div>
+            <div class="floating-food food-4">🍜</div>
+            <div class="floating-food food-5">🥗</div>
+            <div class="floating-food food-6">🍣</div>
+            <div class="floating-food food-7">🍗</div>
+            <div class="floating-food food-8">🥪</div>
+            <div class="floating-food food-9">🍝</div>
+            <div class="floating-food food-10">🥘</div>
+            <div class="floating-food food-11">🍛</div>
+            <div class="floating-food food-12">🥙</div>
+        </div>
+    </section>
 
-        <!-- Popular Items -->
-        <section class="popular-items-section">
-            <div class="card">
-                <h2>Popular Items</h2>
-                <div id="popularItems" class="popular-items-grid"></div>
+    <!-- Featured Dishes -->
+    <section id="featured" class="featured-section">
+        <div class="container">
+            <div class="section-header">
+                <h2>Featured Dishes</h2>
+                <p>Discover our most popular and delicious menu items</p>
             </div>
-        </section>
-    </main>
-    
+            <div id="popularItems" class="featured-grid"></div>
+        </div>
+    </section>
+
+
     <footer>
-        <p>&copy; 2025 Lunch Manager. All rights reserved. | Developed by Vijay</p>
+                <p>&copy; 2025 Lunch Manager. All rights reserved. | Developed by Vijay</p>
     </footer>
     
     <script src="js/storage.js?v=1.0.0"></script>

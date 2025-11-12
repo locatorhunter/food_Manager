@@ -5,7 +5,6 @@
 document.addEventListener('DOMContentLoaded', function() {
     initializeNavbar();
     initializeBanner();
-    initializeTheme();
     setActivePage();
     initializeMobileUX();
 });
@@ -79,9 +78,6 @@ function initializeNavbar() {
                     <li><a href="menu.html" class="nav-link" data-page="menu">Menu</a></li>
                     <li><a href="dashboard.html" class="nav-link" data-page="dashboard">Dashboard</a></li>
                     <li><a href="admin.html" class="nav-link" data-page="admin">Admin</a></li>
-                    <li>
-                        <button class="theme-toggle" id="themeToggle" title="Toggle Dark/Light Mode">🌙</button>
-                    </li>
                 </ul>
             </div>
         </div>
@@ -159,7 +155,7 @@ async function updateBanner() {
                 details += ` 📍${hotel.location}`;
             }
             return details;
-        }).join(' | ');
+        }).join('  |  |  ');
 
         const bannerHtml = `
             <div class="banner">
@@ -187,50 +183,6 @@ async function updateBanner() {
     }
 }
 
-async function initializeTheme() {
-    try {
-        const savedTheme = await StorageManager.getTheme();
-        applyTheme(savedTheme);
-
-        const themeToggle = document.getElementById('themeToggle');
-        if (themeToggle) {
-            updateThemeIcon(savedTheme);
-            themeToggle.addEventListener('click', toggleTheme);
-        }
-    } catch (error) {
-        console.error('Error initializing theme:', error);
-        // Default to light theme
-        applyTheme('light');
-    }
-}
-
-async function toggleTheme() {
-    try {
-        const currentTheme = await StorageManager.getTheme();
-        const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-        applyTheme(newTheme);
-        await StorageManager.setTheme(newTheme);
-        updateThemeIcon(newTheme);
-    } catch (error) {
-        console.error('Error toggling theme:', error);
-    }
-}
-
-function applyTheme(theme) {
-    if (theme === 'dark') {
-        document.body.classList.add('dark-mode');
-    } else {
-        document.body.classList.remove('dark-mode');
-    }
-}
-
-function updateThemeIcon(theme) {
-    const themeToggle = document.getElementById('themeToggle');
-    if (themeToggle) {
-        themeToggle.textContent = theme === 'light' ? '🌙' : '☀️';
-        themeToggle.style.color = theme === 'light' ? 'var(--text-primary)' : 'var(--text-primary)';
-    }
-}
 
 function setActivePage() {
     const currentPage = window.location.pathname.split('/').pop() || 'index.html';
