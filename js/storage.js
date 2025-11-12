@@ -279,89 +279,33 @@ const StorageManager = {
 
 // Initialize demo data - removed for production deployment
 function initializeDemoData() {
-    // Demo data removed for production deployment
-    // Uncomment the code below if you want to add demo data for testing
-
-    /*
-    // Fix missing IDs for existing menu items
+    // Clear any existing demo data for production deployment
     const hotels = StorageManager.getHotels();
-    let needsSave = false;
-    hotels.forEach(hotel => {
-        hotel.menuItems.forEach(item => {
-            if (!item.id) {
-                item.id = Date.now().toString() + '_' + Math.random().toString(36).substr(2, 9);
-                needsSave = true;
+
+    // Check if demo hotels exist and remove them
+    const demoHotelNames = ['Paradise Lunch Home', 'Spice Garden Restaurant'];
+    const hasDemoData = hotels.some(hotel => demoHotelNames.includes(hotel.name));
+
+    if (hasDemoData) {
+        console.log('Removing demo data for production deployment');
+        // Remove demo hotels
+        demoHotelNames.forEach(demoName => {
+            const demoHotel = hotels.find(h => h.name === demoName);
+            if (demoHotel) {
+                StorageManager.deleteHotel(demoHotel.id);
             }
         });
-    });
-    if (needsSave) {
-        StorageManager.setHotels(hotels);
-        console.log('Fixed missing IDs for menu items');
+
+        // Clear all orders (demo orders)
+        StorageManager.clearAllOrders();
+
+        // Clear selected hotels
+        const today = new Date().toDateString();
+        const selectedKey = StorageManager.KEYS.SELECTED_HOTELS + '_' + today;
+        localStorage.removeItem(selectedKey);
+
+        console.log('Demo data cleared successfully');
     }
-
-    if (StorageManager.getHotels().length === 0) {
-        // Add demo hotels with menus
-        const demoHotels = [
-            {
-                name: 'Paradise Lunch Home',
-                menuItems: [
-                    { name: 'Chicken Biryani', price: 150, category: 'Main Course', available: true },
-                    { name: 'Paneer Butter Masala', price: 120, category: 'Curry', available: true },
-                    { name: 'Dal Tadka', price: 80, category: 'Curry', available: true },
-                    { name: 'Jeera Rice', price: 60, category: 'Rice', available: true }
-                ]
-            },
-            {
-                name: 'Spice Garden Restaurant',
-                menuItems: [
-                    { name: 'Veg Thali', price: 130, category: 'Main Course', available: true },
-                    { name: 'Butter Chicken', price: 180, category: 'Main Course', available: true },
-                    { name: 'Garlic Naan', price: 45, category: 'Bread', available: true },
-                    { name: 'Masala Chai', price: 20, category: 'Beverage', available: true }
-                ]
-            }
-        ];
-
-        demoHotels.forEach(hotel => {
-            StorageManager.addHotel(hotel);
-        });
-
-        // Select first hotel by default
-        const currentHotels = StorageManager.getHotels();
-        if (currentHotels.length > 0) {
-            StorageManager.setSelectedHotels([currentHotels[0].id]);
-        }
-    }
-
-    // Add demo orders if none exist
-    if (StorageManager.getOrders().length === 0) {
-        const currentHotels = StorageManager.getHotels();
-        if (currentHotels.length >= 2) {
-            const order1 = {
-                employeeName: 'John Doe',
-                items: [
-                    { name: 'Chicken Biryani', price: 150, quantity: 2, category: 'Main Course' },
-                    { name: 'Paneer Butter Masala', price: 120, quantity: 1, category: 'Curry' }
-                ],
-                total: 420,
-                hotelName: currentHotels[0].name
-            };
-
-            const order2 = {
-                employeeName: 'Jane Smith',
-                items: [
-                    { name: 'Veg Thali', price: 130, quantity: 1, category: 'Main Course' },
-                    { name: 'Butter Chicken', price: 180, quantity: 1, category: 'Main Course' }
-                ],
-                total: 310,
-                hotelName: currentHotels[1].name
-            };
-
-            StorageManager.addOrder(order1);
-            StorageManager.addOrder(order2);
-        }
-    }
-    */
 
     // Update existing hotels to have type if missing
     const existingHotels = StorageManager.getHotels();

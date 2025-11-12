@@ -65,12 +65,17 @@ function initializeBanner() {
         }
     });
 
+    // Order summary removed for production deployment
+    // Uncomment the code below if you want to show order summary on home page
+
+    /*
     // Display order summary on home page
     if (document.getElementById('orderSummary')) {
         displayOrderSummary();
         window.addEventListener('orderAdded', displayOrderSummary);
         window.addEventListener('orderDeleted', displayOrderSummary);
     }
+    */
 }
 
 function updateBanner() {
