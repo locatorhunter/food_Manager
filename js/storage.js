@@ -14,7 +14,7 @@ const StorageManager = {
     // Initialize real-time listeners
     init() {
         // Listen for hotels changes
-        const hotelsRef = firebaseRef(firebaseDB, this.PATHS.HOTELS);
+        const hotelsRef = firebaseRef(`${this.PATHS.HOTELS}`);
         firebaseOnValue(hotelsRef, (snapshot) => {
             const data = snapshot.val() || {};
             // Convert object to array and dispatch event
@@ -23,7 +23,7 @@ const StorageManager = {
         });
 
         // Listen for orders changes
-        const ordersRef = firebaseRef(firebaseDB, this.PATHS.ORDERS);
+        const ordersRef = firebaseRef(`${this.PATHS.ORDERS}`);
         firebaseOnValue(ordersRef, (snapshot) => {
             const data = snapshot.val() || {};
             const orders = Object.values(data);
@@ -35,7 +35,7 @@ const StorageManager = {
     // ===== HOTEL MANAGEMENT =====
     async getHotels() {
         try {
-            const hotelsRef = firebaseRef(firebaseDB, this.PATHS.HOTELS);
+            const hotelsRef = firebaseRef(`${this.PATHS.HOTELS}`);
             const snapshot = await firebaseGet(hotelsRef);
             const data = snapshot.val() || {};
             return Object.values(data);
@@ -47,7 +47,7 @@ const StorageManager = {
 
     async setHotels(hotels) {
         try {
-            const hotelsRef = firebaseRef(firebaseDB, this.PATHS.HOTELS);
+            const hotelsRef = firebaseRef(`${this.PATHS.HOTELS}`);
             const hotelsObject = {};
             hotels.forEach(hotel => {
                 hotelsObject[hotel.id] = hotel;
@@ -63,7 +63,7 @@ const StorageManager = {
         try {
             hotelData.id = Date.now().toString() + '_' + Math.random().toString(36).substr(2, 9);
             hotelData.menuItems = hotelData.menuItems || [];
-            const hotelRef = firebaseRef(firebaseDB, `${this.PATHS.HOTELS}/${hotelData.id}`);
+            const hotelRef = firebaseRef(`${this.PATHS.HOTELS}/${hotelData.id}`);
             await firebaseSet(hotelRef, hotelData);
             return hotelData;
         } catch (error) {
@@ -75,7 +75,7 @@ const StorageManager = {
 
     async updateHotel(hotelId, updates) {
         try {
-            const hotelRef = firebaseRef(firebaseDB, `${this.PATHS.HOTELS}/${hotelId}`);
+            const hotelRef = firebaseRef(`${this.PATHS.HOTELS}/${hotelId}`);
             await firebaseUpdate(hotelRef, updates);
         } catch (error) {
             console.error('Error updating hotel:', error);
@@ -85,7 +85,7 @@ const StorageManager = {
 
     async deleteHotel(hotelId) {
         try {
-            const hotelRef = firebaseRef(firebaseDB, `${this.PATHS.HOTELS}/${hotelId}`);
+            const hotelRef = firebaseRef(`${this.PATHS.HOTELS}/${hotelId}`);
             await firebaseRemove(hotelRef);
         } catch (error) {
             console.error('Error deleting hotel:', error);
@@ -106,17 +106,12 @@ const StorageManager = {
     // ===== MENU ITEMS FOR HOTELS =====
     async addMenuItemToHotel(hotelId, menuItem) {
         try {
-            console.log('addMenuItemToHotel called with hotelId:', hotelId, 'menuItem:', menuItem);
             const hotel = await this.getHotelById(hotelId);
             if (hotel) {
                 menuItem.id = Date.now().toString() + '_' + Math.random().toString(36).substr(2, 9);
-                console.log('Assigned id:', menuItem.id);
                 hotel.menuItems = hotel.menuItems || [];
                 hotel.menuItems.push(menuItem);
                 await this.updateHotel(hotelId, { menuItems: hotel.menuItems });
-                console.log('Menu item added, hotel now has', hotel.menuItems.length, 'items');
-            } else {
-                console.log('Hotel not found for id:', hotelId);
             }
         } catch (error) {
             console.error('Error adding menu item:', error);
@@ -174,10 +169,9 @@ const StorageManager = {
     async getSelectedHotels() {
         try {
             const today = new Date().toDateString();
-            const selectedRef = firebaseRef(firebaseDB, `${this.PATHS.SELECTED_HOTELS}/${today}`);
+            const selectedRef = firebaseRef(`${this.PATHS.SELECTED_HOTELS}/${today}`);
             const snapshot = await firebaseGet(selectedRef);
             const data = snapshot.val();
-            console.log('getSelectedHotels for', today, 'value:', data);
             return data || [];
         } catch (error) {
             console.error('Error fetching selected hotels:', error);
@@ -188,8 +182,7 @@ const StorageManager = {
     async setSelectedHotels(hotelIds) {
         try {
             const today = new Date().toDateString();
-            console.log('setSelectedHotels for', today, 'hotelIds:', hotelIds);
-            const selectedRef = firebaseRef(firebaseDB, `${this.PATHS.SELECTED_HOTELS}/${today}`);
+            const selectedRef = firebaseRef(`${this.PATHS.SELECTED_HOTELS}/${today}`);
             await firebaseSet(selectedRef, hotelIds);
             // Event will be triggered by the real-time listener
         } catch (error) {
@@ -212,7 +205,7 @@ const StorageManager = {
     // ===== ORDERS =====
     async getOrders() {
         try {
-            const ordersRef = firebaseRef(firebaseDB, this.PATHS.ORDERS);
+            const ordersRef = firebaseRef(`${this.PATHS.ORDERS}`);
             const snapshot = await firebaseGet(ordersRef);
             const data = snapshot.val() || {};
             return Object.values(data);
@@ -224,7 +217,7 @@ const StorageManager = {
 
     async setOrders(orders) {
         try {
-            const ordersRef = firebaseRef(firebaseDB, this.PATHS.ORDERS);
+            const ordersRef = firebaseRef(`${this.PATHS.ORDERS}`);
             const ordersObject = {};
             orders.forEach(order => {
                 ordersObject[order.id] = order;
@@ -242,7 +235,7 @@ const StorageManager = {
             order.timestamp = new Date().toISOString();
             order.date = new Date().toDateString();
             order.completed = false; // Add completed status
-            const orderRef = firebaseRef(firebaseDB, `${this.PATHS.ORDERS}/${order.id}`);
+            const orderRef = firebaseRef(`${this.PATHS.ORDERS}/${order.id}`);
             await firebaseSet(orderRef, order);
             // Event will be triggered by real-time listener
             return order;
@@ -279,7 +272,7 @@ const StorageManager = {
 
     async deleteOrder(id) {
         try {
-            const orderRef = firebaseRef(firebaseDB, `${this.PATHS.ORDERS}/${id}`);
+            const orderRef = firebaseRef(`${this.PATHS.ORDERS}/${id}`);
             await firebaseRemove(orderRef);
             // Event will be triggered by real-time listener
         } catch (error) {
@@ -290,7 +283,7 @@ const StorageManager = {
 
     async updateOrderStatus(orderId, completed) {
         try {
-            const orderRef = firebaseRef(firebaseDB, `${this.PATHS.ORDERS}/${orderId}`);
+            const orderRef = firebaseRef(`${this.PATHS.ORDERS}/${orderId}`);
             await firebaseUpdate(orderRef, { completed });
             // Event will be triggered by real-time listener
         } catch (error) {
@@ -301,7 +294,7 @@ const StorageManager = {
 
     async clearAllOrders() {
         try {
-            const ordersRef = firebaseRef(firebaseDB, this.PATHS.ORDERS);
+            const ordersRef = firebaseRef(`${this.PATHS.ORDERS}`);
             await firebaseSet(ordersRef, {});
             // Event will be triggered by real-time listener
         } catch (error) {
@@ -313,7 +306,7 @@ const StorageManager = {
     // ===== THEME =====
     async getTheme() {
         try {
-            const themeRef = firebaseRef(firebaseDB, this.PATHS.THEME);
+            const themeRef = firebaseRef(`${this.PATHS.THEME}`);
             const snapshot = await firebaseGet(themeRef);
             return snapshot.val() || 'light';
         } catch (error) {
@@ -324,7 +317,7 @@ const StorageManager = {
 
     async setTheme(theme) {
         try {
-            const themeRef = firebaseRef(firebaseDB, this.PATHS.THEME);
+            const themeRef = firebaseRef(`${this.PATHS.THEME}`);
             await firebaseSet(themeRef, theme);
         } catch (error) {
             console.error('Error saving theme:', error);
@@ -337,7 +330,7 @@ const StorageManager = {
             // Clear all Firebase data
             const paths = [this.PATHS.HOTELS, this.PATHS.ORDERS, this.PATHS.SELECTED_HOTELS];
             for (const path of paths) {
-                const ref = firebaseRef(firebaseDB, path);
+                const ref = firebaseRef(`${path}`);
                 await firebaseSet(ref, {});
             }
             // Keep theme

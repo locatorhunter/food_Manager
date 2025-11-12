@@ -5,6 +5,35 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lunch Manager - Menu</title>
     <link rel="stylesheet" href="css/style.css?v=1.0.0">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCLzX2loYEmPjk0AgH0caHLFBso9yPYTCc",
+            authDomain: "foodmanager-19cbb.firebaseapp.com",
+            projectId: "foodmanager-19cbb",
+            storageBucket: "foodmanager-19cbb.firebasestorage.app",
+            messagingSenderId: "853074932493",
+            appId: "1:853074932493:web:779a3bd8e5e501cb86f644",
+            measurementId: "G-639Z6PMW6R"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        // Make Firebase available globally
+        window.firebaseDB = database;
+        window.firebaseRef = (path) => database.ref(path);
+        window.firebaseSet = (ref, data) => ref.set(data);
+        window.firebaseGet = (ref) => ref.once('value');
+        window.firebaseOnValue = (ref, callback) => ref.on('value', callback);
+        window.firebasePush = (ref) => ref.push();
+        window.firebaseUpdate = (ref, data) => ref.update(data);
+        window.firebaseRemove = (ref) => ref.remove();
+    </script>
 </head>
 <body>
     <nav id="navbar"></nav>

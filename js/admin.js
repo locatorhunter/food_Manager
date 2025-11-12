@@ -89,16 +89,11 @@ async function displayHotelSelection() {
 }
 
 function toggleHotelSelection(hotelId) {
-    console.log('toggleHotelSelection called with:', hotelId);
-    console.log('selectedHotelIds before:', selectedHotelIds);
     if (selectedHotelIds.includes(hotelId)) {
         selectedHotelIds = selectedHotelIds.filter(id => id !== hotelId);
-        console.log('removed', hotelId);
     } else {
         selectedHotelIds.push(hotelId);
-        console.log('added', hotelId);
     }
-    console.log('selectedHotelIds after:', selectedHotelIds);
     // Auto-save selection
     StorageManager.setSelectedHotels(selectedHotelIds);
     showToast('Hotel selection updated successfully!');
@@ -248,7 +243,6 @@ function displayHotelMenuItems(hotel) {
 
 // Modal Functions
 function setupMenuModal() {
-    console.log('setupMenuModal called');
     const modal = document.getElementById('menuModal');
     const closeBtn = document.querySelector('#menuModal .modal-close');
     const form = document.getElementById('menuItemForm');
@@ -278,7 +272,6 @@ function setupMenuModal() {
     });
 
     form.addEventListener('submit', async function(e) {
-        console.log('menuItemForm submit triggered');
         e.preventDefault();
 
         const hotelId = document.getElementById('currentHotelId').value;
@@ -287,16 +280,12 @@ function setupMenuModal() {
         const itemCategory = document.getElementById('itemCategory').value;
         const itemAvailable = document.getElementById('itemAvailable').checked;
 
-        console.log('hotelId:', hotelId, 'itemName:', itemName, 'itemPriceStr:', itemPriceStr, 'itemCategory:', itemCategory, 'itemAvailable:', itemAvailable);
-
         if (!itemName || !itemPriceStr || !itemCategory) {
-            console.log('validation failed: missing fields');
             showToast('Please fill all fields', 'error');
             return;
         }
 
         if (!isValidPrice(itemPriceStr)) {
-            console.log('validation failed: invalid price');
             showToast('Please enter a valid price (e.g., 150 or 150.50)', 'error');
             return;
         }
@@ -305,14 +294,11 @@ function setupMenuModal() {
 
         try {
             const hotel = await StorageManager.getHotelById(hotelId);
-            console.log('hotel found:', hotel);
             if (hotel?.menuItems?.some(item => item.name.toLowerCase() === itemName.toLowerCase())) {
-                console.log('validation failed: duplicate name');
                 showToast('Menu item with this name already exists for this hotel', 'error');
                 return;
             }
 
-            console.log('validation passed, adding item');
             const menuItem = {
                 name: itemName,
                 price: itemPrice,
