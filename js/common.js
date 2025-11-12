@@ -22,9 +22,9 @@ function initializeNavbar() {
                 
                 <ul class="navbar-nav" id="navbarNav">
                     <li><a href="index.html" class="nav-link" data-page="index">Home</a></li>
-                    <li><a href="admin.html" class="nav-link" data-page="admin">Admin</a></li>
                     <li><a href="menu.html" class="nav-link" data-page="menu">Menu</a></li>
                     <li><a href="dashboard.html" class="nav-link" data-page="dashboard">Dashboard</a></li>
+                    <li><a href="admin.html" class="nav-link" data-page="admin">Admin</a></li>
                     <li>
                         <button class="theme-toggle" id="themeToggle" title="Toggle Dark/Light Mode">🌙</button>
                     </li>

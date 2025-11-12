@@ -108,6 +108,16 @@
         <p>&copy; 2025 Lunch Manager. All rights reserved. | Developed by Vijay</p>
     </footer>
     
+    <script>
+        // Password protection for Dashboard page
+        const correctPassword = 'Zoro';
+        const enteredPassword = prompt('Enter Dashboard Password:');
+
+        if (enteredPassword !== correctPassword) {
+            alert('Incorrect password! Redirecting to home page.');
+            window.location.href = 'index.html';
+        }
+    </script>
     <script src="js/storage.js?v=1.0.0"></script>
     <script src="js/common.js?v=1.0.0"></script>
     <script src="js/utils.js?v=1.0.0"></script>
