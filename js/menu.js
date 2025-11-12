@@ -12,30 +12,45 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeMenuPage();
 });
 
-function initializeMenuPage() {
+async function initializeMenuPage() {
     cardSize = localStorage.getItem('menuCardSize') || 'medium';
-    document.getElementById('cardSize').value = cardSize;
+    const cardSizeElement = document.getElementById('cardSize');
+    if (cardSizeElement) {
+        cardSizeElement.value = cardSize;
+    }
 
-    // Expand all hotels by default on initial load
-    const selectedHotels = StorageManager.getSelectedHotelsData();
-    selectedHotels.forEach(hotel => {
-        expandedHotels.add(hotel.id);
-    });
+    try {
+        // Expand all hotels by default on initial load
+        const selectedHotels = await StorageManager.getSelectedHotelsData();
+        if (selectedHotels && Array.isArray(selectedHotels)) {
+            selectedHotels.forEach(hotel => {
+                expandedHotels.add(hotel.id);
+            });
+        }
+    } catch (error) {
+        console.error('Error initializing menu page:', error);
+    }
 
-    displayHotelsMenu();
+    await displayHotelsMenu();
     setupOrderModal();
     setupSearch();
     setupItemModal();
     setupEventDelegation();
 
-    window.addEventListener('hotelsUpdated', () => {
+    window.addEventListener('hotelsUpdated', async () => {
         selectedItems = {};
         expandedHotels.clear();
-        // Re-expand all hotels when hotels are updated
-        const updatedHotels = StorageManager.getSelectedHotelsData();
-        updatedHotels.forEach(hotel => {
-            expandedHotels.add(hotel.id);
-        });
+        try {
+            // Re-expand all hotels when hotels are updated
+            const updatedHotels = await StorageManager.getSelectedHotelsData();
+            if (updatedHotels && Array.isArray(updatedHotels)) {
+                updatedHotels.forEach(hotel => {
+                    expandedHotels.add(hotel.id);
+                });
+            }
+        } catch (error) {
+            console.error('Error updating hotels in menu:', error);
+        }
         displayHotelsMenu();
     });
 }
@@ -70,67 +85,74 @@ function setupSearch() {
     const sizeSelect = document.getElementById('cardSize');
 
     if (searchInput) {
-        searchInput.addEventListener('input', debounce((e) => {
+        searchInput.addEventListener('input', debounce(async (e) => {
             menuSearchTerm = e.target.value;
-            displayHotelsMenu();
+            await displayHotelsMenu();
         }, 300));
     }
 
     if (categorySelect) {
-        categorySelect.addEventListener('change', (e) => {
+        categorySelect.addEventListener('change', async (e) => {
             categoryFilter = e.target.value;
-            displayHotelsMenu();
+            await displayHotelsMenu();
         });
     }
 
     if (sizeSelect) {
-        sizeSelect.addEventListener('change', (e) => {
+        sizeSelect.addEventListener('change', async (e) => {
             cardSize = e.target.value;
             localStorage.setItem('menuCardSize', cardSize);
-            displayHotelsMenu();
+            await displayHotelsMenu();
         });
     }
 }
 
-function displayHotelsMenu() {
+async function displayHotelsMenu() {
     const container = document.getElementById('hotelsMenuContainer');
-    const selectedHotels = StorageManager.getSelectedHotelsData();
+    if (!container) return;
 
-    if (selectedHotels.length === 0) {
-        container.innerHTML = '<p class="empty-message">No hotels selected for today. Please contact admin.</p>';
-        return;
+    try {
+        const selectedHotels = await StorageManager.getSelectedHotelsData();
+
+        if (!selectedHotels || selectedHotels.length === 0) {
+            container.innerHTML = '<p class="empty-message">No hotels selected for today. Please contact admin.</p>';
+            return;
+        }
+
+        let html = '';
+
+        selectedHotels.forEach(hotel => {
+            const isExpanded = expandedHotels.has(hotel.id);
+            const availableItems = hotel.menuItems ? hotel.menuItems.filter(item => item.available) : [];
+
+            html += `
+                <div class="hotel-menu-section">
+                    <div class="hotel-header-clickable" onclick="toggleHotelMenu('${hotel.id}')">
+                        <h3>🏨 ${hotel.name} <span class="item-count">(${availableItems.length} items)</span></h3>
+                        <span class="expand-icon">${isExpanded ? '▼' : '▶'}</span>
+                    </div>
+
+                    <div class="hotel-menu-items ${isExpanded ? 'expanded' : 'collapsed'}" id="hotel-menu-${hotel.id}">
+                        ${displayMenuItems(hotel, availableItems)}
+                    </div>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+    } catch (error) {
+        console.error('Error displaying hotels menu:', error);
+        container.innerHTML = '<p class="empty-message">Error loading menu. Please refresh.</p>';
     }
-
-    let html = '';
-
-    selectedHotels.forEach(hotel => {
-        const isExpanded = expandedHotels.has(hotel.id);
-        const availableItems = hotel.menuItems.filter(item => item.available);
-
-        html += `
-            <div class="hotel-menu-section">
-                <div class="hotel-header-clickable" onclick="toggleHotelMenu('${hotel.id}')">
-                    <h3>🏨 ${hotel.name} <span class="item-count">(${availableItems.length} items)</span></h3>
-                    <span class="expand-icon">${isExpanded ? '▼' : '▶'}</span>
-                </div>
-
-                <div class="hotel-menu-items ${isExpanded ? 'expanded' : 'collapsed'}" id="hotel-menu-${hotel.id}">
-                    ${displayMenuItems(hotel, availableItems)}
-                </div>
-            </div>
-        `;
-    });
-
-    container.innerHTML = html;
 }
 
-function toggleHotelMenu(hotelId) {
+async function toggleHotelMenu(hotelId) {
     if (expandedHotels.has(hotelId)) {
         expandedHotels.delete(hotelId);
     } else {
         expandedHotels.add(hotelId);
     }
-    displayHotelsMenu();
+    await displayHotelsMenu();
 }
 
 function displayMenuItems(hotel, items) {
@@ -158,7 +180,6 @@ function displayMenuItems(hotel, items) {
 
         const itemImages = item.images || [];
         const hasImages = itemImages.length > 0;
-        console.log('Item:', item.name, 'has images:', hasImages, 'images count:', itemImages.length);
 
         const mainImage = hasImages ? itemImages[0] : null;
 
@@ -203,39 +224,47 @@ function displayMenuItems(hotel, items) {
     return html;
 }
 
-function incrementQuantity(hotelId, itemId, hotelName) {
-    const hotel = StorageManager.getHotelById(hotelId);
-    const item = hotel.menuItems.find(i => i.id === itemId);
-    
-    if (item) {
-        const itemKey = `${hotelId}-${itemId}`;
-        
-        if (!selectedItems[itemKey]) {
-            selectedItems[itemKey] = { 
-                ...item, 
-                quantity: 0, 
-                hotelId, 
-                hotelName 
-            };
+async function incrementQuantity(hotelId, itemId, hotelName) {
+    try {
+        const hotel = await StorageManager.getHotelById(hotelId);
+        if (!hotel || !hotel.menuItems) {
+            console.error('Hotel or menu items not found');
+            return;
         }
-        selectedItems[itemKey].quantity++;
-        updateMenuDisplay(itemKey);
-        displayHotelsMenu(); // Refresh to show floating summary
+        const item = hotel.menuItems.find(i => i.id === itemId);
+
+        if (item) {
+            const itemKey = `${hotelId}-${itemId}`;
+
+            if (!selectedItems[itemKey]) {
+                selectedItems[itemKey] = {
+                    ...item,
+                    quantity: 0,
+                    hotelId,
+                    hotelName
+                };
+            }
+            selectedItems[itemKey].quantity++;
+            updateMenuDisplay(itemKey);
+            await displayHotelsMenu(); // Refresh to show floating summary
+        }
+    } catch (error) {
+        console.error('Error incrementing quantity:', error);
     }
 }
 
-function decrementQuantity(hotelId, itemId, hotelName) {
+async function decrementQuantity(hotelId, itemId, hotelName) {
     const itemKey = `${hotelId}-${itemId}`;
-    
+
     if (selectedItems[itemKey] && selectedItems[itemKey].quantity > 0) {
         selectedItems[itemKey].quantity--;
-        
+
         if (selectedItems[itemKey].quantity === 0) {
             delete selectedItems[itemKey];
         }
 
         updateMenuDisplay(itemKey);
-        displayHotelsMenu(); // Refresh to show floating summary
+        await displayHotelsMenu(); // Refresh to show floating summary
     }
 }
 
@@ -329,7 +358,7 @@ function showOrderModal() {
     document.getElementById('orderEmployeeName').focus();
 }
 
-function placeOrders(ordersByHotel, employeeName) {
+async function placeOrders(ordersByHotel, employeeName) {
     // Create separate order for each hotel
     Object.entries(ordersByHotel).forEach(([hotelName, hotelItems]) => {
         const hotelTotal = hotelItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
@@ -348,25 +377,22 @@ function placeOrders(ordersByHotel, employeeName) {
 
     // Reset
     selectedItems = {};
-    displayHotelsMenu();
+    await displayHotelsMenu();
 }
 
-function showItemModal(hotelId, itemId) {
-    console.log('showItemModal called with:', hotelId, itemId);
-    const hotel = StorageManager.getHotelById(hotelId);
-    if (!hotel) {
-        console.log('Hotel not found');
-        return;
-    }
+async function showItemModal(hotelId, itemId) {
+    try {
+        const hotel = await StorageManager.getHotelById(hotelId);
+        if (!hotel || !hotel.menuItems) {
+            console.error('Hotel or menu items not found');
+            return;
+        }
 
-    const item = hotel.menuItems.find(i => i.id === itemId);
-    if (!item) {
-        console.log('Item not found');
-        return;
-    }
-
-    console.log('Item found:', item);
-    console.log('Item images:', item.images);
+        const item = hotel.menuItems.find(i => i.id === itemId);
+        if (!item) {
+            console.error('Item not found');
+            return;
+        }
 
     const itemKey = `${hotelId}-${itemId}`;
     const quantity = selectedItems[itemKey]?.quantity || 0;
@@ -394,6 +420,9 @@ function showItemModal(hotelId, itemId) {
 
     document.getElementById('itemModalContent').innerHTML = modalHtml;
     document.getElementById('itemModal').style.display = 'flex';
+    } catch (error) {
+        console.error('Error showing item modal:', error);
+    }
 }
 
 function updateModalQuantity(itemKey) {
@@ -407,22 +436,19 @@ function refreshModal(hotelId, itemId) {
     setTimeout(() => showItemModal(hotelId, itemId), 100);
 }
 
-function uploadItemImage(hotelId, itemId) {
-    console.log('uploadItemImage called with:', hotelId, itemId);
+async function uploadItemImage(hotelId, itemId) {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
-    input.onchange = function(e) {
+    input.onchange = async function(e) {
         const file = e.target.files[0];
-        console.log('File selected:', file);
         if (file) {
             const reader = new FileReader();
-            reader.onload = function(event) {
+            reader.onload = async function(event) {
                 const imageData = event.target.result;
-                console.log('Image data loaded, length:', imageData.length);
                 StorageManager.addImageToMenuItem(hotelId, itemId, imageData);
                 showToast('Image uploaded successfully!');
-                displayHotelsMenu(); // Refresh to show new image
+                await displayHotelsMenu(); // Refresh to show new image
             };
             reader.readAsDataURL(file);
         }

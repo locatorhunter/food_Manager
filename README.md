@@ -91,7 +91,7 @@ The application starts with a clean slate - no demo data included for production
 3. **Dashboard**: View order confirmations and history
 
 ### For Admins
-1. **Access**: Enter password "Zoro" for Admin/Dashboard
+1. **Access**: Enter password "1" for Admin/Dashboard
 2. **Setup**: Add hotels and create menus
 3. **Daily Management**: Select hotels for lunch service
 4. **Monitoring**: Track orders and analytics
@@ -101,7 +101,7 @@ The application starts with a clean slate - no demo data included for production
 
 - **Public Access**: Home and Menu pages (no password required)
 - **Protected Access**: Admin and Dashboard pages
-- **Password**: "Zoro" (case-sensitive)
+- **Password**: "1" (case-sensitive)
 - **Input Validation**: XSS prevention and data sanitization
 - **Local Storage**: All data stored securely in browser
 

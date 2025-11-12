@@ -420,7 +420,7 @@ Veg Thali,130,Main Course,true`;
     showToast('Template downloaded!');
 }
 
-function importCSV() {
+async function importCSV() {
     const hotelId = document.getElementById('importHotelId').value;
     const fileInput = document.getElementById('csvFile');
     const file = fileInput.files[0];
@@ -431,7 +431,7 @@ function importCSV() {
     }
 
     const reader = new FileReader();
-    reader.onload = function(e) {
+    reader.onload = async function(e) {
         const csv = e.target.result;
         const lines = csv.trim().split('\n');
         const items = [];
@@ -461,8 +461,16 @@ function importCSV() {
             return;
         }
 
-        items.forEach(item => StorageManager.addMenuItemToHotel(hotelId, item));
-        showToast(`Imported ${items.length} menu items successfully!`);
+        try {
+            // Import items sequentially to avoid overwhelming Firebase
+            for (const item of items) {
+                await StorageManager.addMenuItemToHotel(hotelId, item);
+            }
+            showToast(`Imported ${items.length} menu items successfully!`);
+        } catch (error) {
+            console.error('Error importing CSV items:', error);
+            showToast('Error importing some items. Please check the data.', 'error');
+        }
 
         document.getElementById('importModal').style.display = 'none';
         fileInput.value = '';

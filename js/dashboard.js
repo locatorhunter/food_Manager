@@ -9,90 +9,114 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeDashboard();
 });
 
-function initializeDashboard() {
-    loadOrders();
-    populateHotelFilter();
-    setupControls();
+async function initializeDashboard() {
+    // Check if we're on the dashboard page
+    if (!document.getElementById('dateFilter')) return;
+
+    await loadOrders();
+    await populateHotelFilter();
+    await setupControls();
     displayOrders();
-    displayOrderSummary();
-    displayHotelStats();
+    await displayOrderSummary();
+    await displayPopularItems();
 
     window.addEventListener('orderAdded', refreshDashboard);
     window.addEventListener('orderDeleted', refreshDashboard);
-    window.addEventListener('orderStatusUpdated', () => {
-        loadOrders();
+    window.addEventListener('orderStatusUpdated', async () => {
+        await loadOrders();
         displayOrders();
-        displayOrderSummary();
+        await displayOrderSummary();
         updateStatistics();
     });
 }
 
-function loadOrders() {
-    const dateFilter = document.getElementById('dateFilter').value;
+async function loadOrders() {
+    const dateFilterElement = document.getElementById('dateFilter');
+    if (!dateFilterElement) return; // Not on dashboard page
+
+    const dateFilter = dateFilterElement.value;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
-    switch(dateFilter) {
-        case 'today':
-            currentOrders = StorageManager.getTodaysOrders();
-            break;
-        case 'yesterday':
-            const yesterday = new Date(today);
-            yesterday.setDate(yesterday.getDate() - 1);
-            currentOrders = StorageManager.getOrders().filter(order => {
-                const orderDate = new Date(order.timestamp);
-                orderDate.setHours(0, 0, 0, 0);
-                return orderDate.getTime() === yesterday.getTime();
-            });
-            break;
-        case 'week':
-            const weekAgo = new Date(today);
-            weekAgo.setDate(weekAgo.getDate() - 7);
-            currentOrders = StorageManager.getOrders().filter(order => 
-                new Date(order.timestamp) >= weekAgo
-            );
-            break;
-        case 'month':
-            const monthAgo = new Date(today);
-            monthAgo.setMonth(monthAgo.getMonth() - 1);
-            currentOrders = StorageManager.getOrders().filter(order => 
-                new Date(order.timestamp) >= monthAgo
-            );
-            break;
-        case 'all':
-            currentOrders = StorageManager.getOrders();
-            break;
-        default:
-            currentOrders = StorageManager.getTodaysOrders();
+
+    try {
+        switch(dateFilter) {
+            case 'today':
+                currentOrders = await StorageManager.getTodaysOrders();
+                break;
+            case 'yesterday':
+                const yesterday = new Date(today);
+                yesterday.setDate(yesterday.getDate() - 1);
+                const allOrdersYesterday = await StorageManager.getOrders();
+                currentOrders = allOrdersYesterday.filter(order => {
+                    const orderDate = new Date(order.timestamp);
+                    orderDate.setHours(0, 0, 0, 0);
+                    return orderDate.getTime() === yesterday.getTime();
+                });
+                break;
+            case 'week':
+                const weekAgo = new Date(today);
+                weekAgo.setDate(weekAgo.getDate() - 7);
+                const allOrdersWeek = await StorageManager.getOrders();
+                currentOrders = allOrdersWeek.filter(order =>
+                    new Date(order.timestamp) >= weekAgo
+                );
+                break;
+            case 'month':
+                const monthAgo = new Date(today);
+                monthAgo.setMonth(monthAgo.getMonth() - 1);
+                const allOrdersMonth = await StorageManager.getOrders();
+                currentOrders = allOrdersMonth.filter(order =>
+                    new Date(order.timestamp) >= monthAgo
+                );
+                break;
+            case 'all':
+                currentOrders = await StorageManager.getOrders();
+                break;
+            default:
+                currentOrders = await StorageManager.getTodaysOrders();
+        }
+
+        filteredOrders = [...currentOrders];
+        applyFilters();
+    } catch (error) {
+        console.error('Error loading orders:', error);
+        currentOrders = [];
+        filteredOrders = [];
     }
-    
-    filteredOrders = [...currentOrders];
-    applyFilters();
 }
 
-function populateHotelFilter() {
+async function populateHotelFilter() {
     const hotelFilter = document.getElementById('hotelFilter');
-    const hotels = StorageManager.getHotels();
-    
-    let options = '<option value="all">All Hotels</option>';
-    hotels.forEach(hotel => {
-        options += `<option value="${hotel.name}">${hotel.name}</option>`;
-    });
-    
-    hotelFilter.innerHTML = options;
+    if (!hotelFilter) return; // Not on dashboard page
+
+    try {
+        const hotels = await StorageManager.getHotels();
+        let options = '<option value="all">All Hotels</option>';
+        if (hotels && Array.isArray(hotels)) {
+            hotels.forEach(hotel => {
+                options += `<option value="${hotel.name}">${hotel.name}</option>`;
+            });
+        }
+        hotelFilter.innerHTML = options;
+    } catch (error) {
+        console.error('Error populating hotel filter:', error);
+    }
 }
 
-function setupControls() {
+async function setupControls() {
     // Date filter with custom range
-    document.getElementById('dateFilter').addEventListener('change', (e) => {
+    const dateFilterElement = document.getElementById('dateFilter');
+    if (!dateFilterElement) return; // Not on dashboard page
+
+    dateFilterElement.addEventListener('change', async (e) => {
         const customGroup = document.getElementById('customDateGroup');
         if (e.target.value === 'custom') {
             customGroup.style.display = 'block';
         } else {
             customGroup.style.display = 'none';
-            loadOrders();
+            await loadOrders();
             displayOrders();
-            displayPopularItems();
+            await displayPopularItems();
         }
     });
 
@@ -106,8 +130,8 @@ function setupControls() {
     document.getElementById('groupBy').addEventListener('change', displayOrders);
 
     document.getElementById('refreshBtn').addEventListener('click', refreshDashboard);
-    document.getElementById('refreshSummaryBtn').addEventListener('click', () => {
-        displayOrderSummary();
+    document.getElementById('refreshSummaryBtn').addEventListener('click', async () => {
+        await displayOrderSummary();
         showToast('Order summary refreshed!');
     });
     document.getElementById('printSummaryBtn').addEventListener('click', printOrderSummary);
@@ -360,32 +384,53 @@ function displayGroupedOrders(orders, groupBy, container) {
     container.innerHTML = html;
 }
 
-function displayPopularItems() {
+async function displayPopularItems() {
     const container = document.getElementById('popularItems');
+    if (!container) return; // Not on page with popular items
+
     const itemCounts = {};
     const itemDetails = {};
 
-    // Get details from menu items first
-    const hotels = StorageManager.getHotels();
-    hotels.forEach(hotel => {
-        hotel.menuItems.forEach(item => {
-            itemDetails[item.name] = {
-                images: item.images || [],
-                price: item.price,
-                hotel: hotel.name
-            };
-        });
-    });
+    try {
+        // Get details from menu items first
+        const hotels = await StorageManager.getHotels();
+        if (hotels && Array.isArray(hotels)) {
+            hotels.forEach(hotel => {
+                if (hotel.menuItems) {
+                    hotel.menuItems.forEach(item => {
+                        itemDetails[item.name] = {
+                            images: item.images || [],
+                            price: item.price,
+                            hotel: hotel.name
+                        };
+                    });
+                }
+            });
+        }
+    } catch (error) {
+        console.error('Error fetching hotels for popular items:', error);
+        container.innerHTML = '<p class="empty-message">Error loading popular items</p>';
+        return;
+    }
 
     // Use all orders for popular items, not just filtered ones
-    StorageManager.getOrders().forEach(order => {
-        order.items.forEach(item => {
-            if (!itemCounts[item.name]) {
-                itemCounts[item.name] = 0;
-            }
-            itemCounts[item.name] += item.quantity;
-        });
-    });
+    try {
+        const allOrders = await StorageManager.getOrders();
+        if (allOrders && Array.isArray(allOrders)) {
+            allOrders.forEach(order => {
+                if (order.items) {
+                    order.items.forEach(item => {
+                        if (!itemCounts[item.name]) {
+                            itemCounts[item.name] = 0;
+                        }
+                        itemCounts[item.name] += item.quantity;
+                    });
+                }
+            });
+        }
+    } catch (error) {
+        console.error('Error fetching orders for popular items:', error);
+    }
 
     const popularItems = Object.entries(itemCounts)
         .map(([name, count]) => ({
@@ -427,16 +472,20 @@ function displayPopularItems() {
 }
 
 
-function toggleOrderStatus(orderId) {
-    const orders = StorageManager.getOrders();
-    const order = orders.find(o => o.id === orderId);
-    if (order) {
-        const newStatus = !order.completed;
-        StorageManager.updateOrderStatus(orderId, newStatus);
-        showToast(`Order marked as ${newStatus ? 'completed' : 'pending'}!`);
-        // Reload orders to reflect the status change
-        loadOrders();
-        displayOrders();
+async function toggleOrderStatus(orderId) {
+    try {
+        const orders = await StorageManager.getOrders();
+        const order = orders.find(o => o.id === orderId);
+        if (order) {
+            const newStatus = !order.completed;
+            StorageManager.updateOrderStatus(orderId, newStatus);
+            showToast(`Order marked as ${newStatus ? 'completed' : 'pending'}!`);
+            // Reload orders to reflect the status change
+            await loadOrders();
+            displayOrders();
+        }
+    } catch (error) {
+        console.error('Error toggling order status:', error);
     }
 }
 
@@ -447,75 +496,84 @@ function deleteOrderFromDashboard(orderId) {
     }
 }
 
-function displayOrderSummary() {
+async function displayOrderSummary() {
     const container = document.getElementById('orderSummary');
-    const orders = StorageManager.getTodaysOrders().filter(order => !order.completed);
+    if (!container) return; // Not on page with order summary
 
-    if (orders.length === 0) {
-        container.innerHTML = '<p class="empty-message">No pending orders to summarize</p>';
-        return;
-    }
+    try {
+        const todaysOrders = await StorageManager.getTodaysOrders();
+        const orders = todaysOrders.filter(order => !order.completed);
 
-    // Group orders by hotel and aggregate item quantities
-    const hotelSummaries = {};
-
-    orders.forEach(order => {
-        if (!hotelSummaries[order.hotelName]) {
-            hotelSummaries[order.hotelName] = {};
+        if (orders.length === 0) {
+            container.innerHTML = '<p class="empty-message">No pending orders to summarize</p>';
+            return;
         }
 
-        order.items.forEach(item => {
-            if (!hotelSummaries[order.hotelName][item.name]) {
-                hotelSummaries[order.hotelName][item.name] = {
-                    quantity: 0,
-                    price: item.price
-                };
+        // Group orders by hotel and aggregate item quantities
+        const hotelSummaries = {};
+
+        orders.forEach(order => {
+            if (!hotelSummaries[order.hotelName]) {
+                hotelSummaries[order.hotelName] = {};
             }
-            hotelSummaries[order.hotelName][item.name].quantity += item.quantity;
+
+            order.items.forEach(item => {
+                if (!hotelSummaries[order.hotelName][item.name]) {
+                    hotelSummaries[order.hotelName][item.name] = {
+                        quantity: 0,
+                        price: item.price
+                    };
+                }
+                hotelSummaries[order.hotelName][item.name].quantity += item.quantity;
+            });
         });
-    });
 
-    let html = '';
+        const hotels = await StorageManager.getHotels();
+        let html = '';
 
-    Object.entries(hotelSummaries).forEach(([hotelName, items]) => {
-        const totalItems = Object.values(items).reduce((sum, item) => sum + item.quantity, 0);
-        const totalValue = Object.values(items).reduce((sum, item) => sum + (item.quantity * item.price), 0);
+        Object.entries(hotelSummaries).forEach(([hotelName, items]) => {
+            const totalItems = Object.values(items).reduce((sum, item) => sum + item.quantity, 0);
+            const totalValue = Object.values(items).reduce((sum, item) => sum + (item.quantity * item.price), 0);
 
-        const hotel = StorageManager.getHotels().find(h => h.name === hotelName);
-        const typeEmoji = hotel ? getHotelTypeEmoji(hotel.type) : '🏨';
+            const hotel = hotels.find(h => h.name === hotelName);
+            const typeEmoji = hotel ? getHotelTypeEmoji(hotel.type) : '🏨';
 
-        html += `
-            <div class="hotel-order-summary">
-                <h3>${typeEmoji} ${hotelName}</h3>
-                <div class="summary-stats">
-                    <span class="stat-badge">${totalItems} items</span>
-                    <span class="stat-badge">${formatCurrency(totalValue)}</span>
+            html += `
+                <div class="hotel-order-summary">
+                    <h3>${typeEmoji} ${hotelName}</h3>
+                    <div class="summary-stats">
+                        <span class="stat-badge">${totalItems} items</span>
+                        <span class="stat-badge">${formatCurrency(totalValue)}</span>
+                    </div>
+                    <div class="order-items-list">
+                        ${Object.entries(items)
+                            .sort(([,a], [,b]) => b.quantity - a.quantity) // Sort by quantity descending
+                            .map(([itemName, itemData]) => `
+                                <div class="order-items-list li">
+                                    <span class="item-name">${itemName}</span>
+                                    <span class="item-qty">${itemData.quantity}</span>
+                                </div>
+                            `).join('')}
+                    </div>
                 </div>
-                <div class="order-items-list">
-                    ${Object.entries(items)
-                        .sort(([,a], [,b]) => b.quantity - a.quantity) // Sort by quantity descending
-                        .map(([itemName, itemData]) => `
-                            <div class="order-items-list li">
-                                <span class="item-name">${itemName}</span>
-                                <span class="item-qty">${itemData.quantity}</span>
-                            </div>
-                        `).join('')}
-                </div>
-            </div>
-        `;
-    });
+            `;
+        });
 
-    container.innerHTML = html;
+        container.innerHTML = html;
+    } catch (error) {
+        console.error('Error displaying order summary:', error);
+        container.innerHTML = '<p class="empty-message">Error loading order summary</p>';
+    }
 }
 
-function refreshDashboard() {
-    loadOrders();
+async function refreshDashboard() {
+    await loadOrders();
     updateStatistics();
     displayOrders();
-    displayOrderSummary();
+    await displayOrderSummary();
 }
 
-function handleCustomDate() {
+async function handleCustomDate() {
     const startDate = document.getElementById('startDate').value;
     const endDate = document.getElementById('endDate').value;
 
@@ -524,14 +582,19 @@ function handleCustomDate() {
         const end = new Date(endDate);
         end.setHours(23, 59, 59, 999); // End of day
 
-        currentOrders = StorageManager.getOrders().filter(order => {
-            const orderDate = new Date(order.timestamp);
-            return orderDate >= start && orderDate <= end;
-        });
+        try {
+            const allOrders = await StorageManager.getOrders();
+            currentOrders = allOrders.filter(order => {
+                const orderDate = new Date(order.timestamp);
+                return orderDate >= start && orderDate <= end;
+            });
 
-        filteredOrders = [...currentOrders];
-        applyFilters();
-        displayOrders();
+            filteredOrders = [...currentOrders];
+            applyFilters();
+            displayOrders();
+        } catch (error) {
+            console.error('Error handling custom date:', error);
+        }
     }
 }
 

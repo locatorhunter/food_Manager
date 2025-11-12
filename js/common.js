@@ -55,13 +55,13 @@ function initializeNavbar() {
     }
 }
 
-function initializeBanner() {
-    updateBanner();
+async function initializeBanner() {
+    await updateBanner();
     window.addEventListener('hotelsUpdated', updateBanner);
     // Update banner when localStorage changes from other pages
-    window.addEventListener('storage', (e) => {
+    window.addEventListener('storage', async (e) => {
         if (e.key && e.key.startsWith('lunchManager_selectedHotels')) {
-            updateBanner();
+            await updateBanner();
         }
     });
 
@@ -78,65 +78,88 @@ function initializeBanner() {
     */
 }
 
-function updateBanner() {
-    const selectedHotels = StorageManager.getSelectedHotelsData();
-    console.log('updateBanner called, selectedHotels:', selectedHotels);
+async function updateBanner() {
+    try {
+        const selectedHotels = await StorageManager.getSelectedHotelsData();
 
-    if (selectedHotels.length === 0) {
+        if (!selectedHotels || selectedHotels.length === 0) {
+            const bannerHtml = `
+                <div class="banner">
+                    <h2>Hotels for Today</h2>
+                    <p id="hotelNames">No hotels selected</p>
+                </div>
+            `;
+            const bannerContainer = document.getElementById('banner');
+            if (bannerContainer) {
+                bannerContainer.innerHTML = bannerHtml;
+            }
+            return;
+        }
+
+        const hotelDetails = selectedHotels.map(hotel => {
+            let details = `${getHotelTypeEmoji(hotel.type)} ${hotel.name}`;
+            if (hotel.reviews) {
+                details += ` ⭐${hotel.reviews}`;
+            }
+            if (hotel.location) {
+                details += ` 📍${hotel.location}`;
+            }
+            return details;
+        }).join(' | ');
+
         const bannerHtml = `
             <div class="banner">
                 <h2>Hotels for Today</h2>
-                <p id="hotelNames">No hotels selected</p>
+                <p id="hotelNames">${hotelDetails}</p>
+            </div>
+        `;
+
+        const bannerContainer = document.getElementById('banner');
+        if (bannerContainer) {
+            bannerContainer.innerHTML = bannerHtml;
+        }
+    } catch (error) {
+        console.error('Error updating banner:', error);
+        const bannerHtml = `
+            <div class="banner">
+                <h2>Hotels for Today</h2>
+                <p id="hotelNames">Error loading hotels</p>
             </div>
         `;
         const bannerContainer = document.getElementById('banner');
         if (bannerContainer) {
             bannerContainer.innerHTML = bannerHtml;
         }
-        return;
-    }
-
-    const hotelDetails = selectedHotels.map(hotel => {
-        let details = `${getHotelTypeEmoji(hotel.type)} ${hotel.name}`;
-        if (hotel.reviews) {
-            details += ` ⭐${hotel.reviews}`;
-        }
-        if (hotel.location) {
-            details += ` 📍${hotel.location}`;
-        }
-        return details;
-    }).join(' | ');
-
-    const bannerHtml = `
-        <div class="banner">
-            <h2>Hotels for Today</h2>
-            <p id="hotelNames">${hotelDetails}</p>
-        </div>
-    `;
-
-    const bannerContainer = document.getElementById('banner');
-    if (bannerContainer) {
-        bannerContainer.innerHTML = bannerHtml;
     }
 }
 
-function initializeTheme() {
-    const savedTheme = StorageManager.getTheme();
-    applyTheme(savedTheme);
-    
-    const themeToggle = document.getElementById('themeToggle');
-    if (themeToggle) {
-        updateThemeIcon(savedTheme);
-        themeToggle.addEventListener('click', toggleTheme);
+async function initializeTheme() {
+    try {
+        const savedTheme = await StorageManager.getTheme();
+        applyTheme(savedTheme);
+
+        const themeToggle = document.getElementById('themeToggle');
+        if (themeToggle) {
+            updateThemeIcon(savedTheme);
+            themeToggle.addEventListener('click', toggleTheme);
+        }
+    } catch (error) {
+        console.error('Error initializing theme:', error);
+        // Default to light theme
+        applyTheme('light');
     }
 }
 
-function toggleTheme() {
-    const currentTheme = StorageManager.getTheme();
-    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-    applyTheme(newTheme);
-    StorageManager.setTheme(newTheme);
-    updateThemeIcon(newTheme);
+async function toggleTheme() {
+    try {
+        const currentTheme = await StorageManager.getTheme();
+        const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+        applyTheme(newTheme);
+        await StorageManager.setTheme(newTheme);
+        updateThemeIcon(newTheme);
+    } catch (error) {
+        console.error('Error toggling theme:', error);
+    }
 }
 
 function applyTheme(theme) {
