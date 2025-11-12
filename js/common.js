@@ -7,7 +7,61 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeBanner();
     initializeTheme();
     setActivePage();
+    initializeMobileUX();
 });
+
+function initializeMobileUX() {
+    // Prevent zoom on double-tap for iOS
+    let lastTouchEnd = 0;
+    document.addEventListener('touchend', function(event) {
+        const now = Date.now();
+        if (now - lastTouchEnd <= 300) {
+            event.preventDefault();
+        }
+        lastTouchEnd = now;
+    }, false);
+
+    // Add viewport meta tag if not present
+    if (!document.querySelector('meta[name="viewport"]')) {
+        const viewport = document.createElement('meta');
+        viewport.name = 'viewport';
+        viewport.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
+        document.head.appendChild(viewport);
+    }
+
+    // Improve touch scrolling on mobile
+    if ('ontouchstart' in window) {
+        document.body.style.overscrollBehavior = 'none';
+    }
+
+    // Add swipe gestures for mobile menu
+    let touchStartX = 0;
+    let touchEndX = 0;
+
+    document.addEventListener('touchstart', function(e) {
+        touchStartX = e.changedTouches[0].screenX;
+    }, false);
+
+    document.addEventListener('touchend', function(e) {
+        touchEndX = e.changedTouches[0].screenX;
+        handleSwipe();
+    }, false);
+
+    function handleSwipe() {
+        const swipeThreshold = 50;
+        const navbar = document.getElementById('navbarNav');
+
+        if (touchEndX - touchStartX > swipeThreshold && navbar) {
+            // Swipe right - open menu
+            navbar.classList.add('active');
+        }
+
+        if (touchStartX - touchEndX > swipeThreshold && navbar) {
+            // Swipe left - close menu
+            navbar.classList.remove('active');
+        }
+    }
+}
 
 function initializeNavbar() {
     const navbarHtml = `

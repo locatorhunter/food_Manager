@@ -62,6 +62,36 @@ function setupEventDelegation() {
             showOrderModal();
         }
     });
+
+    // Prevent double-tap zoom on quantity buttons
+    document.addEventListener('touchstart', function(e) {
+        if (e.target.classList.contains('quantity-btn') ||
+            e.target.classList.contains('btn-upload') ||
+            e.target.closest('.menu-item-card')) {
+            e.preventDefault();
+        }
+    }, { passive: false });
+
+    // Improve touch feedback for mobile
+    if ('ontouchstart' in window) {
+        document.addEventListener('touchstart', function(e) {
+            const target = e.target;
+            if (target.classList.contains('quantity-btn') ||
+                target.classList.contains('btn-upload') ||
+                target.closest('.menu-item-card')) {
+                target.style.transform = 'scale(0.95)';
+            }
+        });
+
+        document.addEventListener('touchend', function(e) {
+            const target = e.target;
+            if (target.classList.contains('quantity-btn') ||
+                target.classList.contains('btn-upload') ||
+                target.closest('.menu-item-card')) {
+                target.style.transform = '';
+            }
+        });
+    }
 }
 
 function setupItemModal() {

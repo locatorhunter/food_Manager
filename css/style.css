@@ -1401,62 +1401,181 @@ footer {
         box-shadow: var(--shadow-lg);
         transition: left 0.3s;
         border-top: 1px solid var(--border-color);
+        gap: 15px;
     }
-    
+
     .navbar-nav.active {
         left: 0;
     }
-    
+
     .mobile-menu-toggle {
         display: block;
     }
-    
+
     .hero-section h1 {
         font-size: 2rem;
+        line-height: 1.2;
     }
-    
+
     .subtitle {
         font-size: 1.1rem;
+        line-height: 1.4;
     }
-    
+
     .feature-cards {
         grid-template-columns: 1fr;
+        gap: 20px;
     }
-    
+
+    .feature-cards .card {
+        padding: 25px 20px;
+        text-align: center;
+    }
+
+    .feature-cards .card-icon {
+        font-size: 2.5rem;
+        margin-bottom: 15px;
+    }
+
     .stats-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
     }
-    
+
+    .stat-card {
+        padding: 20px;
+        text-align: center;
+    }
+
+    .stat-icon {
+        font-size: 2rem;
+        margin-bottom: 8px;
+    }
+
+    .stat-value {
+        font-size: 1.8rem;
+    }
+
     .card {
         padding: 20px;
+        margin-bottom: 20px;
     }
-    
+
+    .card h2 {
+        font-size: 1.3rem;
+        margin-bottom: 15px;
+    }
+
     .filter-controls {
         flex-direction: column;
+        gap: 15px;
     }
-    
+
     .search-input {
         width: 100%;
+        padding: 12px 16px;
+        font-size: 1rem;
     }
-    
+
     .banner {
-        padding: 20px 15px;
+        padding: 30px 20px;
     }
 
     .banner h2 {
-        font-size: 1.4rem;
+        font-size: 1.5rem;
+        margin-bottom: 5px;
     }
 
     .banner p {
         font-size: 1rem;
     }
-    
-    table {
-        font-size: 0.9rem;
+
+    /* Table responsiveness */
+    .orders-table {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
     }
-    
+
+    table {
+        font-size: 0.85rem;
+        min-width: 600px;
+    }
+
     th, td {
-        padding: 10px;
+        padding: 8px 12px;
+        white-space: nowrap;
+    }
+
+    th {
+        font-weight: 600;
+    }
+
+    /* Form improvements */
+    .form-group {
+        margin-bottom: 18px;
+    }
+
+    .form-group input,
+    .form-group select {
+        padding: 14px 16px;
+        font-size: 1rem;
+        border-radius: 8px;
+    }
+
+    /* Button improvements */
+    .btn {
+        padding: 14px 20px;
+        font-size: 1rem;
+        min-height: 48px; /* Touch target size */
+        border-radius: 8px;
+    }
+
+    /* Menu items grid */
+    .menu-items-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+
+    .menu-item-card {
+        padding: 16px;
+    }
+
+    /* Modal improvements */
+    .modal-content {
+        margin: 20px;
+        max-height: calc(100vh - 40px);
+        overflow-y: auto;
+    }
+
+    /* Floating order summary */
+    .floating-order-summary {
+        position: fixed;
+        bottom: 20px;
+        left: 20px;
+        right: 20px;
+        background: var(--bg-primary);
+        border: 2px solid var(--primary-color);
+        border-radius: 12px;
+        padding: 15px;
+        box-shadow: var(--shadow-lg);
+        z-index: 1000;
+    }
+
+    .order-summary-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .order-summary-content span {
+        font-size: 0.9rem;
+        font-weight: 600;
+    }
+
+    /* Hide floating summary on menu page when modal is open */
+    body.modal-open .floating-order-summary {
+        display: none;
     }
 }
 
@@ -1464,15 +1583,149 @@ footer {
     .navbar-brand {
         font-size: 1.2rem;
     }
-    
+
     .navbar-logo {
         width: 35px;
         height: 35px;
         font-size: 1.2rem;
     }
-    
-    .menu-items-grid {
+
+    .hero-section h1 {
+        font-size: 1.8rem;
+    }
+
+    .hero-section {
+        margin-bottom: 40px;
+    }
+
+    .feature-cards .card {
+        padding: 20px 15px;
+    }
+
+    .feature-cards .card-icon {
+        font-size: 2rem;
+        margin-bottom: 12px;
+    }
+
+    .feature-cards .card h3 {
+        font-size: 1.1rem;
+        margin-bottom: 10px;
+    }
+
+    .feature-cards .card p {
+        font-size: 0.9rem;
+        line-height: 1.4;
+    }
+
+    .stats-grid {
         grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .stat-card {
+        padding: 16px;
+    }
+
+    .stat-icon {
+        font-size: 1.8rem;
+        margin-bottom: 6px;
+    }
+
+    .stat-value {
+        font-size: 1.6rem;
+    }
+
+    .stat-label {
+        font-size: 0.9rem;
+    }
+
+    .card {
+        padding: 16px;
+        margin-bottom: 16px;
+    }
+
+    .card h2 {
+        font-size: 1.2rem;
+        margin-bottom: 12px;
+    }
+
+    .banner {
+        padding: 20px 15px;
+    }
+
+    .banner h2 {
+        font-size: 1.3rem;
+    }
+
+    .banner p {
+        font-size: 0.95rem;
+    }
+
+    /* Touch-friendly improvements */
+    .btn {
+        min-height: 44px; /* iOS touch target */
+        padding: 12px 16px;
+    }
+
+    .quantity-btn {
+        width: 36px;
+        height: 36px;
+        font-size: 1.1rem;
+    }
+
+    .menu-item-card {
+        margin-bottom: 12px;
+    }
+
+    /* Better spacing for small screens */
+    .container {
+        padding: 20px 15px;
+    }
+
+    .hotel-header-clickable {
+        padding: 12px;
+        margin-bottom: 8px;
+    }
+
+    .hotel-header-clickable h3 {
+        font-size: 1.1rem;
+    }
+
+    /* Improved table scrolling */
+    .orders-table {
+        margin: -10px -15px 0;
+        border-radius: 0;
+    }
+
+    table {
+        font-size: 0.8rem;
+        min-width: 500px;
+    }
+
+    th, td {
+        padding: 6px 8px;
+    }
+
+    /* Modal adjustments */
+    .modal-content {
+        margin: 10px;
+        padding: 20px;
+    }
+
+    /* Floating summary adjustments */
+    .floating-order-summary {
+        bottom: 10px;
+        left: 10px;
+        right: 10px;
+        padding: 12px;
+    }
+
+    .order-summary-content {
+        gap: 10px;
+    }
+
+    .order-summary-content span {
+        font-size: 0.85rem;
     }
 }
 
@@ -1488,8 +1741,88 @@ footer {
     }
 }
 
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
 .card {
     animation: fadeIn 0.5s ease-out;
+}
+
+/* Touch feedback for mobile */
+@media (hover: none) and (pointer: coarse) {
+    .btn:active {
+        transform: scale(0.98);
+        animation: pulse 0.2s ease-out;
+    }
+
+    .menu-item-card:active {
+        transform: scale(0.98);
+        animation: pulse 0.2s ease-out;
+    }
+
+    .hotel-header-clickable:active {
+        transform: scale(0.98);
+        animation: pulse 0.2s ease-out;
+    }
+
+    .quantity-btn:active {
+        transform: scale(0.95);
+        animation: pulse 0.1s ease-out;
+    }
+}
+
+/* Accessibility improvements */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    :root {
+        --border-color: #000000;
+        --text-secondary: #000000;
+    }
+
+    .card {
+        border: 2px solid var(--border-color);
+    }
+
+    .btn {
+        border: 2px solid currentColor;
+    }
+}
+
+/* Focus improvements for keyboard navigation */
+.btn:focus-visible,
+input:focus-visible,
+select:focus-visible,
+.menu-item-card:focus-visible {
+    outline: 3px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+/* Better mobile scrolling */
+@media (max-width: 768px) {
+    body {
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .container {
+        scroll-behavior: smooth;
+    }
 }
 
 /* MODAL */
