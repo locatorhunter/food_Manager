@@ -21,7 +21,7 @@
     --bg-tertiary: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%); /* Medium light gradient */
     --bg-accent: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%); /* Blue gradient */
 
-    --text-primary: #1e293b; /* Dark slate */
+    --text-primary: #192eeb; /* Dark slate */
     --text-secondary: #64748b; /* Medium slate */
     --text-tertiary: #94a3b8; /* Light slate */
 
@@ -79,7 +79,7 @@ body.retro-light {
     --bg-secondary: rgba(255, 245, 200, 0.8); /* Semi-transparent cream glass */
     --bg-tertiary: rgba(255, 245, 200, 0.6); /* Lighter cream glass */
 
-    --text-primary: #2d1b69; /* Deep Purple */
+    --text-primary: #5173e4; /* Deep Purple */
     --text-secondary: #d81b60; /* Pink */
     --text-tertiary: #d81b60; /* Pink */
 
@@ -3763,6 +3763,13 @@ select {
     color: white;
     transform: translateY(-1px);
     box-shadow: 0 6px 16px rgba(0, 255, 136, 0.4);
+}
+
+/* Floating order actions styling */
+.floating-order-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
 }
 
 @keyframes slideUp {

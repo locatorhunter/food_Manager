@@ -14,6 +14,8 @@ window.incrementQuantity = incrementQuantity;
 window.decrementQuantity = decrementQuantity;
 window.uploadItemImage = uploadItemImage;
 window.toggleHotelMenu = toggleHotelMenu;
+window.cancelOrder = cancelOrder;
+window.showOrderModal = showOrderModal;
 
 document.addEventListener('DOMContentLoaded', function() {
     initializeMenuPage();
@@ -258,7 +260,10 @@ function displayMenuItems(hotel, items) {
             <div class="floating-order-summary">
                 <div class="order-summary-content">
                     <span>${totalItems} items • ₹${total.toFixed(2)}</span>
-                    <button class="place-order-btn btn btn-primary">Place Order</button>
+                    <div class="floating-order-actions">
+                        <button class="cancel-order-btn btn btn-primary" onclick="cancelOrder()">Cancel</button>
+                        <button class="place-order-btn btn btn-primary" onclick="showOrderModal()">Place Order</button>
+                    </div>
                 </div>
             </div>
         `;
@@ -400,6 +405,14 @@ function showOrderModal() {
     document.getElementById('orderEmployeeName').value = '';
     document.getElementById('orderModal').style.display = 'flex';
     document.getElementById('orderEmployeeName').focus();
+}
+
+function cancelOrder() {
+    // Clear all selected items
+    selectedItems = {};
+    // Refresh the menu display to hide the floating order summary
+    displayHotelsMenu();
+    showToast('Order cancelled');
 }
 
 async function placeOrders(ordersByHotel, employeeName) {
