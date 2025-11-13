@@ -468,14 +468,54 @@ async function importCSV() {
         }
 
         try {
-            // Import items sequentially to avoid overwhelming Firebase
-            for (const item of items) {
-                await StorageManager.addMenuItemToHotel(hotelId, item);
+            // Get current hotel data
+            const hotel = await StorageManager.getHotelById(hotelId);
+            if (!hotel) {
+                showToast('Hotel not found. Please refresh and try again.', 'error');
+                return;
             }
-            showToast(`Imported ${items.length} menu items successfully!`);
+
+            // Check for duplicates against existing items
+            const existingNames = new Set((hotel.menuItems || []).map(item => item.name.toLowerCase()));
+            const uniqueItems = [];
+            const duplicates = [];
+
+            items.forEach(item => {
+                const itemNameLower = item.name.toLowerCase();
+                if (existingNames.has(itemNameLower)) {
+                    duplicates.push(item.name);
+                } else {
+                    existingNames.add(itemNameLower);
+                    uniqueItems.push(item);
+                }
+            });
+
+            if (uniqueItems.length === 0) {
+                showToast('All items already exist in this hotel.', 'error');
+                return;
+            }
+
+            // Prepare items with IDs
+            const itemsWithIds = uniqueItems.map(item => ({
+                ...item,
+                id: Date.now().toString() + '_' + Math.random().toString(36).substr(2, 9)
+            }));
+
+            // Add all items to hotel's menuItems array
+            hotel.menuItems = hotel.menuItems || [];
+            hotel.menuItems.push(...itemsWithIds);
+
+            // Update hotel with all items at once
+            await StorageManager.updateHotel(hotelId, { menuItems: hotel.menuItems });
+
+            let message = `Imported ${uniqueItems.length} menu items successfully!`;
+            if (duplicates.length > 0) {
+                message += ` (${duplicates.length} duplicates skipped)`;
+            }
+            showToast(message);
         } catch (error) {
             console.error('Error importing CSV items:', error);
-            showToast('Error importing some items. Please check the data.', 'error');
+            showToast('Error importing items. Please check the data and try again.', 'error');
         }
 
         document.getElementById('importModal').style.display = 'none';

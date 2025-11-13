@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lunch Manager - Dashboard</title>
     <link rel="stylesheet" href="css/style.css?v=1.0.4">
+    <!-- jsPDF for PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
@@ -83,6 +85,7 @@
                 <div class="actions-section">
                     <button id="refreshBtn" class="btn btn-secondary" title="Refresh data">🔄</button>
                     <button id="exportBtn" class="btn btn-secondary" title="Export to CSV">📥</button>
+                    <button id="downloadOrdersPDFBtn" class="btn btn-secondary" title="Download Orders as PDF">📄</button>
                 </div>
             </div>
             
@@ -94,6 +97,7 @@
                     <div class="summary-controls">
                         <button id="refreshSummaryBtn" class="btn btn-secondary" title="Refresh summary">🔄</button>
                         <button id="printSummaryBtn" class="btn btn-secondary" title="Print summary">🖨️</button>
+                        <button id="downloadSummaryPDFBtn" class="btn btn-secondary" title="Download Summary as PDF">📄</button>
                     </div>
                 </div>
                 <div id="orderSummary" class="order-summary-content"></div>

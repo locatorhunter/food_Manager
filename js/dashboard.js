@@ -136,6 +136,8 @@ async function setupControls() {
     });
     document.getElementById('printSummaryBtn').addEventListener('click', printOrderSummary);
     document.getElementById('exportBtn').addEventListener('click', exportToCSV);
+    document.getElementById('downloadSummaryPDFBtn').addEventListener('click', downloadSummaryPDF);
+    document.getElementById('downloadOrdersPDFBtn').addEventListener('click', downloadOrdersPDF);
 }
 
 function applyFilters() {
@@ -681,6 +683,198 @@ function exportToCSV() {
     window.URL.revokeObjectURL(url);
 
     showToast('Orders exported successfully!');
+}
+
+async function downloadSummaryPDF() {
+    const summaryElement = document.getElementById('orderSummary');
+    if (!summaryElement || summaryElement.innerHTML.includes('No pending orders')) {
+        showToast('No orders to download', 'error');
+        return;
+    }
+
+    try {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+
+        // Add title
+        doc.setFontSize(20);
+        doc.text('Hotel Order Summary', 20, 30);
+
+        // Add date
+        doc.setFontSize(12);
+        doc.text(`Date: ${new Date().toLocaleDateString()}`, 20, 45);
+
+        let yPosition = 60;
+
+        // Get order summary data
+        const todaysOrders = await StorageManager.getTodaysOrders();
+        const orders = todaysOrders.filter(order => !order.completed);
+
+        // Group orders by hotel
+        const hotelSummaries = {};
+        orders.forEach(order => {
+            if (!hotelSummaries[order.hotelName]) {
+                hotelSummaries[order.hotelName] = {};
+            }
+
+            order.items.forEach(item => {
+                if (!hotelSummaries[order.hotelName][item.name]) {
+                    hotelSummaries[order.hotelName][item.name] = {
+                        quantity: 0,
+                        price: item.price
+                    };
+                }
+                hotelSummaries[order.hotelName][item.name].quantity += item.quantity;
+            });
+        });
+
+        // Generate PDF content
+        Object.entries(hotelSummaries).forEach(([hotelName, items]) => {
+            // Check if we need a new page
+            if (yPosition > 250) {
+                doc.addPage();
+                yPosition = 30;
+            }
+
+            // Hotel header
+            doc.setFontSize(16);
+            doc.setFont('helvetica', 'bold');
+            doc.text(`${hotelName}`, 20, yPosition);
+            yPosition += 10;
+
+            // Items table
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'normal');
+
+            const itemEntries = Object.entries(items).sort(([,a], [,b]) => b.quantity - a.quantity);
+            const totalItems = itemEntries.reduce((sum, [, itemData]) => sum + itemData.quantity, 0);
+
+            // Table headers
+            doc.setFont('helvetica', 'bold');
+            doc.text('S.No', 20, yPosition);
+            doc.text('Item Name', 40, yPosition);
+            doc.text('Quantity', 150, yPosition);
+            yPosition += 8;
+
+            // Table rows
+            doc.setFont('helvetica', 'normal');
+            itemEntries.forEach(([itemName, itemData], index) => {
+                if (yPosition > 270) {
+                    doc.addPage();
+                    yPosition = 30;
+                }
+
+                doc.text(`${index + 1}`, 20, yPosition);
+                doc.text(itemName, 40, yPosition);
+                doc.text(`${itemData.quantity}`, 150, yPosition);
+                yPosition += 8;
+            });
+
+            // Total
+            doc.setFont('helvetica', 'bold');
+            doc.text(`Total Items: ${totalItems}`, 20, yPosition + 5);
+            yPosition += 20;
+        });
+
+        // Save the PDF
+        const fileName = `order-summary-${new Date().toISOString().split('T')[0]}.pdf`;
+        doc.save(fileName);
+        showToast('Order summary PDF downloaded successfully!');
+
+    } catch (error) {
+        console.error('Error generating PDF:', error);
+        showToast('Error generating PDF', 'error');
+    }
+}
+
+async function downloadOrdersPDF() {
+    if (filteredOrders.length === 0) {
+        showToast('No orders to download', 'error');
+        return;
+    }
+
+    try {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+
+        // Add title
+        doc.setFontSize(20);
+        doc.text('All Orders Details', 20, 30);
+
+        // Add date
+        doc.setFontSize(12);
+        doc.text(`Date: ${new Date().toLocaleDateString()}`, 20, 45);
+        doc.text(`Total Orders: ${filteredOrders.length}`, 20, 55);
+
+        let yPosition = 70;
+
+        // Table headers
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Date & Time', 20, yPosition);
+        doc.text('Employee', 60, yPosition);
+        doc.text('Hotel', 100, yPosition);
+        doc.text('Items', 130, yPosition);
+        doc.text('Total', 170, yPosition);
+        yPosition += 8;
+
+        // Table rows
+        doc.setFont('helvetica', 'normal');
+        filteredOrders.forEach(order => {
+            if (yPosition > 270) {
+                doc.addPage();
+                yPosition = 30;
+
+                // Repeat headers on new page
+                doc.setFont('helvetica', 'bold');
+                doc.text('Date & Time', 20, yPosition);
+                doc.text('Employee', 60, yPosition);
+                doc.text('Hotel', 100, yPosition);
+                doc.text('Items', 130, yPosition);
+                doc.text('Total', 170, yPosition);
+                yPosition += 8;
+                doc.setFont('helvetica', 'normal');
+            }
+
+            const date = formatDateOnly(order.timestamp);
+            const time = new Date(order.timestamp).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+            const dateTime = `${date} ${time}`;
+
+            const items = order.items.map(item => `${item.name}(${item.quantity})`).join(', ');
+            const total = formatCurrency(order.total);
+
+            // Handle long text wrapping
+            const maxWidth = 30;
+            const wrappedItems = doc.splitTextToSize(items, maxWidth);
+
+            doc.text(dateTime, 20, yPosition);
+            doc.text(order.employeeName, 60, yPosition);
+            doc.text(order.hotelName, 100, yPosition);
+            doc.text(wrappedItems[0], 130, yPosition); // First line of items
+            doc.text(total, 170, yPosition);
+
+            yPosition += 8;
+
+            // Add additional lines for wrapped items
+            for (let i = 1; i < wrappedItems.length; i++) {
+                if (yPosition > 270) {
+                    doc.addPage();
+                    yPosition = 30;
+                }
+                doc.text(wrappedItems[i], 130, yPosition);
+                yPosition += 8;
+            }
+        });
+
+        // Save the PDF
+        const fileName = `all-orders-${new Date().toISOString().split('T')[0]}.pdf`;
+        doc.save(fileName);
+        showToast('Orders PDF downloaded successfully!');
+
+    } catch (error) {
+        console.error('Error generating PDF:', error);
+        showToast('Error generating PDF', 'error');
+    }
 }
 
 function scrollToMenu() {
