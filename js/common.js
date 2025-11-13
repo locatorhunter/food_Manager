@@ -327,13 +327,40 @@ function displayOrderSummary() {
         html += '<p class="empty-message">No orders placed yet today.</p>';
     } else {
         Object.entries(hotelGroups).forEach(([hotel, items]) => {
+            const itemEntries = Object.entries(items);
+            const totalItems = itemEntries.reduce((sum, [, qty]) => sum + qty, 0);
+
             html += `<div class="hotel-order-summary">
                 <h3>🏨 ${hotel}</h3>
-                <ul class="order-items-list">`;
-            Object.entries(items).forEach(([item, qty]) => {
-                html += `<li><span class="item-name">${item}</span> <span class="item-qty">${qty} nos</span></li>`;
+                <div class="orders-table-container">
+                    <table class="orders-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 60px;">S.No</th>
+                                <th>Item Name</th>
+                                <th style="width: 100px;">Quantity</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
+
+            itemEntries.forEach(([item, qty], index) => {
+                html += `<tr>
+                    <td style="text-align: center; font-weight: 600;">${index + 1}</td>
+                    <td>${item}</td>
+                    <td style="text-align: center; font-weight: 600;">${qty}</td>
+                </tr>`;
             });
-            html += '</ul></div>';
+
+            html += `</tbody>
+                        <tfoot>
+                            <tr style="background: var(--bg-tertiary);">
+                                <td colspan="2" style="text-align: right; font-weight: 700;">Total Items:</td>
+                                <td style="text-align: center; font-weight: 700; color: var(--primary-color);">${totalItems}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>`;
         });
     }
 

@@ -533,31 +533,48 @@ async function displayOrderSummary() {
         let html = '';
 
         Object.entries(hotelSummaries).forEach(([hotelName, items]) => {
-            const totalItems = Object.values(items).reduce((sum, item) => sum + item.quantity, 0);
-            const totalValue = Object.values(items).reduce((sum, item) => sum + (item.quantity * item.price), 0);
+            const itemEntries = Object.entries(items).sort(([,a], [,b]) => b.quantity - a.quantity); // Sort by quantity descending
+            const totalItems = itemEntries.reduce((sum, [, itemData]) => sum + itemData.quantity, 0);
+            const totalValue = itemEntries.reduce((sum, [, itemData]) => sum + (itemData.quantity * itemData.price), 0);
 
             const hotel = hotels.find(h => h.name === hotelName);
             const typeEmoji = hotel ? getHotelTypeEmoji(hotel.type) : '🏨';
 
-            html += `
-                <div class="hotel-order-summary">
-                    <h3>${typeEmoji} ${hotelName}</h3>
-                    <div class="summary-stats">
-                        <span class="stat-badge">${totalItems} items</span>
-                        <span class="stat-badge">${formatCurrency(totalValue)}</span>
-                    </div>
-                    <div class="order-items-list">
-                        ${Object.entries(items)
-                            .sort(([,a], [,b]) => b.quantity - a.quantity) // Sort by quantity descending
-                            .map(([itemName, itemData]) => `
-                                <div class="order-items-list li">
-                                    <span class="item-name">${itemName}</span>
-                                    <span class="item-qty">${itemData.quantity}</span>
-                                </div>
-                            `).join('')}
-                    </div>
+            html += `<div class="hotel-order-summary">
+                <h3>${typeEmoji} ${hotelName}</h3>
+                <div class="summary-stats">
+                    <span class="stat-badge">${totalItems} items</span>
+                    <span class="stat-badge">${formatCurrency(totalValue)}</span>
                 </div>
-            `;
+                <div class="orders-table-container">
+                    <table class="orders-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 60px;">S.No</th>
+                                <th>Item Name</th>
+                                <th style="width: 100px;">Quantity</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
+
+            itemEntries.forEach(([itemName, itemData], index) => {
+                html += `<tr>
+                    <td style="text-align: center; font-weight: 600;">${index + 1}</td>
+                    <td>${itemName}</td>
+                    <td style="text-align: center; font-weight: 600;">${itemData.quantity}</td>
+                </tr>`;
+            });
+
+            html += `</tbody>
+                        <tfoot>
+                            <tr style="background: var(--bg-tertiary);">
+                                <td colspan="2" style="text-align: right; font-weight: 700;">Total Items:</td>
+                                <td style="text-align: center; font-weight: 700; color: var(--primary-color);">${totalItems}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>`;
         });
 
         container.innerHTML = html;
