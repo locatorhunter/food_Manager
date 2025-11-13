@@ -3,6 +3,9 @@
    Modern, Responsive, Dark/Light Mode
    ======================================== */
 
+/* Import handwritten font */
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&display=swap');
+
 /* CSS Variables for Light Theme (Modern Blue) */
 :root {
     --primary-color: #2563eb; /* Modern blue */
@@ -154,8 +157,10 @@ body.retro-light .navbar {
     gap: 12px;
     text-decoration: none;
     color: var(--text-primary);
+    font-family: 'Caveat', cursive;
     font-weight: 700;
-    font-size: 1.5rem;
+    font-size: 1.8rem;
+    letter-spacing: 1px;
 }
 
 body.dark-mode .navbar-brand {
@@ -383,12 +388,12 @@ body.retro-light .card {
 .hero-section {
     display: flex;
     align-items: center;
-    min-height: 80vh;
+    min-height: 100vh;
     background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #2d2d2d 100%);
     padding: 80px 0;
     position: relative;
     overflow: hidden;
-    border-bottom: 2px solid var(--primary-color);
+
 }
 
 .hero-section::before {
@@ -498,7 +503,6 @@ body.retro-light .card {
     align-items: center;
     justify-content: center;
     box-shadow: 0 4px 15px rgba(0, 255, 136, 0.3);
-    border: 2px solid var(--primary-color);
     color: #000000;
     font-weight: bold;
 }
@@ -2417,7 +2421,7 @@ footer::before {
 
 @media (max-width: 480px) {
     .navbar-brand {
-        font-size: 1.2rem;
+        font-size: 1.4rem;
     }
 
     .navbar-logo {
