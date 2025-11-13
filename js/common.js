@@ -200,23 +200,12 @@ function setActivePage() {
 function showToast(message, type = 'success') {
     const toast = document.createElement('div');
     toast.textContent = message;
-    toast.style.cssText = `
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        padding: 15px 25px;
-        background-color: ${type === 'success' ? '#10B981' : '#EF4444'};
-        color: white;
-        border-radius: 8px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        z-index: 9999;
-        animation: slideIn 0.3s ease-out;
-    `;
-    
+    toast.className = `toast toast-${type}`;
+
     document.body.appendChild(toast);
-    
+
     setTimeout(() => {
-        toast.style.animation = 'slideOut 0.3s ease-out';
+        toast.classList.add('toast-hide');
         setTimeout(() => toast.remove(), 300);
     }, 3000);
 }

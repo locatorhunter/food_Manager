@@ -452,7 +452,7 @@ async function displayPopularItems() {
         const mainImage = hasImages ? item.images[0] : null;
 
         html += `
-            <div class="popular-item-card">
+            <div class="popular-item-card" onclick="scrollToMenu()">
                 <div class="popular-item-image">
                     ${mainImage ? `<img src="${mainImage}" alt="${item.name}">` : '<div class="no-image">🍽️</div>'}
                 </div>
@@ -664,4 +664,18 @@ function exportToCSV() {
     window.URL.revokeObjectURL(url);
 
     showToast('Orders exported successfully!');
+}
+
+function scrollToMenu() {
+    // Check if we're on the home page
+    if (window.location.pathname.includes('index.html') || window.location.pathname === '/' || window.location.pathname.endsWith('/')) {
+        // Scroll to the featured section on home page
+        const featuredSection = document.getElementById('featured');
+        if (featuredSection) {
+            featuredSection.scrollIntoView({ behavior: 'smooth' });
+        }
+    } else {
+        // On other pages, redirect to menu page
+        window.location.href = 'menu.html';
+    }
 }

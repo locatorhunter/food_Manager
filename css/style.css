@@ -5,10 +5,10 @@
 
 /* CSS Variables for Dark Gradient Theme */
 :root {
-    --primary-color: #00ADB5; /* Bright green */
-    --primary-dark: #00ccc9; /* Darker green */
-    --secondary-color: #31822d; /* Bright red */
-    --danger-color: #42a2cb; /* Light red */
+    --primary-color: #0044ff; /* Bright green */
+    --primary-dark: #04d5fa; /* Darker green */
+    --secondary-color: #6d5e5e; /* Bright red */
+    --danger-color: #d81c1c; /* Light red */
     --warning-color: #FFAA00; /* Orange */
     --success-color: #00FF88; /* Bright green */
     --disabled-color: #666666;
@@ -16,7 +16,7 @@
     --bg-primary: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%); /* Dark gradient */
     --bg-secondary: linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%); /* Darker gradient */
     --bg-tertiary: linear-gradient(135deg, #333333 0%, #404040 100%); /* Medium dark gradient */
-    --bg-accent: linear-gradient(135deg, #a7b46d 0%, #49bfe0 100%); /* Green to red gradient */
+    --bg-accent: linear-gradient(135deg, #636036 0%, #1b2c31 100%); /* Green to red gradient */
 
     --text-primary: #FFFFFF; /* White text */
     --text-secondary: #CCCCCC; /* Light gray */
@@ -111,7 +111,7 @@ body {
     justify-content: center;
     color: #000000;
     font-size: 1.5rem;
-    box-shadow: 0 2px 8px rgba(0, 255, 136, 0.3);
+    box-shadow: 0 2px 8px rgba(26, 59, 44, 0.3);
     border: 2px solid var(--primary-color);
 }
 
@@ -2600,26 +2600,39 @@ select:focus-visible,
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(10px);
     display: flex;
     justify-content: center;
     align-items: center;
     z-index: 1000;
     opacity: 1;
     transition: opacity 0.3s ease;
+    animation: modalFadeIn 0.3s ease-out;
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        backdrop-filter: blur(0px);
+    }
+    to {
+        opacity: 1;
+        backdrop-filter: blur(10px);
+    }
 }
 
 /* PASSWORD MODAL */
 .password-modal-content {
-    background-color: var(--bg-primary);
+    background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
     border-radius: 20px;
     padding: 40px;
     max-width: 450px;
     width: 90%;
     max-height: 90vh;
     overflow-y: auto;
-    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
-    border: 1px solid var(--border-color);
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1);
+    border: 2px solid var(--border-color);
     position: relative;
     animation: modalSlideIn 0.4s ease-out;
 }
@@ -2762,15 +2775,15 @@ select:focus-visible,
 
 /* CUSTOM ALERT/CONFIRM MODALS */
 .custom-modal-content {
-    background-color: var(--bg-primary);
+    background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
     border-radius: 20px;
     padding: 30px;
     max-width: 500px;
     width: 90%;
     max-height: 80vh;
     overflow-y: auto;
-    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
-    border: 1px solid var(--border-color);
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1);
+    border: 2px solid var(--border-color);
     position: relative;
     animation: modalSlideIn 0.4s ease-out;
 }
@@ -2824,16 +2837,28 @@ select:focus-visible,
 }
 
 .modal-content {
-    background-color: var(--bg-primary);
-    border-radius: 12px;
+    background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+    border-radius: 20px;
     padding: 30px;
     max-width: 500px;
     width: 90%;
     max-height: 90vh;
     overflow-y: auto;
-    box-shadow: var(--shadow-lg);
-    border: 1px solid var(--border-color);
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1);
+    border: 2px solid var(--border-color);
     position: relative;
+    animation: modalSlideIn 0.4s ease-out;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9) translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
 }
 
 .item-modal-content {
@@ -3379,24 +3404,54 @@ select {
     bottom: 20px;
     left: 50%;
     transform: translateX(-50%);
-    background-color: var(--bg-primary);
-    border-radius: 12px;
-    padding: 15px 20px;
-    box-shadow: var(--shadow-lg);
+    background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+    border-radius: 16px;
+    padding: 18px 24px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1);
     border: 2px solid var(--primary-color);
     z-index: 100;
-    animation: slideUp 0.3s ease-out;
+    animation: slideUp 0.4s ease-out;
+    backdrop-filter: blur(10px);
+    min-width: 280px;
+    transition: all 0.3s ease;
+}
+
+.floating-order-summary:hover {
+    transform: translateX(-50%) translateY(-2px);
+    box-shadow: 0 20px 45px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.15);
 }
 
 .order-summary-content {
     display: flex;
     align-items: center;
-    gap: 15px;
+    justify-content: space-between;
+    gap: 20px;
+    width: 100%;
 }
 
 .order-summary-content span {
     font-weight: 600;
     color: var(--text-primary);
+    font-size: 1rem;
+}
+
+.order-summary-content .btn {
+    padding: 10px 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    background: var(--bg-accent);
+    color: #000000;
+    border: 2px solid var(--primary-color);
+    box-shadow: 0 4px 12px rgba(0, 255, 136, 0.3);
+}
+
+.order-summary-content .btn:hover {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(0, 255, 136, 0.4);
 }
 
 @keyframes slideUp {
@@ -3416,12 +3471,20 @@ select {
         left: 10px;
         right: 10px;
         transform: none;
+        min-width: auto;
+        padding: 16px 20px;
     }
 
     .order-summary-content {
         flex-direction: column;
-        gap: 10px;
+        gap: 12px;
         text-align: center;
+    }
+
+    .order-summary-content .btn {
+        width: 100%;
+        padding: 12px 16px;
+        font-size: 1rem;
     }
 }
 
@@ -3625,4 +3688,70 @@ tr.completed .order-checkbox {
 .actions-section .btn-danger:hover {
     background: #dc2626;
     transform: scale(1.05);
+}
+
+/* TOAST NOTIFICATIONS */
+.toast {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    padding: 16px 24px;
+    border-radius: 12px;
+    color: white;
+    font-weight: 600;
+    font-size: 0.95rem;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1);
+    z-index: 9999;
+    animation: toastSlideIn 0.4s ease-out;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    max-width: 400px;
+    word-wrap: break-word;
+}
+
+.toast-success {
+    background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+}
+
+.toast-error {
+    background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
+}
+
+.toast-hide {
+    animation: toastSlideOut 0.3s ease-out;
+}
+
+@keyframes toastSlideIn {
+    from {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes toastSlideOut {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+}
+
+/* Multiple toasts stacking */
+.toast:nth-child(2) {
+    bottom: 90px;
+}
+
+.toast:nth-child(3) {
+    bottom: 160px;
+}
+
+.toast:nth-child(4) {
+    bottom: 230px;
 }

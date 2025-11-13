@@ -8,6 +8,13 @@ let menuSearchTerm = '';
 let categoryFilter = '';
 let cardSize = 'medium';
 
+// Make functions globally available
+window.showItemModal = showItemModal;
+window.incrementQuantity = incrementQuantity;
+window.decrementQuantity = decrementQuantity;
+window.uploadItemImage = uploadItemImage;
+window.toggleHotelMenu = toggleHotelMenu;
+
 document.addEventListener('DOMContentLoaded', function() {
     initializeMenuPage();
 });
@@ -56,18 +63,22 @@ async function initializeMenuPage() {
 }
 
 function setupEventDelegation() {
-    // Event delegation for dynamically added buttons
-    document.getElementById('hotelsMenuContainer').addEventListener('click', function(e) {
-        if (e.target.classList.contains('place-order-btn')) {
+    // Event delegation for dynamically added buttons - only for place order button
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('place-order-btn') || e.target.closest('.place-order-btn')) {
+            e.preventDefault();
+            e.stopPropagation();
             showOrderModal();
+            return;
         }
     });
 
-    // Prevent double-tap zoom on quantity buttons
+    // Prevent double-tap zoom on quantity buttons and menu cards
     document.addEventListener('touchstart', function(e) {
         if (e.target.classList.contains('quantity-btn') ||
             e.target.classList.contains('btn-upload') ||
-            e.target.closest('.menu-item-card')) {
+            e.target.closest('.menu-item-card') ||
+            e.target.classList.contains('menu-item-card')) {
             e.preventDefault();
         }
     }, { passive: false });
@@ -78,8 +89,10 @@ function setupEventDelegation() {
             const target = e.target;
             if (target.classList.contains('quantity-btn') ||
                 target.classList.contains('btn-upload') ||
-                target.closest('.menu-item-card')) {
+                target.closest('.menu-item-card') ||
+                target.classList.contains('menu-item-card')) {
                 target.style.transform = 'scale(0.95)';
+                target.style.transition = 'transform 0.1s ease';
             }
         });
 
@@ -87,7 +100,8 @@ function setupEventDelegation() {
             const target = e.target;
             if (target.classList.contains('quantity-btn') ||
                 target.classList.contains('btn-upload') ||
-                target.closest('.menu-item-card')) {
+                target.closest('.menu-item-card') ||
+                target.classList.contains('menu-item-card')) {
                 target.style.transform = '';
             }
         });
