@@ -562,7 +562,7 @@ body.retro-light .hero-content h1 {
     font-size: 2rem;
     opacity: 0.7;
     animation: floatAround 20s infinite linear;
-    background: var(--bg-accent);
+    background: var(--text-secondary);
     border-radius: 50%;
     width: 60px;
     height: 60px;
