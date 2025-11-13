@@ -419,9 +419,76 @@ body.retro-light .card {
 .hero-content h1 {
     font-size: 4rem;
     margin-bottom: 20px;
-    color: var(--text-primary);
     font-weight: 800;
     line-height: 1.1;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Bright contrast colors for hero title across all themes */
+:root .hero-content h1 {
+    color: #1e40af; /* Bright blue for light theme */
+}
+
+body.dark-mode .hero-content h1 {
+    color: #60a5fa; /* Bright blue for dark theme */
+}
+
+body.retro-dark .hero-content h1 {
+    color: #00ffff; /* Electric cyan for retro dark */
+    text-shadow:
+        0 0 10px rgba(0, 255, 255, 0.8),
+        0 0 20px rgba(0, 255, 255, 0.6),
+        0 0 30px rgba(0, 255, 255, 0.4),
+        0 2px 4px rgba(0, 0, 0, 0.3);
+    animation: neonGlow 2s ease-in-out infinite alternate;
+}
+
+body.retro-light .hero-content h1 {
+    color: #ff6b35; /* Coral orange for retro light */
+    text-shadow:
+        0 0 10px rgba(255, 107, 53, 0.8),
+        0 0 20px rgba(255, 107, 53, 0.6),
+        0 0 30px rgba(255, 107, 53, 0.4),
+        0 2px 4px rgba(0, 0, 0, 0.3);
+    animation: neonGlow 2s ease-in-out infinite alternate;
+}
+
+@keyframes neonGlow {
+    from {
+        text-shadow:
+            0 0 10px rgba(0, 255, 255, 0.8),
+            0 0 20px rgba(0, 255, 255, 0.6),
+            0 0 30px rgba(0, 255, 255, 0.4),
+            0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+    to {
+        text-shadow:
+            0 0 15px rgba(0, 255, 255, 1),
+            0 0 25px rgba(0, 255, 255, 0.8),
+            0 0 35px rgba(0, 255, 255, 0.6),
+            0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+}
+
+body.retro-light .hero-content h1 {
+    animation: neonGlowOrange 2s ease-in-out infinite alternate;
+}
+
+@keyframes neonGlowOrange {
+    from {
+        text-shadow:
+            0 0 10px rgba(255, 107, 53, 0.8),
+            0 0 20px rgba(255, 107, 53, 0.6),
+            0 0 30px rgba(255, 107, 53, 0.4),
+            0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+    to {
+        text-shadow:
+            0 0 15px rgba(255, 107, 53, 1),
+            0 0 25px rgba(255, 107, 53, 0.8),
+            0 0 35px rgba(255, 107, 53, 0.6),
+            0 2px 4px rgba(0, 0, 0, 0.3);
+    }
 }
 
 .hero-subtitle {
