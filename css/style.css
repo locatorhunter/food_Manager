@@ -1585,6 +1585,16 @@ tr:hover td {
     font-size: 1.4rem;
 }
 
+.hotel-item-count {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    background-color: var(--bg-tertiary);
+    padding: 2px 8px;
+    border-radius: 12px;
+    margin-left: 8px;
+}
+
 .hotel-status {
     display: inline-block;
     padding: 4px 12px;
@@ -1662,11 +1672,62 @@ tr:hover td {
 }
 
 .menu-item-admin-status.available {
-    color: var(--secondary-color);
+    color: var(--success-color);
+    background-color: rgba(16, 185, 129, 0.1);
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-weight: 600;
+    border: 1px solid rgba(16, 185, 129, 0.3);
 }
 
 .menu-item-admin-status.unavailable {
     color: var(--text-tertiary);
+    background-color: rgba(156, 163, 175, 0.1);
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-weight: 600;
+    border: 1px solid rgba(156, 163, 175, 0.3);
+}
+
+/* Theme-specific button colors */
+body.dark-mode .menu-item-admin-status.available {
+    color: #10b981;
+    background-color: rgba(16, 185, 129, 0.2);
+    border-color: rgba(16, 185, 129, 0.4);
+}
+
+body.dark-mode .menu-item-admin-status.unavailable {
+    color: #9ca3af;
+    background-color: rgba(156, 163, 175, 0.2);
+    border-color: rgba(156, 163, 175, 0.4);
+}
+
+body.retro-dark .menu-item-admin-status.available {
+    color: #00ff80;
+    background-color: rgba(0, 255, 128, 0.2);
+    border-color: rgba(0, 255, 128, 0.4);
+    box-shadow: 0 0 8px rgba(0, 255, 128, 0.3);
+}
+
+body.retro-dark .menu-item-admin-status.unavailable {
+    color: #ff00ff;
+    background-color: rgba(255, 0, 255, 0.2);
+    border-color: rgba(255, 0, 255, 0.4);
+    box-shadow: 0 0 8px rgba(255, 0, 255, 0.3);
+}
+
+body.retro-light .menu-item-admin-status.available {
+    color: #4caf50;
+    background-color: rgba(76, 175, 80, 0.2);
+    border-color: rgba(76, 175, 80, 0.4);
+    box-shadow: 0 0 8px rgba(76, 175, 80, 0.3);
+}
+
+body.retro-light .menu-item-admin-status.unavailable {
+    color: #d81b60;
+    background-color: rgba(216, 27, 96, 0.2);
+    border-color: rgba(216, 27, 96, 0.4);
+    box-shadow: 0 0 8px rgba(216, 27, 96, 0.3);
 }
 
 .menu-item-admin-actions {

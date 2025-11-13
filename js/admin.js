@@ -200,12 +200,14 @@ async function displayHotelsManagement() {
             const isExpanded = hotelExpandedStates[hotel.id] !== false; // Default to expanded
             const expandIcon = isExpanded ? '📂' : '📁';
             const expandText = isExpanded ? 'Collapse' : 'Expand';
+            const totalItems = hotel.menuItems ? hotel.menuItems.length : 0;
+            const availableItems = hotel.menuItems ? hotel.menuItems.filter(item => item.available).length : 0;
 
             html += `
                 <div class="hotel-management-card">
                     <div class="hotel-header">
                         <div class="hotel-info">
-                            <h3>${getHotelTypeEmoji(hotel.type)} ${hotel.name}</h3>
+                            <h3>${getHotelTypeEmoji(hotel.type)} ${hotel.name} <span class="hotel-item-count">(${availableItems}/${totalItems} items)</span></h3>
                             ${selectedHotelIds.includes(hotel.id) ? '<span class="hotel-status selected">Selected for Today</span>' : '<span class="hotel-status not-selected">Not Selected</span>'}
                         </div>
                         <div class="hotel-actions">
