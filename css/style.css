@@ -2750,6 +2750,62 @@ select:focus-visible,
     animation: modalFadeIn 0.3s ease-out;
 }
 
+/* Ensure all modal content is properly centered - exclude form elements */
+.modal > div[class*="modal-content"]:not(input):not(button):not(select):not(textarea),
+.modal > div[class*="modal"]:not(input):not(button):not(select):not(textarea) {
+    position: relative;
+    max-height: 90vh;
+    overflow-y: auto;
+    margin: auto;
+}
+
+/* Specific centering for all modal content types - exclude interactive elements */
+.password-modal-content,
+.custom-modal-content,
+.modal-content,
+.item-modal-content,
+.order-modal-content {
+    position: relative;
+    top: auto;
+    left: auto;
+    transform: none;
+    margin: auto;
+}
+
+/* Ensure all modals are properly centered regardless of how they're created */
+.modal {
+    align-items: center;
+    justify-content: center;
+    display: flex;
+}
+
+/* Specific modal IDs to ensure consistent positioning */
+#itemModal,
+#orderModal,
+#menuModal,
+#importModal,
+#editHotelModal,
+#passwordModal,
+#customModal {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#itemModal > .modal-content,
+#orderModal > .modal-content,
+#menuModal > .modal-content,
+#importModal > .modal-content,
+#editHotelModal > .modal-content,
+#passwordModal > .modal-content,
+#customModal > .modal-content {
+    margin: auto;
+    position: relative;
+    top: auto;
+    left: auto;
+    transform: none;
+}
+
 @keyframes modalFadeIn {
     from {
         opacity: 0;
