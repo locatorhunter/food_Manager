@@ -2763,7 +2763,7 @@ select:focus-visible,
 
 /* PASSWORD MODAL */
 .password-modal-content {
-    background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+    background: var(--bg-primary);
     border-radius: 20px;
     padding: 40px;
     max-width: 450px;
@@ -2771,9 +2771,28 @@ select:focus-visible,
     max-height: 90vh;
     overflow-y: auto;
     box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1);
-    border: 2px solid var(--border-color);
+    border: 3px solid var(--primary-color);
     position: relative;
     animation: modalSlideIn 0.4s ease-out;
+}
+
+/* Theme-specific modal backgrounds */
+body.dark-mode .password-modal-content {
+    background: var(--bg-primary);
+    border-color: var(--primary-color);
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.6), 0 0 20px var(--primary-color);
+}
+
+body.retro-dark .password-modal-content {
+    background: var(--bg-secondary);
+    border-color: var(--primary-color);
+    box-shadow: 0 25px 50px rgba(255, 0, 128, 0.3), 0 0 30px var(--primary-color);
+}
+
+body.retro-light .password-modal-content {
+    background: var(--bg-secondary);
+    border-color: var(--primary-color);
+    box-shadow: 0 25px 50px rgba(255, 107, 53, 0.3), 0 0 30px var(--primary-color);
 }
 
 .password-modal-header {
@@ -2914,7 +2933,7 @@ select:focus-visible,
 
 /* CUSTOM ALERT/CONFIRM MODALS */
 .custom-modal-content {
-    background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+    background: var(--bg-primary);
     border-radius: 20px;
     padding: 30px;
     max-width: 500px;
@@ -2922,9 +2941,28 @@ select:focus-visible,
     max-height: 80vh;
     overflow-y: auto;
     box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1);
-    border: 2px solid var(--border-color);
+    border: 3px solid var(--primary-color);
     position: relative;
     animation: modalSlideIn 0.4s ease-out;
+}
+
+/* Theme-specific custom modal backgrounds */
+body.dark-mode .custom-modal-content {
+    background: var(--bg-primary);
+    border-color: var(--primary-color);
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.6), 0 0 20px var(--primary-color);
+}
+
+body.retro-dark .custom-modal-content {
+    background: var(--bg-secondary);
+    border-color: var(--primary-color);
+    box-shadow: 0 25px 50px rgba(255, 0, 128, 0.3), 0 0 30px var(--primary-color);
+}
+
+body.retro-light .custom-modal-content {
+    background: var(--bg-secondary);
+    border-color: var(--primary-color);
+    box-shadow: 0 25px 50px rgba(255, 107, 53, 0.3), 0 0 30px var(--primary-color);
 }
 
 .custom-modal-header {
@@ -2937,6 +2975,17 @@ select:focus-visible,
     margin-bottom: 10px;
     color: var(--text-primary);
     font-weight: 700;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+body.retro-dark .custom-modal-header h2 {
+    color: var(--primary-color);
+    text-shadow: 0 0 10px var(--primary-color);
+}
+
+body.retro-light .custom-modal-header h2 {
+    color: var(--primary-color);
+    text-shadow: 0 0 10px var(--primary-color);
 }
 
 .custom-modal-body {
@@ -2976,7 +3025,7 @@ select:focus-visible,
 }
 
 .modal-content {
-    background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+    background: var(--bg-primary);
     border-radius: 20px;
     padding: 30px;
     max-width: 500px;
@@ -2984,9 +3033,28 @@ select:focus-visible,
     max-height: 90vh;
     overflow-y: auto;
     box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1);
-    border: 2px solid var(--border-color);
+    border: 3px solid var(--primary-color);
     position: relative;
     animation: modalSlideIn 0.4s ease-out;
+}
+
+/* Theme-specific modal backgrounds */
+body.dark-mode .modal-content {
+    background: var(--bg-primary);
+    border-color: var(--primary-color);
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.6), 0 0 20px var(--primary-color);
+}
+
+body.retro-dark .modal-content {
+    background: var(--bg-secondary);
+    border-color: var(--primary-color);
+    box-shadow: 0 25px 50px rgba(255, 0, 128, 0.3), 0 0 30px var(--primary-color);
+}
+
+body.retro-light .modal-content {
+    background: var(--bg-secondary);
+    border-color: var(--primary-color);
+    box-shadow: 0 25px 50px rgba(255, 107, 53, 0.3), 0 0 30px var(--primary-color);
 }
 
 @keyframes modalSlideIn {
@@ -3003,6 +3071,27 @@ select:focus-visible,
 .item-modal-content {
     max-width: 800px;
     width: 95%;
+    background: var(--bg-primary);
+    border: 3px solid var(--primary-color);
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+body.dark-mode .item-modal-content {
+    background: var(--bg-primary);
+    border-color: var(--primary-color);
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.6), 0 0 20px var(--primary-color);
+}
+
+body.retro-dark .item-modal-content {
+    background: var(--bg-secondary);
+    border-color: var(--primary-color);
+    box-shadow: 0 25px 50px rgba(255, 0, 128, 0.3), 0 0 30px var(--primary-color);
+}
+
+body.retro-light .item-modal-content {
+    background: var(--bg-secondary);
+    border-color: var(--primary-color);
+    box-shadow: 0 25px 50px rgba(255, 107, 53, 0.3), 0 0 30px var(--primary-color);
 }
 
 .modal-close {
@@ -3014,7 +3103,7 @@ select:focus-visible,
     color: var(--text-primary);
     line-height: 1;
     z-index: 1001;
-    background: var(--bg-primary);
+    background: var(--bg-secondary);
     border: 2px solid var(--border-color);
     border-radius: 50%;
     width: 36px;
@@ -3022,14 +3111,24 @@ select:focus-visible,
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .modal-close:hover {
     background: var(--danger-color);
     color: white;
     border-color: var(--danger-color);
-    transform: scale(1.1);
+    transform: scale(1.1) rotate(90deg);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+body.retro-dark .modal-close:hover {
+    box-shadow: 0 4px 12px rgba(255, 0, 128, 0.4);
+}
+
+body.retro-light .modal-close:hover {
+    box-shadow: 0 4px 12px rgba(255, 107, 53, 0.4);
 }
 
 /* ITEM MODAL */
@@ -3103,6 +3202,27 @@ select:focus-visible,
 .order-modal-content {
     max-width: 400px;
     width: 100%;
+    background: var(--bg-primary);
+    border: 3px solid var(--primary-color);
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+body.dark-mode .order-modal-content {
+    background: var(--bg-primary);
+    border-color: var(--primary-color);
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.6), 0 0 20px var(--primary-color);
+}
+
+body.retro-dark .order-modal-content {
+    background: var(--bg-secondary);
+    border-color: var(--primary-color);
+    box-shadow: 0 25px 50px rgba(255, 0, 128, 0.3), 0 0 30px var(--primary-color);
+}
+
+body.retro-light .order-modal-content {
+    background: var(--bg-secondary);
+    border-color: var(--primary-color);
+    box-shadow: 0 25px 50px rgba(255, 107, 53, 0.3), 0 0 30px var(--primary-color);
 }
 
 .order-modal-content h2 {
