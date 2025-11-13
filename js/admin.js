@@ -266,7 +266,7 @@ function displayHotelMenuItems(hotel) {
                     <strong>${item.name}</strong>
                     <span class="menu-item-price">${formatCurrency(item.price)}</span>
                 </div>
-                <div class="menu-item-admin-category">${item.category}</div>
+                <div class="menu-item-admin-category">${item.category || 'No category'}</div>
                 <div class="menu-item-admin-status ${item.available ? 'available' : 'unavailable'}">
                     ${item.available ? '✓ Available' : '✗ Unavailable'}
                 </div>
@@ -328,8 +328,8 @@ function setupMenuModal() {
         const itemCategory = document.getElementById('itemCategory').value;
         const itemAvailable = document.getElementById('itemAvailable').checked;
 
-        if (!itemName || !itemPriceStr || !itemCategory) {
-            showToast('Please fill all fields', 'error');
+        if (!itemName || !itemPriceStr) {
+            showToast('Please fill name and price fields', 'error');
             return;
         }
 
@@ -459,7 +459,9 @@ Chicken Biryani,150,Main Course,true
 Paneer Butter Masala,120,Curry,true
 Garlic Naan,45,Bread,true
 Masala Chai,20,Beverage,true
-Veg Thali,130,Main Course,true`;
+Veg Thali,130,Main Course,true
+Simple Rice,80,,true
+Plain Naan,30,,true`;
 
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
@@ -471,7 +473,7 @@ Veg Thali,130,Main Course,true`;
     document.body.removeChild(a);
     window.URL.revokeObjectURL(url);
 
-    showToast('Template downloaded!');
+    showToast('Template downloaded! (Category is optional)');
 }
 
 async function importCSV() {
@@ -494,16 +496,21 @@ async function importCSV() {
             const line = lines[i].trim();
             if (!line) continue;
             const parts = line.split(',');
-            if (parts.length < 4) continue;
-            const [name, priceStr, category, availableStr] = parts;
-            const price = parseFloat(priceStr);
-            const available = availableStr.toLowerCase() === 'true';
+            if (parts.length < 3) continue; // Need at least name, price, available
 
-            if (name && !isNaN(price) && category) {
+            const name = parts[0]?.trim();
+            const priceStr = parts[1]?.trim();
+            const category = parts.length >= 4 ? parts[2]?.trim() : ''; // Category is optional, default to empty
+            const availableStr = parts.length >= 4 ? parts[3]?.trim() : parts[2]?.trim(); // Available can be in position 2 or 3
+
+            const price = parseFloat(priceStr);
+            const available = availableStr?.toLowerCase() === 'true';
+
+            if (name && !isNaN(price)) {
                 const item = {
-                    name: sanitizeInput(name.trim()),
+                    name: sanitizeInput(name),
                     price: price,
-                    category: category.trim(),
+                    category: category || '', // Empty string if not provided
                     available: available
                 };
                 items.push(item);

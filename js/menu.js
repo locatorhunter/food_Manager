@@ -237,7 +237,7 @@ function displayMenuItems(hotel, items) {
                         <div class="menu-item-name">${item.name}</div>
                         <div class="menu-item-price">${formatCurrency(item.price)}</div>
                     </div>
-                    <div class="menu-item-category">${item.category}</div>
+                    <div class="menu-item-category">${item.category || 'No category'}</div>
                     <div class="menu-item-actions">
                         <div class="menu-item-quantity">
                             <button type="button" class="quantity-btn" onclick="event.stopPropagation(); decrementQuantity('${hotel.id}', '${item.id}', '${hotel.name}')">−</button>
@@ -461,7 +461,7 @@ async function showItemModal(hotelId, itemId) {
             <div class="item-modal-details">
                 <h2>${item.name}</h2>
                 <p class="item-modal-price">${formatCurrency(item.price)}</p>
-                <p class="item-modal-category">Category: ${item.category}</p>
+                <p class="item-modal-category">Category: ${item.category || 'No category'}</p>
                 <p class="item-modal-hotel">From: ${hotel.name}</p>
                 <div class="item-modal-actions">
                     <div class="menu-item-quantity">
