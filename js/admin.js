@@ -3,6 +3,12 @@
 // ========================================
 
 let selectedHotelIds = [];
+let currentHotelFilters = {
+    search: '',
+    type: 'all',
+    status: 'all'
+};
+let hotelExpandedStates = {}; // Track which hotels are expanded
 
 document.addEventListener('DOMContentLoaded', function() {
     initializeAdminPage();
@@ -17,6 +23,7 @@ async function initializeAdminPage() {
         setupMenuModal();
         setupEditHotelForm();
         setupDangerZone();
+        setupSearchAndFilters();
 
         window.addEventListener('storageReset', () => {
             selectedHotelIds = [];
@@ -149,24 +156,59 @@ function setupHotelForm() {
 async function displayHotelsManagement() {
     try {
         const container = document.getElementById('hotelsManagement');
-        const hotels = await StorageManager.getHotels();
+        let hotels = await StorageManager.getHotels();
 
         if (hotels.length === 0) {
             container.innerHTML = '<p class="empty-message">No hotels yet. Add your first hotel!</p>';
             return;
         }
 
+        // Apply filters
+        hotels = hotels.filter(hotel => {
+            // Search filter
+            if (currentHotelFilters.search && !hotel.name.toLowerCase().includes(currentHotelFilters.search.toLowerCase())) {
+                return false;
+            }
+
+            // Type filter
+            if (currentHotelFilters.type !== 'all' && hotel.type !== currentHotelFilters.type) {
+                return false;
+            }
+
+            // Status filter
+            if (currentHotelFilters.status !== 'all') {
+                const isSelected = selectedHotelIds.includes(hotel.id);
+                if (currentHotelFilters.status === 'selected' && !isSelected) {
+                    return false;
+                }
+                if (currentHotelFilters.status === 'not-selected' && isSelected) {
+                    return false;
+                }
+            }
+
+            return true;
+        });
+
+        if (hotels.length === 0) {
+            container.innerHTML = '<p class="empty-message">No hotels match your filters.</p>';
+            return;
+        }
+
         let html = '';
 
         hotels.forEach(hotel => {
+            const isExpanded = hotelExpandedStates[hotel.id] !== false; // Default to expanded
+            const expandIcon = isExpanded ? '📂' : '📁';
+            const expandText = isExpanded ? 'Collapse' : 'Expand';
+
             html += `
                 <div class="hotel-management-card">
                     <div class="hotel-header">
-                        <div>
+                        <div class="hotel-info">
                             <h3>${getHotelTypeEmoji(hotel.type)} ${hotel.name}</h3>
                             ${selectedHotelIds.includes(hotel.id) ? '<span class="hotel-status selected">Selected for Today</span>' : '<span class="hotel-status not-selected">Not Selected</span>'}
                         </div>
-                        <div>
+                        <div class="hotel-actions">
                             <button class="btn btn-info btn-small" onclick="editHotelDetails('${hotel.id}')">
                                 ✏️ Edit Details
                             </button>
@@ -176,13 +218,16 @@ async function displayHotelsManagement() {
                             <button class="btn btn-secondary btn-small" onclick="openImportModal('${hotel.id}')">
                                 Import CSV
                             </button>
+                            <button class="btn btn-outline btn-small" onclick="toggleHotelExpansion('${hotel.id}')" title="${expandText} Menu">
+                                ${expandIcon} ${expandText}
+                            </button>
                             <button class="btn btn-danger btn-small" onclick="deleteHotel('${hotel.id}')">
                                 Delete Hotel
                             </button>
                         </div>
                     </div>
 
-                    <div class="menu-items-container">
+                    <div class="menu-items-container" id="menu-container-${hotel.id}" style="display: ${isExpanded ? 'block' : 'none'};">
                         ${displayHotelMenuItems(hotel)}
                     </div>
                 </div>
@@ -190,6 +235,9 @@ async function displayHotelsManagement() {
         });
 
         container.innerHTML = html;
+
+        // Update expand/collapse button states
+        setTimeout(updateExpandCollapseButtons, 100);
     } catch (error) {
         console.error('Error displaying hotels management:', error);
         showToast('Error loading hotels management.', 'error');
@@ -610,4 +658,85 @@ async function setupDangerZone() {
             }
         }
     });
+}
+
+// Setup search and filter controls
+function setupSearchAndFilters() {
+    // Search input
+    document.getElementById('hotelSearch').addEventListener('input', function(e) {
+        currentHotelFilters.search = e.target.value.trim();
+        displayHotelsManagement();
+    });
+
+    // Type filter
+    document.getElementById('hotelTypeFilter').addEventListener('change', function(e) {
+        currentHotelFilters.type = e.target.value;
+        displayHotelsManagement();
+    });
+
+    // Status filter
+    document.getElementById('hotelStatusFilter').addEventListener('change', function(e) {
+        currentHotelFilters.status = e.target.value;
+        displayHotelsManagement();
+    });
+
+    // Expand/Collapse all buttons
+    document.getElementById('expandAllBtn').addEventListener('click', function() {
+        const hotels = document.querySelectorAll('[id^="menu-container-"]');
+        hotels.forEach(container => {
+            container.style.display = 'block';
+            const hotelId = container.id.replace('menu-container-', '');
+            hotelExpandedStates[hotelId] = true;
+        });
+        // Update button states
+        updateExpandCollapseButtons();
+    });
+
+    document.getElementById('collapseAllBtn').addEventListener('click', function() {
+        const hotels = document.querySelectorAll('[id^="menu-container-"]');
+        hotels.forEach(container => {
+            container.style.display = 'none';
+            const hotelId = container.id.replace('menu-container-', '');
+            hotelExpandedStates[hotelId] = false;
+        });
+        // Update button states
+        updateExpandCollapseButtons();
+    });
+}
+
+// Toggle individual hotel expansion
+function toggleHotelExpansion(hotelId) {
+    const container = document.getElementById(`menu-container-${hotelId}`);
+    if (container) {
+        const isExpanded = container.style.display !== 'none';
+        container.style.display = isExpanded ? 'none' : 'block';
+        hotelExpandedStates[hotelId] = !isExpanded;
+        updateExpandCollapseButtons();
+    }
+}
+
+// Update expand/collapse button states based on current expansion state
+function updateExpandCollapseButtons() {
+    const containers = document.querySelectorAll('[id^="menu-container-"]');
+    const expandAllBtn = document.getElementById('expandAllBtn');
+    const collapseAllBtn = document.getElementById('collapseAllBtn');
+
+    if (containers.length === 0) return;
+
+    let allExpanded = true;
+    let allCollapsed = true;
+
+    containers.forEach(container => {
+        if (container.style.display === 'none') {
+            allExpanded = false;
+        } else {
+            allCollapsed = false;
+        }
+    });
+
+    expandAllBtn.disabled = allExpanded;
+    collapseAllBtn.disabled = allCollapsed;
+
+    expandAllBtn.style.opacity = allExpanded ? '0.5' : '1';
+    collapseAllBtn.style.opacity = allCollapsed ? '0.5' : '1';
 }

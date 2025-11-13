@@ -4073,3 +4073,99 @@ tr.completed .order-checkbox {
 .toast:nth-child(4) {
     bottom: 230px;
 }
+
+/* ADMIN CONTROLS */
+.admin-controls {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+    padding: 20px;
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+}
+
+.control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.control-group label {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    margin-bottom: 4px;
+}
+
+.admin-controls .search-input,
+.admin-controls .filter-select {
+    padding: 12px 16px;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-tertiary) 100%);
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.admin-controls .search-input:focus,
+.admin-controls .filter-select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 4px rgba(0, 255, 136, 0.15), 0 4px 12px rgba(0, 255, 136, 0.2);
+    transform: translateY(-1px);
+    background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+}
+
+.admin-controls .search-input:hover,
+.admin-controls .filter-select:hover {
+    border-color: var(--primary-color);
+    background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 255, 136, 0.15);
+}
+
+/* HOTEL HEADER WITH EXPAND/COLLAPSE */
+.hotel-info {
+    flex: 1;
+}
+
+.hotel-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.hotel-actions .btn {
+    padding: 6px 10px;
+    font-size: 0.85rem;
+}
+
+/* RESPONSIVE ADMIN CONTROLS */
+@media (max-width: 768px) {
+    .admin-controls {
+        grid-template-columns: 1fr;
+        gap: 12px;
+        padding: 15px;
+    }
+
+    .control-group {
+        gap: 6px;
+    }
+
+    .hotel-actions {
+        justify-content: center;
+        margin-top: 10px;
+    }
+
+    .hotel-actions .btn {
+        flex: 1;
+        min-width: 80px;
+    }
+}

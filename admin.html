@@ -74,6 +74,35 @@
             <div class="card">
                 <h2>⚙️ Manage Hotels & Menus</h2>
                 <p class="card-description">Edit restaurant details and manage their menu items</p>
+
+                <!-- Search and Filter Controls -->
+                <div class="admin-controls">
+                    <div class="control-group">
+                        <label for="hotelSearch">🔍 Search Hotels</label>
+                        <input type="text" id="hotelSearch" placeholder="Search by hotel name..." class="search-input">
+                    </div>
+                    <div class="control-group">
+                        <label for="hotelTypeFilter">🏷️ Filter by Type</label>
+                        <select id="hotelTypeFilter" class="filter-select">
+                            <option value="all">All Types</option>
+                            <option value="veg">🥬 Vegetarian</option>
+                            <option value="non-veg">🍖 Non-Vegetarian</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label for="hotelStatusFilter">📊 Filter by Status</label>
+                        <select id="hotelStatusFilter" class="filter-select">
+                            <option value="all">All Hotels</option>
+                            <option value="selected">Selected for Today</option>
+                            <option value="not-selected">Not Selected</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <button id="expandAllBtn" class="btn btn-secondary" title="Expand All Menus">📂 Expand All</button>
+                        <button id="collapseAllBtn" class="btn btn-secondary" title="Collapse All Menus">📁 Collapse All</button>
+                    </div>
+                </div>
+
                 <div id="hotelsManagement"></div>
 
                 <!-- Edit Hotel Details Modal -->
