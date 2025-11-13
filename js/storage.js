@@ -308,10 +308,10 @@ const StorageManager = {
         try {
             const themeRef = firebaseRef(StorageManager.PATHS.THEME);
             const snapshot = await firebaseGet(themeRef);
-            return snapshot.val() || 'light';
+            return snapshot.val() || 'retro-light';
         } catch (error) {
             console.error('Error fetching theme:', error);
-            return 'light';
+            return 'retro-light';
         }
     },
 

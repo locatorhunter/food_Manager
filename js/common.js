@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeBanner();
     setActivePage();
     initializeMobileUX();
+    initializeTheme();
 });
 
 function initializeMobileUX() {
@@ -79,6 +80,8 @@ function initializeNavbar() {
                     <li><a href="dashboard.html" class="nav-link" data-page="dashboard">Dashboard</a></li>
                     <li><a href="admin.html" class="nav-link" data-page="admin">Admin</a></li>
                 </ul>
+
+                <button class="theme-toggle" id="themeToggle" title="Toggle theme">🌙</button>
             </div>
         </div>
     `;
@@ -103,6 +106,59 @@ function initializeNavbar() {
             });
         }
     }
+}
+
+async function initializeTheme() {
+    // Load saved theme (defaults to retro-light arcade pastel theme)
+    const savedTheme = await StorageManager.getTheme();
+    setTheme(savedTheme);
+
+    // Add theme toggle event listener
+    const themeToggle = document.getElementById('themeToggle');
+    if (themeToggle) {
+        themeToggle.addEventListener('click', toggleTheme);
+    }
+}
+
+function setTheme(theme) {
+    const body = document.body;
+    const themeToggle = document.getElementById('themeToggle');
+
+    // Remove all theme classes
+    body.classList.remove('dark-mode', 'retro-dark', 'retro-light');
+
+    if (theme === 'dark') {
+        body.classList.add('dark-mode');
+        if (themeToggle) themeToggle.textContent = '☀️';
+    } else if (theme === 'retro-dark') {
+        body.classList.add('retro-dark');
+        if (themeToggle) themeToggle.textContent = '🎨';
+    } else if (theme === 'retro-light') {
+        body.classList.add('retro-light');
+        if (themeToggle) themeToggle.textContent = '🌞';
+    } else {
+        // light
+        if (themeToggle) themeToggle.textContent = '🌙';
+    }
+}
+
+async function toggleTheme() {
+    const themes = ['light', 'dark', 'retro-dark', 'retro-light'];
+    let currentTheme = 'light';
+
+    if (document.body.classList.contains('dark-mode')) {
+        currentTheme = 'dark';
+    } else if (document.body.classList.contains('retro-dark')) {
+        currentTheme = 'retro-dark';
+    } else if (document.body.classList.contains('retro-light')) {
+        currentTheme = 'retro-light';
+    }
+
+    const currentIndex = themes.indexOf(currentTheme);
+    const newTheme = themes[(currentIndex + 1) % themes.length];
+
+    setTheme(newTheme);
+    await StorageManager.setTheme(newTheme);
 }
 
 async function initializeBanner() {

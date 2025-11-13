@@ -3,49 +3,93 @@
    Modern, Responsive, Dark/Light Mode
    ======================================== */
 
-/* CSS Variables for Dark Gradient Theme */
+/* CSS Variables for Light Theme (Modern Blue) */
 :root {
-    --primary-color: #8a8300; /* Bright green */
-    --primary-dark: #04d5fa; /* Darker green */
-    --secondary-color: #6d5e5e; /* Bright red */
-    --danger-color: #d81c1c; /* Light red */
-    --warning-color: #FFAA00; /* Orange */
-    --success-color: #00FF88; /* Bright green */
-    --disabled-color: #666666;
+    --primary-color: #2563eb; /* Modern blue */
+    --primary-dark: #1d4ed8; /* Darker blue */
+    --secondary-color: #64748b; /* Slate */
+    --danger-color: #dc2626; /* Red */
+    --warning-color: #f59e0b; /* Amber */
+    --success-color: #10b981; /* Emerald */
+    --disabled-color: #9ca3af;
 
-    --bg-primary: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%); /* Dark gradient */
-    --bg-secondary: linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%); /* Darker gradient */
-    --bg-tertiary: linear-gradient(135deg, #333333 0%, #404040 100%); /* Medium dark gradient */
-    --bg-accent: linear-gradient(135deg, #636036 0%, #1b2c31 100%); /* Green to red gradient */
+    --bg-primary: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); /* Clean white gradient */
+    --bg-secondary: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%); /* Light gray gradient */
+    --bg-tertiary: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%); /* Medium light gradient */
+    --bg-accent: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%); /* Blue gradient */
 
-    --text-primary: #FFFFFF; /* White text */
-    --text-secondary: #CCCCCC; /* Light gray */
-    --text-tertiary: #999999; /* Medium gray */
+    --text-primary: #1e293b; /* Dark slate */
+    --text-secondary: #64748b; /* Medium slate */
+    --text-tertiary: #94a3b8; /* Light slate */
 
-    --border-color: #555555; /* Dark gray borders */
-    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
-    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.4);
+    --border-color: #e2e8f0; /* Light borders */
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.07);
 
     --navbar-height: 70px;
     --banner-height: 120px;
     --transition-speed: 0.3s;
 }
 
-/* Dark Mode Variables */
+/* Dark Mode Variables - Warm Dark */
 body.dark-mode {
-    --bg-primary: #2A3441;
-    --bg-secondary: #1E2530;
-    --bg-tertiary: #151B23;
+    --bg-primary: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); /* Dark slate gradient */
+    --bg-secondary: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); /* Darker slate gradient */
+    --bg-tertiary: linear-gradient(135deg, #334155 0%, #475569 100%); /* Medium dark gradient */
 
-    --text-primary: #F8F9FA;
-    --text-secondary: #B8C5D1;
-    --text-tertiary: #7A8B99;
+    --text-primary: #f8fafc; /* Off-white text */
+    --text-secondary: #cbd5e1; /* Light slate */
+    --text-tertiary: #94a3b8; /* Medium slate */
 
-    --border-color: #4A5A6A;
+    --border-color: #475569; /* Slate borders */
     --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
     --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.4);
     --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.6), 0 4px 6px -2px rgba(0, 0, 0, 0.5);
+}
+
+/* Retro Dark Theme Variables - Cyberpunk Neon */
+body.retro-dark {
+    --bg-primary: #0a0a1a; /* Deep Navy Blue */
+    --bg-secondary: rgba(26, 10, 46, 0.7); /* Semi-transparent Purple glass */
+    --bg-tertiary: rgba(26, 10, 46, 0.5); /* Lighter purple glass */
+
+    --text-primary: #00ffff; /* Electric Cyan */
+    --text-secondary: #ff00ff; /* Electric Magenta */
+    --text-tertiary: #ff00ff; /* Electric Magenta */
+
+    --border-color: #8000ff; /* Electric Purple */
+    --primary-color: #ff0080; /* Hot Magenta */
+    --secondary-color: #00ffff; /* Electric Cyan */
+    --danger-color: #ff0040; /* Bright Red */
+    --warning-color: #ffff00; /* Electric Yellow */
+    --success-color: #00ff80; /* Electric Green */
+
+    --shadow-sm: 0 1px 2px 0 rgba(255, 0, 128, 0.3);
+    --shadow-md: 0 4px 6px -1px rgba(255, 0, 128, 0.4), 0 2px 4px -1px rgba(255, 0, 128, 0.3);
+    --shadow-lg: 0 10px 15px -3px rgba(255, 0, 128, 0.5), 0 4px 6px -2px rgba(255, 0, 128, 0.4);
+}
+
+/* Retro Light Theme Variables - Arcade Pastel */
+body.retro-light {
+    --bg-primary: #fff8e1; /* Cream background */
+    --bg-secondary: rgba(255, 245, 200, 0.8); /* Semi-transparent cream glass */
+    --bg-tertiary: rgba(255, 245, 200, 0.6); /* Lighter cream glass */
+
+    --text-primary: #2d1b69; /* Deep Purple */
+    --text-secondary: #d81b60; /* Pink */
+    --text-tertiary: #d81b60; /* Pink */
+
+    --border-color: #ff6b35; /* Coral Orange */
+    --primary-color: #ff6b35; /* Coral Orange */
+    --secondary-color: #4ecdc4; /* Teal */
+    --danger-color: #e91e63; /* Pink */
+    --warning-color: #ff9800; /* Orange */
+    --success-color: #4caf50; /* Green */
+
+    --shadow-sm: 0 1px 2px 0 rgba(255, 107, 53, 0.2);
+    --shadow-md: 0 4px 6px -1px rgba(255, 107, 53, 0.3), 0 2px 4px -1px rgba(255, 107, 53, 0.2);
+    --shadow-lg: 0 10px 15px -3px rgba(255, 107, 53, 0.4), 0 4px 6px -2px rgba(255, 107, 53, 0.3);
 }
 
 /* Reset & Base Styles */
@@ -61,14 +105,14 @@ body {
     background-attachment: fixed;
     color: var(--text-primary);
     line-height: 1.6;
-    transition: background-color var(--transition-speed), color var(--transition-speed);
+    transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
     min-height: 100vh;
     padding-top: var(--navbar-height);
 }
 
 /* NAVBAR */
 .navbar {
-    background: linear-gradient(135deg, rgba(26, 26, 26, 0.95) 0%, rgba(45, 45, 45, 0.95) 100%);
+    background: linear-gradient(135deg, rgba(248, 248, 248, 0.95) 0%, rgba(240, 240, 240, 0.95) 100%);
     backdrop-filter: blur(10px);
     border-bottom: 1px solid var(--border-color);
     box-shadow: var(--shadow-sm);
@@ -78,7 +122,20 @@ body {
     right: 0;
     z-index: 1000;
     height: var(--navbar-height);
-    transition: all var(--transition-speed);
+    transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body.dark-mode .navbar {
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%);
+}
+
+/* Glass navbar for retro themes */
+body.retro-dark .navbar {
+    background: rgba(26, 10, 46, 0.7);
+}
+
+body.retro-light .navbar {
+    background: rgba(255, 245, 200, 0.8);
 }
 
 .navbar-container {
@@ -99,6 +156,10 @@ body {
     color: var(--text-primary);
     font-weight: 700;
     font-size: 1.5rem;
+}
+
+body.dark-mode .navbar-brand {
+    color: var(--text-primary);
 }
 
 .navbar-logo {
@@ -152,7 +213,7 @@ body {
     align-items: center;
     justify-content: center;
     font-size: 1.3rem;
-    transition: all 0.3s;
+    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .theme-toggle:hover {
@@ -259,9 +320,16 @@ main {
     box-shadow: var(--shadow-md);
     margin-bottom: 30px;
     border: 1px solid var(--border-color);
-    transition: all var(--transition-speed);
+    transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
     overflow: hidden;
+}
+
+/* Glass effect for retro themes */
+body.retro-dark .card,
+body.retro-light .card {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
 }
 
 .card::before {
@@ -615,7 +683,7 @@ main {
     color: var(--text-primary);
     font-size: 1rem;
     font-weight: 500;
-    transition: all 0.3s ease;
+    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
@@ -651,7 +719,7 @@ main {
     cursor: pointer;
     font-size: 1rem;
     font-weight: 600;
-    transition: all 0.2s;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     text-decoration: none;
     display: inline-block;
     text-align: center;
@@ -1971,7 +2039,7 @@ footer {
     border-top: 2px solid var(--primary-color);
     padding: 40px 0 20px;
     color: var(--text-secondary);
-    margin-top: 80px;
+    margin-top: 0px;
     position: relative;
 }
 
