@@ -417,8 +417,7 @@ async function showGroupOrderingModal(total, maxAmount, items) {
     const infoHtml = `
         <div class="limit-exceeded">⚠️ Order Total Exceeds Limit</div>
         <div class="current-total">Your order: ${formatCurrency(total)} (${totalItems} items)</div>
-        <div class="limit-info">Individual limit: ${formatCurrency(maxAmount)} per person<br>
-        You need ${formatCurrency(excess)} more to place this order.</div>
+        <div class="limit-info">Individual limit: ${formatCurrency(maxAmount)} per person</div>
         <div style="margin-top: 12px; color: var(--text-secondary);">
             💡 <strong>Solution:</strong> Order with friends to share the cost!
         </div>
@@ -974,11 +973,18 @@ function showCartModal() {
     cartItems.forEach(item => {
         const itemKey = `${item.hotelId}-${item.id}`;
         const itemTotal = item.price * item.quantity;
+        const itemImages = item.images || [];
+        const hasImages = itemImages.length > 0;
+        const mainImage = hasImages ? itemImages[0] : null;
 
         itemsHtml += `
-            <div class="cart-item">
+            <div class="cart-item" data-item-key="${itemKey}" tabindex="0">
+                <div class="cart-item-image">
+                    ${mainImage ? `<img src="${mainImage}" alt="${item.name}" class="cart-item-thumb">` : '<div class="cart-item-no-image">🍽️</div>'}
+                </div>
                 <div class="cart-item-info">
                     <div class="cart-item-name">${item.name}</div>
+                    <div class="cart-item-category">${item.category || 'No category'}</div>
                     <div class="cart-item-details">
                         <span class="cart-item-price">${formatCurrency(item.price)} each</span>
                         <span class="cart-item-hotel">🏨 ${item.hotelName}</span>
@@ -986,12 +992,12 @@ function showCartModal() {
                 </div>
                 <div class="cart-item-controls">
                     <div class="cart-quantity-controls">
-                        <button class="quantity-btn" data-action="decrease" data-item="${itemKey}">−</button>
-                        <input type="number" class="quantity-input" value="${item.quantity}" readonly min="0">
-                        <button class="quantity-btn" data-action="increase" data-item="${itemKey}">+</button>
+                        <button class="quantity-btn quantity-decrease" data-action="decrease" data-item="${itemKey}" aria-label="Decrease quantity">−</button>
+                        <input type="number" class="quantity-input" value="${item.quantity}" readonly min="0" aria-label="Quantity">
+                        <button class="quantity-btn quantity-increase" data-action="increase" data-item="${itemKey}" aria-label="Increase quantity">+</button>
                     </div>
                     <div class="cart-item-total">${formatCurrency(itemTotal)}</div>
-                    <button class="btn btn-danger btn-small" data-action="remove" data-item="${itemKey}">Remove</button>
+                    <button class="btn btn-danger btn-small cart-remove-btn" data-action="remove" data-item="${itemKey}" aria-label="Remove item">🗑️</button>
                 </div>
             </div>
         `;
@@ -1012,7 +1018,7 @@ function showCartModal() {
         <div style="background: var(--bg-primary); border-radius: 12px; max-width: 600px; width: 90%; height: 80vh; display: flex; flex-direction: column;">
             <div class="cart-modal-header" style="flex-shrink: 0; padding: 20px; border-bottom: 1px solid var(--border-color);">
                 <h3>Your Cart (${cartItems.length} items)</h3>
-                <span class="cart-close" data-action="close" style="position: absolute; top: 10px; right: 15px; font-size: 24px; cursor: pointer;">&times;</span>
+                <span class="cart-close" data-action="close">&times;</span>
             </div>
             <div class="cart-items-list" style="flex: 1; overflow-y: auto; padding: 20px;">
                 ${itemsHtml}
@@ -1089,6 +1095,56 @@ function showCartModal() {
                 closeCartModal();
             }
         });
+
+        // Add keyboard navigation
+        modal.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeCartModal();
+            }
+        });
+
+        // Focus management
+        const firstFocusable = modal.querySelector('.cart-item, .cart-close, [data-action="continue"]');
+        if (firstFocusable) {
+            firstFocusable.focus();
+        }
+
+        // Add touch/swipe support for mobile
+        if ('ontouchstart' in window) {
+            let startX = 0;
+            let startY = 0;
+
+            modal.addEventListener('touchstart', (e) => {
+                startX = e.touches[0].clientX;
+                startY = e.touches[0].clientY;
+            }, { passive: true });
+
+            modal.addEventListener('touchend', (e) => {
+                if (!startX || !startY) return;
+
+                const endX = e.changedTouches[0].clientX;
+                const endY = e.changedTouches[0].clientY;
+                const diffX = startX - endX;
+                const diffY = startY - endY;
+
+                // Detect swipe left to remove item
+                if (Math.abs(diffX) > Math.abs(diffY) && diffX > 50) {
+                    const target = e.target.closest('.cart-item');
+                    if (target) {
+                        const itemKey = target.getAttribute('data-item-key');
+                        if (itemKey && selectedItems[itemKey]) {
+                            // Add swipe animation
+                            target.style.transform = 'translateX(-100%)';
+                            target.style.opacity = '0';
+                            target.style.transition = 'all 0.3s ease';
+                            setTimeout(() => {
+                                removeFromCart(itemKey);
+                            }, 300);
+                        }
+                    }
+                }
+            });
+        }
     }, 10);
 }
 
@@ -1105,25 +1161,54 @@ function showEmptyCartModal() {
     if (!modal) return;
 
     const emptyCartHtml = `
-        <div style="background: var(--bg-primary); border-radius: 12px; max-width: 400px; width: 90%; height: 300px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px;">
-            <div style="font-size: 48px; margin-bottom: 20px;">🛒</div>
-            <h3 style="margin-bottom: 10px; color: var(--text-primary);">Your Cart is Empty</h3>
-            <p style="color: var(--text-secondary); margin-bottom: 20px;">Add some delicious items to get started!</p>
-            <button class="btn btn-primary" data-action="continue" style="width: 100%;">Continue Shopping</button>
+        <div style="background: var(--bg-primary); border-radius: 12px; max-width: 500px; width: 90%; height: 80vh; display: flex; flex-direction: column;">
+            <div class="cart-modal-header" style="flex-shrink: 0; padding: 20px; border-bottom: 1px solid var(--border-color);">
+                <h3>Your Cart (0 items)</h3>
+                <span class="cart-close" data-action="close">&times;</span>
+            </div>
+            <div class="cart-items-list" style="flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 40px 20px;">
+                <div style="font-size: 64px; margin-bottom: 20px; opacity: 0.7;">🛒</div>
+                <h3 style="margin-bottom: 10px; color: var(--text-primary); font-size: 24px;">Your Cart is Empty</h3>
+                <p style="color: var(--text-secondary); margin-bottom: 30px; font-size: 16px; max-width: 300px;">Discover delicious meals from our partner hotels and start building your perfect lunch order!</p>
+                <button class="btn btn-primary" data-action="continue" style="padding: 12px 24px; font-size: 16px; border-radius: 8px;">
+                    🍽️ Start Exploring Menu
+                </button>
+            </div>
+            <div class="cart-summary" style="flex-shrink: 0; padding: 20px; border-top: 1px solid var(--border-color); text-align: center;">
+                <div class="cart-total" style="color: var(--text-secondary);">
+                    <strong>Total: ₹0.00 (0 items)</strong>
+                </div>
+            </div>
         </div>
     `;
 
     modal.innerHTML = emptyCartHtml;
 
-    // Add event listener for continue shopping button
-    modal.addEventListener('click', function(e) {
-        const target = e.target;
-        const action = target.getAttribute('data-action');
-
-        if (action === 'continue' || target === modal) {
-            closeCartModal();
+    // Add event listeners
+    setTimeout(() => {
+        // Handle close button
+        const closeBtn = modal.querySelector('.cart-close');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                closeCartModal();
+            });
         }
-    });
+
+        // Handle continue shopping button
+        const continueBtn = modal.querySelector('[data-action="continue"]');
+        if (continueBtn) {
+            continueBtn.addEventListener('click', () => {
+                closeCartModal();
+            });
+        }
+
+        // Close modal on background click
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeCartModal();
+            }
+        });
+    }, 10);
 }
 
 async function updateCartQuantity(itemKey, newQuantity) {
@@ -1136,7 +1221,7 @@ async function updateCartQuantity(itemKey, newQuantity) {
         selectedItems[itemKey].quantity = newQuantity;
         updateMenuDisplay(itemKey);
         await displayHotelsMenu(); // Refresh floating summary
-        showCartModal(); // Refresh cart modal
+        updateCartModalItem(itemKey, newQuantity); // Update specific item in cart modal
     }
 }
 
@@ -1150,12 +1235,81 @@ async function removeFromCart(itemKey) {
             // Cart is now empty - show empty cart modal
             showEmptyCartModal();
         } else {
-            // Cart still has items - refresh cart modal
-            showCartModal();
+            // Cart still has items - remove item from current modal
+            removeCartModalItem(itemKey);
+            updateCartModalTotals();
         }
 
         // Always refresh the menu display to update floating summary
         await displayHotelsMenu();
+    }
+}
+
+// Update specific cart item in the modal without recreating the entire modal
+function updateCartModalItem(itemKey, newQuantity) {
+    const cartItem = document.querySelector(`.cart-item[data-item-key="${itemKey}"]`);
+    if (!cartItem) return;
+
+    // Temporarily disable buttons to prevent rapid clicking issues
+    const buttons = cartItem.querySelectorAll('button');
+    buttons.forEach(btn => btn.disabled = true);
+
+    // Update quantity input
+    const quantityInput = cartItem.querySelector('.quantity-input');
+    if (quantityInput) {
+        quantityInput.value = newQuantity;
+    }
+
+    // Update item total
+    const item = selectedItems[itemKey];
+    if (item) {
+        const itemTotal = item.price * newQuantity;
+        const totalElement = cartItem.querySelector('.cart-item-total');
+        if (totalElement) {
+            totalElement.textContent = formatCurrency(itemTotal);
+        }
+    }
+
+    // Update overall totals
+    updateCartModalTotals();
+
+    // Re-enable buttons after a short delay
+    setTimeout(() => {
+        buttons.forEach(btn => btn.disabled = false);
+    }, 100);
+}
+
+// Remove specific cart item from the modal
+function removeCartModalItem(itemKey) {
+    const cartItem = document.querySelector(`.cart-item[data-item-key="${itemKey}"]`);
+    if (cartItem) {
+        // Add fade out animation
+        cartItem.style.transition = 'all 0.3s ease';
+        cartItem.style.opacity = '0';
+        cartItem.style.transform = 'translateX(-20px)';
+
+        setTimeout(() => {
+            cartItem.remove();
+        }, 300);
+    }
+}
+
+// Update cart modal totals and header
+function updateCartModalTotals() {
+    const cartItems = Object.values(selectedItems).filter(item => item.quantity > 0);
+    const total = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+
+    // Update header
+    const headerTitle = document.querySelector('.cart-modal-header h3');
+    if (headerTitle) {
+        headerTitle.textContent = `Your Cart (${totalItems} items)`;
+    }
+
+    // Update summary
+    const totalElement = document.querySelector('.cart-total strong');
+    if (totalElement) {
+        totalElement.textContent = `Total: ${formatCurrency(total)} (${totalItems} items)`;
     }
 }
 
