@@ -55,18 +55,22 @@
                 <h2>➕ Add New Hotel</h2>
                 <p class="card-description">Register a new restaurant to the system</p>
                 <form id="hotelForm">
-                    <div class="form-group">
-                        <label for="hotelName">Hotel Name</label>
-                        <input type="text" id="hotelName" placeholder="Enter restaurant name" required>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="hotelName">Hotel Name</label>
+                            <input type="text" id="hotelName" placeholder="Enter restaurant name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="hotelType">Type</label>
+                            <select id="hotelType" required>
+                                <option value="veg">🥬 Vegetarian</option>
+                                <option value="non-veg">🍖 Non-Vegetarian</option>
+                            </select>
+                        </div>
+                        <div class="form-group form-group-button">
+                            <button type="submit" class="btn btn-primary">Add Hotel</button>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label for="hotelType">Type</label>
-                        <select id="hotelType" required>
-                            <option value="veg">🥬 Vegetarian</option>
-                            <option value="non-veg">🍖 Non-Vegetarian</option>
-                        </select>
-                    </div>
-                    <button type="submit" class="btn btn-primary">Add Hotel</button>
                 </form>
             </div>
 
