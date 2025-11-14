@@ -4688,6 +4688,14 @@ tr.completed .order-checkbox {
     transform: scale(1.1);
 }
 
+.cart-quantity-controls .quantity-btn:disabled,
+.cart-remove-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
+    pointer-events: none;
+}
+
 .cart-quantity-controls .quantity-decrease {
     background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
     border-color: #fca5a5;

@@ -417,8 +417,7 @@ async function showGroupOrderingModal(total, maxAmount, items) {
     const infoHtml = `
         <div class="limit-exceeded">⚠️ Order Total Exceeds Limit</div>
         <div class="current-total">Your order: ${formatCurrency(total)} (${totalItems} items)</div>
-        <div class="limit-info">Individual limit: ${formatCurrency(maxAmount)} per person<br>
-        You need ${formatCurrency(excess)} more to place this order.</div>
+        <div class="limit-info">Individual limit: ${formatCurrency(maxAmount)} per person</div>
         <div style="margin-top: 12px; color: var(--text-secondary);">
             💡 <strong>Solution:</strong> Order with friends to share the cost!
         </div>
@@ -1133,9 +1132,11 @@ function showCartModal() {
                     const target = e.target.closest('.cart-item');
                     if (target) {
                         const itemKey = target.getAttribute('data-item-key');
-                        if (itemKey) {
+                        if (itemKey && selectedItems[itemKey]) {
+                            // Add swipe animation
                             target.style.transform = 'translateX(-100%)';
                             target.style.opacity = '0';
+                            target.style.transition = 'all 0.3s ease';
                             setTimeout(() => {
                                 removeFromCart(itemKey);
                             }, 300);
@@ -1220,7 +1221,7 @@ async function updateCartQuantity(itemKey, newQuantity) {
         selectedItems[itemKey].quantity = newQuantity;
         updateMenuDisplay(itemKey);
         await displayHotelsMenu(); // Refresh floating summary
-        showCartModal(); // Refresh cart modal
+        updateCartModalItem(itemKey, newQuantity); // Update specific item in cart modal
     }
 }
 
@@ -1234,12 +1235,81 @@ async function removeFromCart(itemKey) {
             // Cart is now empty - show empty cart modal
             showEmptyCartModal();
         } else {
-            // Cart still has items - refresh cart modal
-            showCartModal();
+            // Cart still has items - remove item from current modal
+            removeCartModalItem(itemKey);
+            updateCartModalTotals();
         }
 
         // Always refresh the menu display to update floating summary
         await displayHotelsMenu();
+    }
+}
+
+// Update specific cart item in the modal without recreating the entire modal
+function updateCartModalItem(itemKey, newQuantity) {
+    const cartItem = document.querySelector(`.cart-item[data-item-key="${itemKey}"]`);
+    if (!cartItem) return;
+
+    // Temporarily disable buttons to prevent rapid clicking issues
+    const buttons = cartItem.querySelectorAll('button');
+    buttons.forEach(btn => btn.disabled = true);
+
+    // Update quantity input
+    const quantityInput = cartItem.querySelector('.quantity-input');
+    if (quantityInput) {
+        quantityInput.value = newQuantity;
+    }
+
+    // Update item total
+    const item = selectedItems[itemKey];
+    if (item) {
+        const itemTotal = item.price * newQuantity;
+        const totalElement = cartItem.querySelector('.cart-item-total');
+        if (totalElement) {
+            totalElement.textContent = formatCurrency(itemTotal);
+        }
+    }
+
+    // Update overall totals
+    updateCartModalTotals();
+
+    // Re-enable buttons after a short delay
+    setTimeout(() => {
+        buttons.forEach(btn => btn.disabled = false);
+    }, 100);
+}
+
+// Remove specific cart item from the modal
+function removeCartModalItem(itemKey) {
+    const cartItem = document.querySelector(`.cart-item[data-item-key="${itemKey}"]`);
+    if (cartItem) {
+        // Add fade out animation
+        cartItem.style.transition = 'all 0.3s ease';
+        cartItem.style.opacity = '0';
+        cartItem.style.transform = 'translateX(-20px)';
+
+        setTimeout(() => {
+            cartItem.remove();
+        }, 300);
+    }
+}
+
+// Update cart modal totals and header
+function updateCartModalTotals() {
+    const cartItems = Object.values(selectedItems).filter(item => item.quantity > 0);
+    const total = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+
+    // Update header
+    const headerTitle = document.querySelector('.cart-modal-header h3');
+    if (headerTitle) {
+        headerTitle.textContent = `Your Cart (${totalItems} items)`;
+    }
+
+    // Update summary
+    const totalElement = document.querySelector('.cart-total strong');
+    if (totalElement) {
+        totalElement.textContent = `Total: ${formatCurrency(total)} (${totalItems} items)`;
     }
 }
 
