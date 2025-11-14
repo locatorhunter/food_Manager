@@ -26,7 +26,6 @@ async function initializeDashboard() {
         await loadOrders();
         displayOrders();
         await displayOrderSummary();
-        updateStatistics();
     });
 }
 
@@ -244,21 +243,30 @@ function displayOrdersTable(orders, container) {
 
         const completedClass = order.completed ? 'completed' : '';
         const checkedAttr = order.completed ? 'checked' : '';
+        const isGroupOrder = order.isGroupOrder;
+        const groupOrderBadge = isGroupOrder ? '<span class="group-order-badge">👥 Group</span>' : '';
 
         html += `
-            <tr class="${completedClass}">
+            <tr class="${completedClass} ${isGroupOrder ? 'group-order-row' : ''}">
                 <td>
                     <input type="checkbox"
                            ${checkedAttr}
                            onchange="toggleOrderStatus('${order.id}')"
                            class="order-checkbox">
+                    ${groupOrderBadge}
                 </td>
                 <td>${formatDate(order.timestamp)}</td>
-                <td>${order.employeeName}</td>
+                <td>
+                    ${order.employeeName}
+                    ${isGroupOrder ? `<br><small style="color: var(--text-secondary);">+ ${order.participants.length - 1} others</small>` : ''}
+                </td>
                 <td>${order.hotelName}</td>
                 <td>${itemsList}</td>
                 <td><strong>${formatCurrency(order.total)}</strong></td>
                 <td>
+                    <button class="btn btn-info btn-small" onclick="showGroupOrderDetails('${order.id}')" title="View Details">
+                        👁️
+                    </button>
                     <button class="btn btn-danger btn-small" onclick="deleteOrderFromDashboard('${order.id}')">
                         🗑️
                     </button>
@@ -357,21 +365,30 @@ function displayGroupedOrders(orders, groupBy, container) {
 
             const completedClass = order.completed ? 'completed' : '';
             const checkedAttr = order.completed ? 'checked' : '';
-
+            const isGroupOrder = order.isGroupOrder;
+            const groupOrderBadge = isGroupOrder ? '<span class="group-order-badge">👥 Group</span>' : '';
+    
             html += `
-                <tr class="${completedClass}">
+                <tr class="${completedClass} ${isGroupOrder ? 'group-order-row' : ''}">
                     <td>
                         <input type="checkbox"
                                ${checkedAttr}
                                onchange="toggleOrderStatus('${order.id}')"
                                class="order-checkbox">
+                        ${groupOrderBadge}
                     </td>
                     <td>${formatDate(order.timestamp)}</td>
-                    <td>${order.employeeName}</td>
+                    <td>
+                        ${order.employeeName}
+                        ${isGroupOrder ? `<br><small style="color: var(--text-secondary);">+ ${order.participants.length - 1} others</small>` : ''}
+                    </td>
                     <td>${order.hotelName}</td>
                     <td>${itemsList}</td>
                     <td><strong>${formatCurrency(order.total)}</strong></td>
                     <td>
+                        <button class="btn btn-info btn-small" onclick="showGroupOrderDetails('${order.id}')" title="View Details">
+                            👁️
+                        </button>
                         <button class="btn btn-danger btn-small" onclick="deleteOrderFromDashboard('${order.id}')">
                             🗑️
                         </button>
@@ -588,7 +605,6 @@ async function displayOrderSummary() {
 
 async function refreshDashboard() {
     await loadOrders();
-    updateStatistics();
     displayOrders();
     await displayOrderSummary();
 }
@@ -669,7 +685,14 @@ function exportToCSV() {
         const date = formatDateOnly(order.timestamp);
         const time = new Date(order.timestamp).toLocaleTimeString('en-IN');
         const items = order.items.map(item => `${item.name} (${item.quantity})`).join('; ');
-        csv += `"${date}","${time}","${order.employeeName}","${order.hotelName}","${items}",${order.total}\n`;
+
+        if (order.isGroupOrder) {
+            // For group orders, include participant details
+            const participants = order.participants.map(p => `${p.name}(${formatCurrency(p.shareAmount)})`).join('; ');
+            csv += `"${date}","${time}","${order.employeeName} (Group)","${order.hotelName}","${items} [Group: ${participants}]",${order.total}\n`;
+        } else {
+            csv += `"${date}","${time}","${order.employeeName}","${order.hotelName}","${items}",${order.total}\n`;
+        }
     });
 
     const blob = new Blob([csv], { type: 'text/csv' });
@@ -843,12 +866,17 @@ async function downloadOrdersPDF() {
             const items = order.items.map(item => `${item.name}(${item.quantity})`).join(', ');
             const total = formatCurrency(order.total);
 
+            let employeeName = order.employeeName;
+            if (order.isGroupOrder) {
+                employeeName += ` (Group: ${order.participants.length})`;
+            }
+
             // Handle long text wrapping
             const maxWidth = 30;
             const wrappedItems = doc.splitTextToSize(items, maxWidth);
 
             doc.text(dateTime, 20, yPosition);
-            doc.text(order.employeeName, 60, yPosition);
+            doc.text(employeeName, 60, yPosition);
             doc.text(order.hotelName, 100, yPosition);
             doc.text(wrappedItems[0], 130, yPosition); // First line of items
             doc.text(total, 170, yPosition);
@@ -864,6 +892,27 @@ async function downloadOrdersPDF() {
                 doc.text(wrappedItems[i], 130, yPosition);
                 yPosition += 8;
             }
+
+            // Add participant details for group orders
+            if (order.isGroupOrder && order.participants) {
+                const participantsText = `Participants: ${order.participants.map(p => `${p.name}(${formatCurrency(p.shareAmount)})`).join(', ')}`;
+                const wrappedParticipants = doc.splitTextToSize(participantsText, 150);
+
+                wrappedParticipants.forEach((line, index) => {
+                    if (yPosition > 270) {
+                        doc.addPage();
+                        yPosition = 30;
+                    }
+                    doc.setFontSize(8);
+                    doc.setTextColor(100, 100, 100); // Gray color for participants
+                    doc.text(line, 20, yPosition);
+                    yPosition += 6;
+                });
+
+                doc.setFontSize(10);
+                doc.setTextColor(0, 0, 0); // Reset to black
+                yPosition += 2; // Add some spacing
+            }
         });
 
         // Save the PDF
@@ -874,6 +923,81 @@ async function downloadOrdersPDF() {
     } catch (error) {
         console.error('Error generating PDF:', error);
         showToast('Error generating PDF', 'error');
+    }
+}
+
+async function showGroupOrderDetails(orderId) {
+    try {
+        const orders = await StorageManager.getOrders();
+        const order = orders.find(o => o.id === orderId);
+
+        if (!order || !order.isGroupOrder) {
+            showToast('Order details not found', 'error');
+            return;
+        }
+
+        let detailsHtml = `
+            <div style="padding: 20px;">
+                <h3>👥 Group Order Details</h3>
+                <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <p><strong>Item:</strong> ${order.items[0].name}</p>
+                    <p><strong>Total Amount:</strong> ${formatCurrency(order.total)}</p>
+                    <p><strong>Hotel:</strong> ${order.hotelName}</p>
+                    <p><strong>Order Time:</strong> ${formatDate(order.timestamp)}</p>
+                </div>
+
+                <h4>Participants (${order.participants.length})</h4>
+                <div style="background: var(--bg-secondary); padding: 15px; border-radius: 8px;">
+        `;
+
+        order.participants.forEach((participant, index) => {
+            detailsHtml += `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border-color);">
+                    <div>
+                        <strong>${participant.name}</strong>
+                        ${index === 0 ? ' <small style="color: var(--text-secondary);">(Primary)</small>' : ''}
+                    </div>
+                    <div style="font-weight: bold; color: var(--primary-color);">
+                        ${formatCurrency(participant.shareAmount)}
+                    </div>
+                </div>
+            `;
+        });
+
+        detailsHtml += `
+                </div>
+            </div>
+        `;
+
+        // Create a simple modal for details
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.style.cssText = `
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); z-index: 10000; display: flex;
+            align-items: center; justify-content: center;
+        `;
+        modal.innerHTML = `
+            <div style="background: var(--bg-primary); border-radius: 12px; max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto;">
+                ${detailsHtml}
+                <div style="padding: 20px; text-align: right;">
+                    <button onclick="this.closest('.modal').remove()" style="padding: 8px 16px; background: var(--primary-color); color: white; border: none; border-radius: 6px; cursor: pointer;">Close</button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        // Close on background click
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                modal.remove();
+            }
+        });
+
+    } catch (error) {
+        console.error('Error showing group order details:', error);
+        showToast('Error loading order details', 'error');
     }
 }
 

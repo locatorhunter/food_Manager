@@ -22,6 +22,7 @@ async function initializeAdminPage() {
         await displayHotelsManagement();
         setupMenuModal();
         setupEditHotelForm();
+        await setupGroupSettings();
         setupDangerZone();
         setupSearchAndFilters();
 
@@ -647,6 +648,49 @@ function setupEditHotelForm() {
     });
 }
 
+async function setupGroupSettings() {
+    // Load current setting
+    const currentLimit = await StorageManager.getMaxAmountPerPerson();
+    document.getElementById('maxAmountPerPerson').value = currentLimit;
+    document.getElementById('currentLimitValue').textContent = `₹${currentLimit}`;
+
+    // Load the full settings object to get update time
+    try {
+        const settingsRef = firebaseRef('settings/maxAmountPerPerson');
+        const snapshot = await firebaseGet(settingsRef);
+        const settingsData = snapshot.val();
+
+        if (settingsData && settingsData.lastUpdated) {
+            const lastUpdated = new Date(settingsData.lastUpdated);
+            const timeAgo = getTimeAgo(lastUpdated);
+            document.getElementById('currentLimitUpdated').textContent = timeAgo;
+        } else {
+            document.getElementById('currentLimitUpdated').textContent = 'Recently';
+        }
+    } catch (error) {
+        console.error('Error loading settings timestamp:', error);
+        document.getElementById('currentLimitUpdated').textContent = 'Recently';
+    }
+
+    // Handle form submission
+    document.getElementById('groupSettingsForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const newLimit = parseFloat(document.getElementById('maxAmountPerPerson').value);
+
+        if (!newLimit || newLimit < 50 || newLimit > 2000) {
+            showToast('Please enter a valid amount between ₹50 and ₹2000', 'error');
+            return;
+        }
+
+        await StorageManager.setMaxAmountPerPerson(newLimit);
+
+        // Update display
+        document.getElementById('currentLimitValue').textContent = `₹${newLimit}`;
+        document.getElementById('currentLimitUpdated').textContent = 'Just now';
+    });
+}
+
 async function setupDangerZone() {
     document.getElementById('clearOrdersBtn').addEventListener('click', async function() {
         const confirmed = await customConfirm('Clear all orders? This cannot be undone!', 'Danger Zone');
@@ -748,4 +792,17 @@ function updateExpandCollapseButtons() {
 
     expandAllBtn.style.opacity = allExpanded ? '0.5' : '1';
     collapseAllBtn.style.opacity = allCollapsed ? '0.5' : '1';
+}
+
+// Helper function to format time ago
+function getTimeAgo(date) {
+    const now = new Date();
+    const diffInSeconds = Math.floor((now - date) / 1000);
+
+    if (diffInSeconds < 60) return 'Just now';
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`;
+    if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)} days ago`;
+
+    return date.toLocaleDateString();
 }

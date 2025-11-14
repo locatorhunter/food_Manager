@@ -8,7 +8,8 @@ const StorageManager = {
         HOTELS: 'hotels',
         SELECTED_HOTELS: 'selectedHotels',
         ORDERS: 'orders',
-        THEME: 'theme'
+        THEME: 'theme',
+        SETTINGS: 'settings'
     },
 
     // Initialize real-time listeners
@@ -235,6 +236,11 @@ const StorageManager = {
             order.timestamp = new Date().toISOString();
             order.date = new Date().toDateString();
             order.completed = false; // Add completed status
+
+            // Set defaults for group order fields if not provided
+            order.isGroupOrder = order.isGroupOrder || false;
+            order.participants = order.participants || [];
+
             const orderRef = firebaseRef(`${StorageManager.PATHS.ORDERS}/${order.id}`);
             await firebaseSet(orderRef, order);
             // Event will be triggered by real-time listener
@@ -321,6 +327,34 @@ const StorageManager = {
             await firebaseSet(themeRef, theme);
         } catch (error) {
             console.error('Error saving theme:', error);
+        }
+    },
+
+    // ===== SETTINGS =====
+    async getMaxAmountPerPerson() {
+        try {
+            const settingsRef = firebaseRef(`${StorageManager.PATHS.SETTINGS}/maxAmountPerPerson`);
+            const snapshot = await firebaseGet(settingsRef);
+            const data = snapshot.val();
+            return data ? (data.amount || 300) : 300; // Default to ₹300
+        } catch (error) {
+            console.error('Error fetching max amount per person:', error);
+            return 300; // Default fallback
+        }
+    },
+
+    async setMaxAmountPerPerson(amount) {
+        try {
+            const settingsRef = firebaseRef(`${StorageManager.PATHS.SETTINGS}/maxAmountPerPerson`);
+            await firebaseSet(settingsRef, {
+                amount: parseFloat(amount),
+                lastUpdated: new Date().toISOString(),
+                updatedBy: 'admin'
+            });
+            showToast(`Max amount per person set to ₹${amount}`);
+        } catch (error) {
+            console.error('Error saving max amount per person:', error);
+            showToast('Error saving setting.', 'error');
         }
     },
 
