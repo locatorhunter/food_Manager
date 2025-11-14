@@ -193,6 +193,10 @@ async function updateBanner() {
                 <div class="banner">
                     <h2>Hotels for Today</h2>
                     <p id="hotelNames">No hotels selected</p>
+                    <div class="delivery-animation">
+                        <div class="road-line"></div>
+                        <div class="office-building">🏢</div>
+                    </div>
                 </div>
             `;
             const bannerContainer = document.getElementById('banner');
@@ -203,7 +207,7 @@ async function updateBanner() {
         }
 
         const hotelDetails = selectedHotels.map(hotel => {
-            let details = `${getHotelTypeEmoji(hotel.type)} ${hotel.name}`;
+            let details = `${hotel.name}`;
             if (hotel.reviews) {
                 details += ` ⭐${hotel.reviews}`;
             }
@@ -217,6 +221,20 @@ async function updateBanner() {
             <div class="banner">
                 <h2>Hotels for Today</h2>
                 <p id="hotelNames">${hotelDetails}</p>
+                <div class="delivery-animation">
+                    <div class="sky-clouds">
+                        <div class="cloud cloud-1">☁️</div>
+                        <div class="cloud cloud-2">☁️</div>
+                        <div class="cloud cloud-3">☁️</div>
+                        <div class="cloud cloud-4">☁️</div>
+                    </div>
+                    <div class="delivery-food food-1">🍕</div>
+                    <div class="delivery-food food-2">🍔</div>
+                    <div class="delivery-food food-3">🌮</div>
+                    <div class="delivery-food food-4">🍜</div>
+                    <div class="delivery-food food-5">🥪</div>
+                    <div class="office-building">🏢</div>
+                </div>
             </div>
         `;
 
@@ -230,6 +248,9 @@ async function updateBanner() {
             <div class="banner">
                 <h2>Hotels for Today</h2>
                 <p id="hotelNames">Error loading hotels</p>
+                <div class="delivery-animation">
+                    <div class="office-building">🏢</div>
+                </div>
             </div>
         `;
         const bannerContainer = document.getElementById('banner');

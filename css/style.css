@@ -306,6 +306,200 @@ body.dark-mode .navbar-brand {
     50% { transform: translateY(-10px); }
 }
 
+/* Delivery Animation */
+.delivery-animation {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.sky-clouds {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1;
+}
+
+.cloud {
+    position: absolute;
+    opacity: 0.7;
+    animation: cloudWind 25s ease-in-out infinite;
+    filter: drop-shadow(0 2px 4px rgba(255, 255, 255, 0.3));
+}
+
+.cloud.cloud-1 {
+    top: -15px;
+    left: 5%;
+    font-size: 10rem;
+    animation-delay: 0s;
+    animation-duration: 28s;
+}
+
+.cloud.cloud-2 {
+    top: 25px;
+    right: 10%;
+    font-size: 2.2rem;
+    animation-delay: -8s;
+    animation-duration: 32s;
+}
+
+.cloud.cloud-3 {
+    top: -30px;
+    left: 60%;
+    font-size: 6rem;
+    animation-delay: -15s;
+    animation-duration: 26s;
+}
+
+.cloud.cloud-4 {
+    top: 20px;
+    right: 2%;
+    font-size: 4rem;
+    animation-delay: -5s;
+    animation-duration: 30s;
+}
+
+
+@keyframes cloudWind {
+    0%, 100% {
+        transform: translateX(0) translateY(0) scale(1);
+    }
+    20% {
+        transform: translateX(25px) translateY(-2px) scale(1.03);
+    }
+    40% {
+        transform: translateX(15px) translateY(3px) scale(0.97);
+    }
+    60% {
+        transform: translateX(-10px) translateY(-1px) scale(1.02);
+    }
+    80% {
+        transform: translateX(-20px) translateY(2px) scale(0.98);
+    }
+}
+
+.delivery-food {
+    position: absolute;
+    font-size: 1.8rem;
+    z-index: 4;
+    animation: foodDelivery 12s ease-in-out infinite;
+    bottom: 10px;
+}
+
+.delivery-food.food-1 {
+    animation-delay: 0s;
+    left: -40px;
+}
+
+.delivery-food.food-2 {
+    animation-delay: -3s;
+    left: -40px;
+}
+
+.delivery-food.food-3 {
+    animation-delay: -6s;
+    left: -40px;
+}
+
+.delivery-food.food-4 {
+    animation-delay: -9s;
+    left: -40px;
+}
+
+.delivery-food.food-5 {
+    animation-delay: -12s;
+    left: -40px;
+}
+
+.office-building {
+    position: absolute;
+    right: 10px;
+    bottom: -10px;
+    font-size: 3rem;
+    z-index: 2;
+    opacity: 0.8;
+}
+
+@keyframes foodDelivery {
+    0% {
+        left: -40px;
+        bottom: 10px;
+        transform: scale(0.8) rotate(-5deg);
+        opacity: 0;
+    }
+    10% {
+        transform: scale(1) rotate(2deg);
+        opacity: 1;
+    }
+    20% {
+        transform: scale(1.1) rotate(-3deg);
+    }
+    30% {
+        transform: scale(0.9) rotate(4deg);
+    }
+    40% {
+        transform: scale(1.05) rotate(-2deg);
+    }
+    50% {
+        transform: scale(1) rotate(1deg);
+    }
+    70% {
+        transform: scale(1) rotate(0deg);
+        opacity: 1;
+    }
+    85% {
+        transform: scale(0.95) rotate(0deg);
+        opacity: 0.8;
+    }
+    100% {
+        left: calc(100% - 20px);
+        bottom: 60px;
+        transform: scale(0.9) rotate(0deg);
+        opacity: 0;
+    }
+}
+
+/* Responsive adjustments for delivery animation */
+@media (max-width: 768px) {
+    .cloud.cloud-1 {
+        font-size: 2.5rem;
+        top: 12px;
+    }
+
+    .cloud.cloud-2 {
+        font-size: 1.8rem;
+        top: 18px;
+    }
+
+    .cloud.cloud-3 {
+        font-size: 2.8rem;
+        top: 25px;
+    }
+
+    .cloud.cloud-4 {
+        font-size: 2.2rem;
+        top: 15px;
+    }
+
+
+    .delivery-food {
+        font-size: 1.3rem;
+        bottom: 8px;
+    }
+
+    .office-building {
+        font-size: 2rem;
+        right: 15px;
+        bottom: 2px;
+    }
+}
+
 /* CONTAINER & LAYOUT */
 .container {
     max-width: 1400px;
