@@ -435,6 +435,7 @@ function adjustParticipantCount(change) {
 
     updateParticipantNameInputs();
     updateCountButtonStates();
+    updateCostBreakdown(); // Recalculate cost breakdown with new group size
 
     // Clear any existing values when count changes
     groupParticipantNames = new Array(selectedGroupSize).fill('');
@@ -471,6 +472,8 @@ async function updateCostBreakdown() {
     const items = Object.values(selectedItems).filter(item => item.quantity > 0);
     const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     const perPersonShare = Math.ceil(total / selectedGroupSize); // Round up to ensure coverage
+
+    console.log('updateCostBreakdown:', { total, selectedGroupSize, perPersonShare });
 
     const maxAmount = await StorageManager.getMaxAmountPerPerson();
 
