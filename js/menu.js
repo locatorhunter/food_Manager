@@ -53,7 +53,6 @@ async function initializeMenuPage() {
     }
 
     await displayHotelsMenu();
-    setupOrderModal();
     setupSearch();
     setupItemModal();
     setupEventDelegation();
@@ -82,7 +81,12 @@ function setupEventDelegation() {
         if (e.target.classList.contains('place-order-btn') || e.target.closest('.place-order-btn')) {
             e.preventDefault();
             e.stopPropagation();
-            showOrderModal();
+            // Close any open cart modal first
+            closeCartModal();
+            // Wait for DOM to settle before showing order modal
+            setTimeout(() => {
+                showOrderModal();
+            }, 300);
             return;
         }
     });
@@ -365,6 +369,13 @@ let selectedGroupSize = null;
 let groupParticipantNames = [];
 
 async function showGroupOrderingModal(total, maxAmount, items) {
+    // First check if we're on the menu page
+    if (!document.getElementById('hotelsMenuContainer') || !document.getElementById('menuSearch')) {
+        console.error('Not on menu page - group ordering modal not available');
+        showToast('Error: Please navigate to the menu page to place orders.', 'error');
+        return;
+    }
+
     selectedGroupSize = null;
     groupParticipantNames = [];
 
@@ -381,16 +392,65 @@ async function showGroupOrderingModal(total, maxAmount, items) {
         </div>
     `;
 
-    const groupOrderingInfo = document.getElementById('groupOrderingInfo');
-    const participantNamesSection = document.getElementById('participantNamesSection');
-    const confirmGroupOrderingBtn = document.getElementById('confirmGroupOrderingBtn');
+    // Try to find existing modal elements
+    let groupOrderingModal = document.getElementById('groupOrderingModal');
+    let groupOrderingInfo = document.getElementById('groupOrderingInfo');
+    let participantNamesSection = document.getElementById('participantNamesSection');
+    let confirmGroupOrderingBtn = document.getElementById('confirmGroupOrderingBtn');
+    let participantCount = document.getElementById('participantCount');
 
-    if (!groupOrderingInfo || !participantNamesSection || !confirmGroupOrderingBtn) {
-        console.error('Group ordering modal elements not found');
-        showToast('Error loading group ordering modal', 'error');
-        return;
+    // If modal doesn't exist, create it dynamically
+    if (!groupOrderingModal) {
+        console.log('Creating group ordering modal dynamically');
+
+        const modalHtml = `
+            <div id="groupOrderingModal" class="modal" style="display: none;">
+                <div class="modal-content group-ordering-modal-content">
+                    <span class="modal-close" onclick="closeGroupOrderingModal()">&times;</span>
+                    <h2>💰 Amount Limit Exceeded</h2>
+                    <div id="groupOrderingInfo" class="group-ordering-info">
+                        ${infoHtml}
+                    </div>
+                    <div class="group-size-selection">
+                        <h3>How many people are ordering together?</h3>
+                        <div class="participant-count-selector">
+                            <button class="count-btn" onclick="adjustParticipantCount(-1)">−</button>
+                            <input type="number" id="participantCount" class="participant-count-input" value="2" min="2" max="20" readonly>
+                            <button class="count-btn" onclick="adjustParticipantCount(1)">+</button>
+                            <span class="count-label">people</span>
+                        </div>
+                        <div class="group-size-hint">
+                            <small>💡 Enter the number of people sharing this order (2-20)</small>
+                        </div>
+                    </div>
+                    <div id="participantNamesSection" class="participant-names-section" style="display: none;">
+                        <h3>Enter Participant Names</h3>
+                        <div id="participantNamesList" class="participant-names-list">
+                            <!-- Name inputs will be added here -->
+                        </div>
+                        <div class="cost-breakdown" id="costBreakdown">
+                            <!-- Cost breakdown will be shown here -->
+                        </div>
+                    </div>
+                    <div class="modal-actions">
+                        <button id="confirmGroupOrderingBtn" class="btn btn-primary" onclick="confirmGroupOrdering()" style="display: none;">Place Group Order</button>
+                        <button class="btn btn-secondary" onclick="closeGroupOrderingModal()">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+        // Now get the references to the newly created elements
+        groupOrderingModal = document.getElementById('groupOrderingModal');
+        groupOrderingInfo = document.getElementById('groupOrderingInfo');
+        participantNamesSection = document.getElementById('participantNamesSection');
+        confirmGroupOrderingBtn = document.getElementById('confirmGroupOrderingBtn');
+        participantCount = document.getElementById('participantCount');
     }
 
+    // Now proceed with modal setup
     groupOrderingInfo.innerHTML = infoHtml;
     participantNamesSection.style.display = 'block';
     confirmGroupOrderingBtn.style.display = 'none';
@@ -398,12 +458,12 @@ async function showGroupOrderingModal(total, maxAmount, items) {
     // Initialize with 2 participants
     selectedGroupSize = 2;
     groupParticipantNames = ['', ''];
-    document.getElementById('participantCount').value = selectedGroupSize;
+    participantCount.value = selectedGroupSize;
 
     // Generate initial name inputs
     updateParticipantNameInputs();
 
-    document.getElementById('groupOrderingModal').style.display = 'flex';
+    groupOrderingModal.style.display = 'flex';
 
     // Update button states and cost breakdown after modal is displayed
     setTimeout(() => {
@@ -636,76 +696,6 @@ async function confirmGroupOrdering() {
 
 
 
-function setupOrderModal() {
-    const modal = document.getElementById('orderModal');
-    const confirmBtn = document.getElementById('confirmOrderBtn');
-    const cancelBtn = document.getElementById('cancelOrderBtn');
-    const closeBtn = document.querySelector('#orderModal .modal-close');
-
-    if (!modal || !confirmBtn || !cancelBtn) {
-        console.error('Order modal elements not found');
-        return;
-    }
-
-    if (closeBtn) {
-        closeBtn.addEventListener('click', () => {
-            modal.style.display = 'none';
-        });
-    }
-
-    cancelBtn.addEventListener('click', () => {
-        modal.style.display = 'none';
-    });
-
-    // Close modal when clicking outside
-    window.addEventListener('click', (e) => {
-        if (e.target === modal) {
-            modal.style.display = 'none';
-        }
-    });
-
-    confirmBtn.addEventListener('click', () => {
-        const employeeNameInput = document.getElementById('orderEmployeeName');
-        if (!employeeNameInput) {
-            showToast('Error: Name input not found', 'error');
-            return;
-        }
-
-        const employeeName = sanitizeInput(employeeNameInput.value);
-
-        if (!employeeName) {
-            showToast('Please enter your name', 'error');
-            return;
-        }
-
-        if (!isValidName(employeeName)) {
-            showToast('Name can only contain letters, spaces, hyphens, and apostrophes', 'error');
-            return;
-        }
-
-        modal.style.display = 'none';
-
-        const items = Object.values(selectedItems).filter(item => item.quantity > 0);
-        const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
-
-        // Group items by hotel for order
-        const ordersByHotel = {};
-        items.forEach(item => {
-            if (!ordersByHotel[item.hotelName]) {
-                ordersByHotel[item.hotelName] = [];
-            }
-            ordersByHotel[item.hotelName].push({
-                name: item.name,
-                price: item.price,
-                quantity: item.quantity,
-                category: item.category
-            });
-        });
-
-        placeOrders(ordersByHotel, employeeName);
-    });
-}
 
 async function showOrderModal() {
     const items = Object.values(selectedItems).filter(item => item.quantity > 0);
@@ -715,23 +705,117 @@ async function showOrderModal() {
     // Check if total exceeds the limit
     const maxAmount = await StorageManager.getMaxAmountPerPerson();
     if (total > maxAmount) {
-        // Show group ordering modal instead
-        showGroupOrderingModal(total, maxAmount, items);
+        // Close any open cart modal first
+        closeCartModal();
+        // Wait for DOM to settle before showing group ordering modal
+        setTimeout(() => {
+            showGroupOrderingModal(total, maxAmount, items);
+        }, 300);
         return;
     }
 
-    // Normal ordering flow
+    // Normal ordering flow - try to find existing modal elements
+    let orderModal = document.getElementById('orderModal');
+    let orderPreview = document.getElementById('orderPreview');
+    let orderEmployeeName = document.getElementById('orderEmployeeName');
+
+    // If modal doesn't exist, create it dynamically
+    if (!orderModal) {
+        console.log('Creating order modal dynamically');
+
+        const modalHtml = `
+            <div id="orderModal" class="modal" style="display: none;">
+                <div class="modal-content order-modal-content">
+                    <h2>Place Your Order</h2>
+                    <div class="form-group">
+                        <label for="orderEmployeeName">Your Name</label>
+                        <input type="text" id="orderEmployeeName" placeholder="Enter your name" required>
+                    </div>
+                    <div class="order-summary-preview">
+                        <p id="orderPreview"></p>
+                    </div>
+                    <div class="modal-actions">
+                        <button id="confirmOrderBtn" class="btn btn-primary">Place Order</button>
+                        <button id="cancelOrderBtn" class="btn btn-secondary">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+        // Now get the references to the newly created elements
+        orderModal = document.getElementById('orderModal');
+        orderPreview = document.getElementById('orderPreview');
+        orderEmployeeName = document.getElementById('orderEmployeeName');
+
+        // Re-setup modal event listeners for the dynamically created modal
+        const confirmBtn = document.getElementById('confirmOrderBtn');
+        const cancelBtn = document.getElementById('cancelOrderBtn');
+        const closeBtn = orderModal.querySelector('.modal-close');
+
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                orderModal.style.display = 'none';
+            });
+        }
+
+        cancelBtn.addEventListener('click', () => {
+            orderModal.style.display = 'none';
+        });
+
+        // Close modal when clicking outside
+        window.addEventListener('click', (e) => {
+            if (e.target === orderModal) {
+                orderModal.style.display = 'none';
+            }
+        });
+
+        confirmBtn.addEventListener('click', () => {
+            const employeeNameInput = document.getElementById('orderEmployeeName');
+            if (!employeeNameInput) {
+                showToast('Error: Name input not found', 'error');
+                return;
+            }
+
+            const employeeName = sanitizeInput(employeeNameInput.value);
+
+            if (!employeeName) {
+                showToast('Please enter your name', 'error');
+                return;
+            }
+
+            if (!isValidName(employeeName)) {
+                showToast('Name can only contain letters, spaces, hyphens, and apostrophes', 'error');
+                return;
+            }
+
+            orderModal.style.display = 'none';
+
+            const items = Object.values(selectedItems).filter(item => item.quantity > 0);
+            const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
+
+            // Group items by hotel for order
+            const ordersByHotel = {};
+            items.forEach(item => {
+                if (!ordersByHotel[item.hotelName]) {
+                    ordersByHotel[item.hotelName] = [];
+                }
+                ordersByHotel[item.hotelName].push({
+                    name: item.name,
+                    price: item.price,
+                    quantity: item.quantity,
+                    category: item.category
+                });
+            });
+
+            placeOrders(ordersByHotel, employeeName);
+        });
+    }
+
+    // Now proceed with modal setup
     const preview = `${totalItems} item(s) • Total: ${formatCurrency(total)}`;
-    const orderPreview = document.getElementById('orderPreview');
-    const orderEmployeeName = document.getElementById('orderEmployeeName');
-    const orderModal = document.getElementById('orderModal');
-
-    if (!orderPreview || !orderEmployeeName || !orderModal) {
-        console.error('Order modal elements not found');
-        showToast('Error loading order modal', 'error');
-        return;
-    }
-
     orderPreview.textContent = preview;
     orderEmployeeName.value = '';
     orderModal.style.display = 'flex';
@@ -936,7 +1020,10 @@ function showCartModal() {
             closeCartModal();
         } else if (action === 'checkout') {
             closeCartModal();
-            showOrderModal();
+            // Wait for DOM to settle before showing order modal
+            setTimeout(() => {
+                showOrderModal();
+            }, 300);
         } else if (action === 'increase' && itemKey) {
             await updateCartQuantity(itemKey, selectedItems[itemKey].quantity + 1);
         } else if (action === 'decrease' && itemKey) {
@@ -1000,16 +1087,19 @@ async function updateCartQuantity(itemKey, newQuantity) {
 async function removeFromCart(itemKey) {
     if (selectedItems[itemKey]) {
         delete selectedItems[itemKey];
-        await displayHotelsMenu(); // Refresh floating summary
 
-        // Check if cart is now empty
+        // Check if cart is now empty after removal
         const remainingItems = Object.values(selectedItems).filter(item => item.quantity > 0);
         if (remainingItems.length === 0) {
-            // Show empty cart message in modal instead of closing
+            // Cart is now empty - show empty cart modal
             showEmptyCartModal();
         } else {
-            showCartModal(); // Refresh cart modal
+            // Cart still has items - refresh cart modal
+            showCartModal();
         }
+
+        // Always refresh the menu display to update floating summary
+        await displayHotelsMenu();
     }
 }
 
