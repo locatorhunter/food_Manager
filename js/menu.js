@@ -25,6 +25,9 @@ window.showGroupOrderingModal = showGroupOrderingModal;
 window.closeGroupOrderingModal = closeGroupOrderingModal;
 window.adjustParticipantCount = adjustParticipantCount;
 window.confirmGroupOrdering = confirmGroupOrdering;
+window.showCartModal = showCartModal;
+window.closeCartModal = closeCartModal;
+window.removeFromCart = removeFromCart;
 
 document.addEventListener('DOMContentLoaded', function() {
     initializeMenuPage();
@@ -267,6 +270,7 @@ function displayMenuItems(hotel, items) {
         const totalItems = Object.values(selectedItems).reduce((sum, item) => sum + item.quantity, 0);
         html += `
             <div class="floating-order-summary">
+                <button class="cart-btn" onclick="showCartModal()" title="View Cart">🛒</button>
                 <div class="order-summary-content">
                     <span>${totalItems} items • ₹${total.toFixed(2)}</span>
                     <div class="floating-order-actions">
@@ -377,9 +381,19 @@ async function showGroupOrderingModal(total, maxAmount, items) {
         </div>
     `;
 
-    document.getElementById('groupOrderingInfo').innerHTML = infoHtml;
-    document.getElementById('participantNamesSection').style.display = 'block';
-    document.getElementById('confirmGroupOrderingBtn').style.display = 'none';
+    const groupOrderingInfo = document.getElementById('groupOrderingInfo');
+    const participantNamesSection = document.getElementById('participantNamesSection');
+    const confirmGroupOrderingBtn = document.getElementById('confirmGroupOrderingBtn');
+
+    if (!groupOrderingInfo || !participantNamesSection || !confirmGroupOrderingBtn) {
+        console.error('Group ordering modal elements not found');
+        showToast('Error loading group ordering modal', 'error');
+        return;
+    }
+
+    groupOrderingInfo.innerHTML = infoHtml;
+    participantNamesSection.style.display = 'block';
+    confirmGroupOrderingBtn.style.display = 'none';
 
     // Initialize with 2 participants
     selectedGroupSize = 2;
@@ -391,17 +405,17 @@ async function showGroupOrderingModal(total, maxAmount, items) {
 
     document.getElementById('groupOrderingModal').style.display = 'flex';
 
-    // Update button states after modal is displayed
-    setTimeout(updateCountButtonStates, 10);
-
-    // Update cost breakdown to show the button
-    updateCostBreakdown();
-
-    // Focus on first name input
+    // Update button states and cost breakdown after modal is displayed
     setTimeout(() => {
-        const firstInput = document.getElementById('participant-name-0');
-        if (firstInput) firstInput.focus();
-    }, 100);
+        updateCountButtonStates();
+        updateCostBreakdown();
+
+        // Focus on first name input
+        setTimeout(() => {
+            const firstInput = document.getElementById('participant-name-0');
+            if (firstInput) firstInput.focus();
+        }, 50);
+    }, 10);
 }
 
 function closeGroupOrderingModal() {
@@ -462,7 +476,12 @@ function updateParticipantNameInputs() {
                id="participant-name-${index}">
     `).join('');
 
-    document.getElementById('participantNamesList').innerHTML = namesListHtml;
+    const participantNamesList = document.getElementById('participantNamesList');
+    if (!participantNamesList) {
+        console.error('participantNamesList element not found');
+        return;
+    }
+    participantNamesList.innerHTML = namesListHtml;
 }
 
 
@@ -501,7 +520,12 @@ async function updateCostBreakdown() {
         `;
     }
 
-    document.getElementById('costBreakdown').innerHTML = breakdownHtml;
+    const costBreakdown = document.getElementById('costBreakdown');
+    if (!costBreakdown) {
+        console.error('costBreakdown element not found');
+        return;
+    }
+    costBreakdown.innerHTML = breakdownHtml;
 
     // Always enable the button - validation happens on submit
     const button = document.getElementById('confirmGroupOrderingBtn');
@@ -618,6 +642,11 @@ function setupOrderModal() {
     const cancelBtn = document.getElementById('cancelOrderBtn');
     const closeBtn = document.querySelector('#orderModal .modal-close');
 
+    if (!modal || !confirmBtn || !cancelBtn) {
+        console.error('Order modal elements not found');
+        return;
+    }
+
     if (closeBtn) {
         closeBtn.addEventListener('click', () => {
             modal.style.display = 'none';
@@ -636,7 +665,13 @@ function setupOrderModal() {
     });
 
     confirmBtn.addEventListener('click', () => {
-        const employeeName = sanitizeInput(document.getElementById('orderEmployeeName').value);
+        const employeeNameInput = document.getElementById('orderEmployeeName');
+        if (!employeeNameInput) {
+            showToast('Error: Name input not found', 'error');
+            return;
+        }
+
+        const employeeName = sanitizeInput(employeeNameInput.value);
 
         if (!employeeName) {
             showToast('Please enter your name', 'error');
@@ -687,10 +722,20 @@ async function showOrderModal() {
 
     // Normal ordering flow
     const preview = `${totalItems} item(s) • Total: ${formatCurrency(total)}`;
-    document.getElementById('orderPreview').textContent = preview;
-    document.getElementById('orderEmployeeName').value = '';
-    document.getElementById('orderModal').style.display = 'flex';
-    document.getElementById('orderEmployeeName').focus();
+    const orderPreview = document.getElementById('orderPreview');
+    const orderEmployeeName = document.getElementById('orderEmployeeName');
+    const orderModal = document.getElementById('orderModal');
+
+    if (!orderPreview || !orderEmployeeName || !orderModal) {
+        console.error('Order modal elements not found');
+        showToast('Error loading order modal', 'error');
+        return;
+    }
+
+    orderPreview.textContent = preview;
+    orderEmployeeName.value = '';
+    orderModal.style.display = 'flex';
+    orderEmployeeName.focus();
 }
 
 function cancelOrder() {
@@ -799,6 +844,175 @@ async function uploadItemImage(hotelId, itemId) {
     input.click();
 }
 
+// Cart Modal Functions
+function showCartModal() {
+    const cartItems = Object.values(selectedItems).filter(item => item.quantity > 0);
+
+    if (cartItems.length === 0) {
+        showToast('Your cart is empty', 'error');
+        return;
+    }
+
+    let cartHtml = `
+        <div class="cart-modal-header">
+            <h3>Your Cart (${cartItems.length} items)</h3>
+            <span class="cart-close" data-action="close">&times;</span>
+        </div>
+        <div class="cart-items-list">
+    `;
+
+    cartItems.forEach(item => {
+        const itemKey = `${item.hotelId}-${item.id}`;
+        const itemTotal = item.price * item.quantity;
+
+        cartHtml += `
+            <div class="cart-item">
+                <div class="cart-item-info">
+                    <div class="cart-item-name">${item.name}</div>
+                    <div class="cart-item-details">
+                        <span class="cart-item-price">${formatCurrency(item.price)} each</span>
+                        <span class="cart-item-hotel">🏨 ${item.hotelName}</span>
+                    </div>
+                </div>
+                <div class="cart-item-controls">
+                    <div class="cart-quantity-controls">
+                        <button class="quantity-btn" data-action="decrease" data-item="${itemKey}">−</button>
+                        <input type="number" class="quantity-input" value="${item.quantity}" readonly min="0">
+                        <button class="quantity-btn" data-action="increase" data-item="${itemKey}">+</button>
+                    </div>
+                    <div class="cart-item-total">${formatCurrency(itemTotal)}</div>
+                    <button class="btn btn-danger btn-small" data-action="remove" data-item="${itemKey}">Remove</button>
+                </div>
+            </div>
+        `;
+    });
+
+    const total = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+
+    cartHtml += `
+        </div>
+        <div class="cart-summary">
+            <div class="cart-total">
+                <strong>Total: ${formatCurrency(total)} (${totalItems} items)</strong>
+            </div>
+            <div class="cart-actions">
+                <button class="btn btn-secondary" data-action="continue">Continue Shopping</button>
+                <button class="btn btn-primary" data-action="checkout">Place Order</button>
+            </div>
+        </div>
+    `;
+
+    // Create modal
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.style.cssText = `
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.5); z-index: 10000; display: flex;
+        align-items: center; justify-content: center;
+    `;
+    modal.innerHTML = `
+        <div style="background: var(--bg-primary); border-radius: 12px; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto;">
+            ${cartHtml}
+        </div>
+    `;
+
+    // Add event listeners for cart actions using event delegation
+    modal.addEventListener('click', async function(e) {
+        const target = e.target;
+        const action = target.getAttribute('data-action');
+        const itemKey = target.getAttribute('data-item');
+
+        // Close modal on background click
+        if (target === modal) {
+            closeCartModal();
+            return;
+        }
+
+        // Handle button clicks
+        if (action === 'close') {
+            closeCartModal();
+        } else if (action === 'continue') {
+            closeCartModal();
+        } else if (action === 'checkout') {
+            closeCartModal();
+            showOrderModal();
+        } else if (action === 'increase' && itemKey) {
+            await updateCartQuantity(itemKey, selectedItems[itemKey].quantity + 1);
+        } else if (action === 'decrease' && itemKey) {
+            await updateCartQuantity(itemKey, selectedItems[itemKey].quantity - 1);
+        } else if (action === 'remove' && itemKey) {
+            await removeFromCart(itemKey);
+        }
+    });
+
+    document.body.appendChild(modal);
+}
+
+function closeCartModal() {
+    const modal = document.querySelector('.modal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+function showEmptyCartModal() {
+    // Replace current cart modal content with empty message
+    const modal = document.querySelector('.modal');
+    if (!modal) return;
+
+    const emptyCartHtml = `
+        <div style="background: var(--bg-primary); border-radius: 12px; max-width: 400px; width: 90%; padding: 30px; text-align: center;">
+            <div style="font-size: 48px; margin-bottom: 20px;">🛒</div>
+            <h3 style="margin-bottom: 10px; color: var(--text-primary);">Your Cart is Empty</h3>
+            <p style="color: var(--text-secondary); margin-bottom: 20px;">Add some delicious items to get started!</p>
+            <button class="btn btn-primary" data-action="continue" style="width: 100%;">Continue Shopping</button>
+        </div>
+    `;
+
+    modal.innerHTML = emptyCartHtml;
+
+    // Add event listener for continue shopping button
+    modal.addEventListener('click', function(e) {
+        const target = e.target;
+        const action = target.getAttribute('data-action');
+
+        if (action === 'continue' || target === modal) {
+            closeCartModal();
+        }
+    });
+}
+
+async function updateCartQuantity(itemKey, newQuantity) {
+    if (newQuantity <= 0) {
+        removeFromCart(itemKey);
+        return;
+    }
+
+    if (selectedItems[itemKey]) {
+        selectedItems[itemKey].quantity = newQuantity;
+        updateMenuDisplay(itemKey);
+        await displayHotelsMenu(); // Refresh floating summary
+        showCartModal(); // Refresh cart modal
+    }
+}
+
+async function removeFromCart(itemKey) {
+    if (selectedItems[itemKey]) {
+        delete selectedItems[itemKey];
+        await displayHotelsMenu(); // Refresh floating summary
+
+        // Check if cart is now empty
+        const remainingItems = Object.values(selectedItems).filter(item => item.quantity > 0);
+        if (remainingItems.length === 0) {
+            // Show empty cart message in modal instead of closing
+            showEmptyCartModal();
+        } else {
+            showCartModal(); // Refresh cart modal
+        }
+    }
+}
+
 // Group Order Modal Functions
 let currentGroupOrderItem = null;
 let groupOrderParticipants = [];
@@ -820,7 +1034,12 @@ async function showGroupOrderModal(item, hotel) {
         <p style="color: #ff6b6b;"><strong>Note:</strong> This item exceeds the ₹${maxAmount} limit and requires group ordering.</p>
     `;
 
-    document.getElementById('groupOrderItemInfo').innerHTML = itemInfoHtml;
+    const groupOrderItemInfo = document.getElementById('groupOrderItemInfo');
+    if (!groupOrderItemInfo) {
+        console.error('groupOrderItemInfo element not found');
+        return;
+    }
+    groupOrderItemInfo.innerHTML = itemInfoHtml;
     updateParticipantsList();
     updateGroupOrderSummary();
 
@@ -870,7 +1089,12 @@ function updateParticipantsList() {
         </div>
     `).join('');
 
-    document.getElementById('participantsList').innerHTML = listHtml;
+    const participantsList = document.getElementById('participantsList');
+    if (!participantsList) {
+        console.error('participantsList element not found');
+        return;
+    }
+    participantsList.innerHTML = listHtml;
 }
 
 function updateParticipantName(index, name) {
@@ -930,7 +1154,12 @@ async function updateGroupOrderSummary() {
         document.getElementById('confirmGroupOrderBtn').disabled = false;
     }
 
-    document.getElementById('groupOrderSummary').innerHTML = summaryHtml;
+    const groupOrderSummary = document.getElementById('groupOrderSummary');
+    if (!groupOrderSummary) {
+        console.error('groupOrderSummary element not found');
+        return;
+    }
+    groupOrderSummary.innerHTML = summaryHtml;
 }
 
 async function confirmGroupOrder() {
