@@ -8,6 +8,35 @@ let menuSearchTerm = '';
 let categoryFilter = '';
 let cardSize = 'medium';
 
+// Cache management
+function clearCacheOnReload() {
+    // Clear in-memory cart cache
+    selectedItems = {};
+
+    // Clear any cached data in localStorage (except user preferences)
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        // Keep user preferences like cardSize, but clear other cache
+        if (key && key.startsWith('cache_')) {
+            keysToRemove.push(key);
+        }
+    }
+    keysToRemove.forEach(key => localStorage.removeItem(key));
+
+    // Clear sessionStorage cache
+    const sessionKeysToRemove = [];
+    for (let i = 0; i < sessionStorage.length; i++) {
+        const key = sessionStorage.key(i);
+        if (key && key.startsWith('cache_')) {
+            sessionKeysToRemove.push(key);
+        }
+    }
+    sessionKeysToRemove.forEach(key => sessionStorage.removeItem(key));
+
+    console.log('Cache cleared on page reload');
+}
+
 // Make functions globally available
 window.showItemModal = showItemModal;
 window.incrementQuantity = incrementQuantity;
@@ -34,6 +63,9 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 async function initializeMenuPage() {
+    // Clear cache on page load/reload
+    clearCacheOnReload();
+
     cardSize = localStorage.getItem('menuCardSize') || 'medium';
     const cardSizeElement = document.getElementById('cardSize');
     if (cardSizeElement) {
