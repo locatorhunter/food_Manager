@@ -989,7 +989,7 @@ function showCartModal() {
 
     // Create modal
     const modal = document.createElement('div');
-    modal.className = 'modal';
+    modal.className = 'modal cart-modal';
     modal.style.cssText = `
         position: fixed; top: 0; left: 0; width: 100%; height: 100%;
         background: rgba(0,0,0,0.5); z-index: 10000; display: flex;
@@ -1001,43 +1001,71 @@ function showCartModal() {
         </div>
     `;
 
-    // Add event listeners for cart actions using event delegation
-    modal.addEventListener('click', async function(e) {
-        const target = e.target;
-        const action = target.getAttribute('data-action');
-        const itemKey = target.getAttribute('data-item');
+    // Append modal to DOM first
+    document.body.appendChild(modal);
+
+    // Add event listeners after modal is in DOM
+    setTimeout(() => {
+        // Handle close button
+        const closeBtn = modal.querySelector('.cart-close');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                closeCartModal();
+            });
+        }
+
+        // Handle continue shopping button
+        const continueBtn = modal.querySelector('[data-action="continue"]');
+        if (continueBtn) {
+            continueBtn.addEventListener('click', () => {
+                closeCartModal();
+            });
+        }
+
+        // Handle checkout button
+        const checkoutBtn = modal.querySelector('[data-action="checkout"]');
+        if (checkoutBtn) {
+            checkoutBtn.addEventListener('click', () => {
+                closeCartModal();
+                // Wait for DOM to settle before showing order modal
+                setTimeout(() => {
+                    showOrderModal();
+                }, 300);
+            });
+        }
+
+        // Handle quantity and remove buttons
+        const buttons = modal.querySelectorAll('[data-action]');
+        buttons.forEach(button => {
+            const action = button.getAttribute('data-action');
+            const itemKey = button.getAttribute('data-item');
+
+            if (action === 'increase' && itemKey) {
+                button.addEventListener('click', async () => {
+                    await updateCartQuantity(itemKey, selectedItems[itemKey].quantity + 1);
+                });
+            } else if (action === 'decrease' && itemKey) {
+                button.addEventListener('click', async () => {
+                    await updateCartQuantity(itemKey, selectedItems[itemKey].quantity - 1);
+                });
+            } else if (action === 'remove' && itemKey) {
+                button.addEventListener('click', async () => {
+                    await removeFromCart(itemKey);
+                });
+            }
+        });
 
         // Close modal on background click
-        if (target === modal) {
-            closeCartModal();
-            return;
-        }
-
-        // Handle button clicks
-        if (action === 'close') {
-            closeCartModal();
-        } else if (action === 'continue') {
-            closeCartModal();
-        } else if (action === 'checkout') {
-            closeCartModal();
-            // Wait for DOM to settle before showing order modal
-            setTimeout(() => {
-                showOrderModal();
-            }, 300);
-        } else if (action === 'increase' && itemKey) {
-            await updateCartQuantity(itemKey, selectedItems[itemKey].quantity + 1);
-        } else if (action === 'decrease' && itemKey) {
-            await updateCartQuantity(itemKey, selectedItems[itemKey].quantity - 1);
-        } else if (action === 'remove' && itemKey) {
-            await removeFromCart(itemKey);
-        }
-    });
-
-    document.body.appendChild(modal);
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeCartModal();
+            }
+        });
+    }, 10);
 }
 
 function closeCartModal() {
-    const modal = document.querySelector('.modal');
+    const modal = document.querySelector('.cart-modal');
     if (modal) {
         modal.remove();
     }
@@ -1045,7 +1073,7 @@ function closeCartModal() {
 
 function showEmptyCartModal() {
     // Replace current cart modal content with empty message
-    const modal = document.querySelector('.modal');
+    const modal = document.querySelector('.cart-modal');
     if (!modal) return;
 
     const emptyCartHtml = `
