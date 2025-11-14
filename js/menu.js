@@ -937,19 +937,13 @@ function showCartModal() {
         return;
     }
 
-    let cartHtml = `
-        <div class="cart-modal-header">
-            <h3>Your Cart (${cartItems.length} items)</h3>
-            <span class="cart-close" data-action="close">&times;</span>
-        </div>
-        <div class="cart-items-list">
-    `;
-
+    // Build cart items HTML
+    let itemsHtml = '';
     cartItems.forEach(item => {
         const itemKey = `${item.hotelId}-${item.id}`;
         const itemTotal = item.price * item.quantity;
 
-        cartHtml += `
+        itemsHtml += `
             <div class="cart-item">
                 <div class="cart-item-info">
                     <div class="cart-item-name">${item.name}</div>
@@ -974,19 +968,6 @@ function showCartModal() {
     const total = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
-    cartHtml += `
-        </div>
-        <div class="cart-summary">
-            <div class="cart-total">
-                <strong>Total: ${formatCurrency(total)} (${totalItems} items)</strong>
-            </div>
-            <div class="cart-actions">
-                <button class="btn btn-secondary" data-action="continue">Continue Shopping</button>
-                <button class="btn btn-primary" data-action="checkout">Place Order</button>
-            </div>
-        </div>
-    `;
-
     // Create modal
     const modal = document.createElement('div');
     modal.className = 'modal cart-modal';
@@ -996,8 +977,23 @@ function showCartModal() {
         align-items: center; justify-content: center;
     `;
     modal.innerHTML = `
-        <div style="background: var(--bg-primary); border-radius: 12px; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto;">
-            ${cartHtml}
+        <div style="background: var(--bg-primary); border-radius: 12px; max-width: 600px; width: 90%; height: 80vh; display: flex; flex-direction: column;">
+            <div class="cart-modal-header" style="flex-shrink: 0; padding: 20px; border-bottom: 1px solid var(--border-color);">
+                <h3>Your Cart (${cartItems.length} items)</h3>
+                <span class="cart-close" data-action="close" style="position: absolute; top: 10px; right: 15px; font-size: 24px; cursor: pointer;">&times;</span>
+            </div>
+            <div class="cart-items-list" style="flex: 1; overflow-y: auto; padding: 20px;">
+                ${itemsHtml}
+            </div>
+            <div class="cart-summary" style="flex-shrink: 0; padding: 20px; border-top: 1px solid var(--border-color);">
+                <div class="cart-total">
+                    <strong>Total: ${formatCurrency(total)} (${totalItems} items)</strong>
+                </div>
+                <div class="cart-actions">
+                    <button class="btn btn-secondary" data-action="continue">Continue Shopping</button>
+                    <button class="btn btn-primary" data-action="checkout">Place Order</button>
+                </div>
+            </div>
         </div>
     `;
 
@@ -1077,7 +1073,7 @@ function showEmptyCartModal() {
     if (!modal) return;
 
     const emptyCartHtml = `
-        <div style="background: var(--bg-primary); border-radius: 12px; max-width: 400px; width: 90%; padding: 30px; text-align: center;">
+        <div style="background: var(--bg-primary); border-radius: 12px; max-width: 400px; width: 90%; height: 300px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px;">
             <div style="font-size: 48px; margin-bottom: 20px;">🛒</div>
             <h3 style="margin-bottom: 10px; color: var(--text-primary);">Your Cart is Empty</h3>
             <p style="color: var(--text-secondary); margin-bottom: 20px;">Add some delicious items to get started!</p>
