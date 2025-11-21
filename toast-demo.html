@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Toast Position Demo</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .demo-content {
+            height: 200vh;
+            padding: 50px 20px;
+        }
+        .demo-section {
+            margin-bottom: 100px;
+            padding: 20px;
+            background: var(--bg-secondary);
+            border-radius: 10px;
+        }
+        .test-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div id="navbar"></div>
+    <div id="banner"></div>
+    
+    <div class="container">
+        <div class="demo-content">
+            <div class="demo-section">
+                <h2>🧪 Toast Positioning Test</h2>
+                <p>Scroll through this page and click the buttons below to test the new toast positioning system.</p>
+                <div class="test-buttons">
+                    <button class="btn btn-primary" onclick="showToast('Success message - now in corner!', 'success')">Show Success Message</button>
+                    <button class="btn btn-danger" onclick="showToast('Error message - corner positioning!', 'error')">Show Error Message</button>
+                    <button class="btn btn-secondary" onclick="showToast('Info message - corner display!', 'info')">Show Info Message</button>
+                    <button class="btn btn-primary" onclick="showToast('Top Right Toast', 'success', 4000, 'top-right')">Force Top Right</button>
+                    <button class="btn btn-danger" onclick="showToast('Bottom Right Toast', 'error', 4000, 'bottom-right')">Force Bottom Right</button>
+                </div>
+                <p><strong>Instructions:</strong></p>
+                <ul>
+                    <li>Click buttons to see corner positioning</li>
+                    <li>Toasts now appear in corners, not interfering with modals</li>
+                    <li>Multiple toasts stack vertically in the same corner</li>
+                    <li>When modals are open, toasts automatically go to bottom-right</li>
+                    <li>Works on mobile devices with proper sizing</li>
+                </ul>
+            </div>
+            
+            <div class="demo-section">
+                <h3>📍 Middle Section</h3>
+                <p>Scroll here to test middle positioning...</p>
+                <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.</p>
+            </div>
+            
+            <div class="demo-section">
+                <h3>📍 Bottom Section</h3>
+                <p>Scroll here to test bottom positioning...</p>
+                <p>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/common.js"></script>
+    <script>
+        // Auto-load common components
+        document.addEventListener('DOMContentLoaded', function() {
+            // Show initial test message
+            setTimeout(() => {
+                showToast('Welcome! Scroll around and test the toast positioning!', 'success');
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

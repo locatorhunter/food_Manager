@@ -65,23 +65,48 @@ function initializeMobileUX() {
 
 function initializeNavbar() {
     const navbarHtml = `
-        <div class="navbar">
+        <div class="navbar" role="navigation" aria-label="Main navigation">
             <div class="navbar-container">
-                <a href="index.html" class="navbar-brand">
-                    <div class="navbar-logo">🍽️</div>
+                <a href="index.html" class="navbar-brand" aria-label="Lunch Manager Home">
+                    <div class="navbar-logo" aria-hidden="true">🍽️</div>
                     <span>Lunch Manager</span>
                 </a>
                 
-                <button class="mobile-menu-toggle" id="mobileMenuToggle">☰</button>
+                <button class="mobile-menu-toggle" 
+                        id="mobileMenuToggle" 
+                        aria-label="Toggle mobile menu"
+                        aria-expanded="false"
+                        aria-controls="navbarNav">☰</button>
                 
-                <ul class="navbar-nav" id="navbarNav">
-                    <li><a href="index.html" class="nav-link" data-page="index">Home</a></li>
-                    <li><a href="menu.html" class="nav-link" data-page="menu">Menu</a></li>
-                    <li><a href="dashboard.html" class="nav-link" data-page="dashboard">Dashboard</a></li>
-                    <li><a href="admin.html" class="nav-link" data-page="admin">Admin</a></li>
+                <ul class="navbar-nav" id="navbarNav" role="menubar">
+                    <li role="none"><a href="index.html" 
+                                        class="nav-link" 
+                                        data-page="index" 
+                                        role="menuitem"
+                                        aria-label="Home page">Home</a></li>
+                    <li role="none"><a href="menu.html" 
+                                        class="nav-link" 
+                                        data-page="menu" 
+                                        role="menuitem"
+                                        aria-label="View menu and place orders">Menu</a></li>
+                    <li role="none"><a href="dashboard.html" 
+                                        class="nav-link" 
+                                        data-page="dashboard" 
+                                        role="menuitem"
+                                        aria-label="View order dashboard and analytics">Dashboard</a></li>
+                    <li role="none"><a href="admin.html" 
+                                        class="nav-link" 
+                                        data-page="admin" 
+                                        role="menuitem"
+                                        aria-label="Admin panel for managing hotels and menus">Admin</a></li>
                 </ul>
 
-                <button class="theme-toggle" id="themeToggle" title="Toggle theme">🌙</button>
+                <button class="theme-toggle" 
+                        id="themeToggle" 
+                        title="Toggle theme"
+                        aria-label="Switch between light and dark themes"
+                        aria-describedby="themeStatus">🌙</button>
+                <span id="themeStatus" class="sr-only" aria-live="polite">Current theme: Light</span>
             </div>
         </div>
     `;
@@ -95,14 +120,55 @@ function initializeNavbar() {
         
         if (mobileToggle && navbarNav) {
             mobileToggle.addEventListener('click', () => {
-                navbarNav.classList.toggle('active');
+                const isExpanded = navbarNav.classList.toggle('active');
+                mobileToggle.setAttribute('aria-expanded', isExpanded);
+                
+                // Focus management for accessibility
+                if (isExpanded) {
+                    // Focus first menu item when opened
+                    const firstMenuItem = navbarNav.querySelector('.nav-link');
+                    if (firstMenuItem) {
+                        setTimeout(() => firstMenuItem.focus(), 100);
+                    }
+                }
             });
             
+            // Enhanced keyboard navigation
             const navLinks = navbarNav.querySelectorAll('.nav-link');
-            navLinks.forEach(link => {
+            navLinks.forEach((link, index) => {
                 link.addEventListener('click', () => {
                     navbarNav.classList.remove('active');
+                    mobileToggle.setAttribute('aria-expanded', 'false');
                 });
+                
+                // Arrow key navigation
+                link.addEventListener('keydown', (e) => {
+                    let targetIndex;
+                    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        targetIndex = (index + 1) % navLinks.length;
+                        navLinks[targetIndex].focus();
+                    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        targetIndex = (index - 1 + navLinks.length) % navLinks.length;
+                        navLinks[targetIndex].focus();
+                    } else if (e.key === 'Home') {
+                        e.preventDefault();
+                        navLinks[0].focus();
+                    } else if (e.key === 'End') {
+                        e.preventDefault();
+                        navLinks[navLinks.length - 1].focus();
+                    }
+                });
+            });
+            
+            // ESC key to close mobile menu
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && navbarNav.classList.contains('active')) {
+                    navbarNav.classList.remove('active');
+                    mobileToggle.setAttribute('aria-expanded', 'false');
+                    mobileToggle.focus();
+                }
             });
         }
     }
@@ -144,6 +210,13 @@ function setTheme(theme) {
 
 async function toggleTheme() {
     const themes = ['light', 'dark', 'retro-dark', 'retro-light'];
+    const themeNames = {
+        'light': 'Light',
+        'dark': 'Dark',
+        'retro-dark': 'Retro Dark',
+        'retro-light': 'Retro Light'
+    };
+
     let currentTheme = 'light';
 
     if (document.body.classList.contains('dark-mode')) {
@@ -157,8 +230,24 @@ async function toggleTheme() {
     const currentIndex = themes.indexOf(currentTheme);
     const newTheme = themes[(currentIndex + 1) % themes.length];
 
+    // Announce theme change to screen readers
+    const themeStatus = document.getElementById('themeStatus');
+    if (themeStatus) {
+        themeStatus.textContent = `Switching from ${themeNames[currentTheme]} to ${themeNames[newTheme]} theme`;
+    }
+
     setTheme(newTheme);
     await StorageManager.setTheme(newTheme);
+
+    // Update ARIA label
+    const themeToggle = document.getElementById('themeToggle');
+    if (themeToggle) {
+        themeToggle.setAttribute('aria-label', `Switch to ${themeNames[themes[(currentIndex + 2) % themes.length]]} theme`);
+        themeToggle.setAttribute('aria-pressed', newTheme !== 'light');
+    }
+
+    // Show success message
+    showToast(`Theme changed to ${themeNames[newTheme]}`, 'success');
 }
 
 async function initializeBanner() {
@@ -195,7 +284,6 @@ async function updateBanner() {
                     <p id="hotelNames">No hotels selected</p>
                     <div class="delivery-animation">
                         <div class="road-line"></div>
-                        <div class="office-building">🏢</div>
                     </div>
                 </div>
             `;
@@ -228,12 +316,6 @@ async function updateBanner() {
                         <div class="cloud cloud-3">☁️</div>
                         <div class="cloud cloud-4">☁️</div>
                     </div>
-                    <div class="delivery-food food-1">🍕</div>
-                    <div class="delivery-food food-2">🍔</div>
-                    <div class="delivery-food food-3">🌮</div>
-                    <div class="delivery-food food-4">🍜</div>
-                    <div class="delivery-food food-5">🥪</div>
-                    <div class="office-building">🏢</div>
                 </div>
             </div>
         `;
@@ -249,7 +331,6 @@ async function updateBanner() {
                 <h2>Hotels for Today</h2>
                 <p id="hotelNames">Error loading hotels</p>
                 <div class="delivery-animation">
-                    <div class="office-building">🏢</div>
                 </div>
             </div>
         `;
@@ -274,17 +355,149 @@ function setActivePage() {
     });
 }
 
-function showToast(message, type = 'success') {
+function showToast(message, type = 'success', duration = 4000, position = 'auto') {
     const toast = document.createElement('div');
     toast.textContent = message;
     toast.className = `toast toast-${type}`;
+    toast.setAttribute('role', 'alert');
+    toast.setAttribute('aria-live', type === 'error' ? 'assertive' : 'polite');
+    toast.setAttribute('aria-atomic', 'true');
 
+    // Add dismiss button for better accessibility
+    const dismissBtn = document.createElement('button');
+    dismissBtn.innerHTML = '×';
+    dismissBtn.setAttribute('aria-label', 'Dismiss notification');
+    dismissBtn.style.cssText = `
+        background: none;
+        border: none;
+        color: inherit;
+        font-size: 1.2rem;
+        cursor: pointer;
+        padding: 0;
+        margin-left: 8px;
+        opacity: 0.8;
+    `;
+    
+    dismissBtn.addEventListener('click', () => {
+        toast.classList.add('toast-hide');
+        setTimeout(() => toast.remove(), 300);
+    });
+
+    toast.appendChild(dismissBtn);
+
+    // Add progress bar for longer messages
+    if (duration > 2000) {
+        const progressBar = document.createElement('div');
+        progressBar.style.cssText = `
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.5);
+            width: 100%;
+            animation: toastProgress ${duration}ms linear forwards;
+        `;
+        toast.style.position = 'relative';
+        toast.appendChild(progressBar);
+    }
+
+    // Position the toast based on current viewport
+    positionToast(toast, position);
+    
     document.body.appendChild(toast);
 
+    // Auto-dismiss with configurable duration
     setTimeout(() => {
         toast.classList.add('toast-hide');
         setTimeout(() => toast.remove(), 300);
-    }, 3000);
+    }, duration);
+}
+
+/**
+ * Position toast notification in corner of screen
+ * @param {HTMLElement} toast - Toast element
+ * @param {string} position - Position strategy ('auto', 'top-right', 'bottom-right', 'top-left', 'bottom-left')
+ */
+function positionToast(toast, position = 'auto') {
+    // Get current scroll position and viewport dimensions
+    const viewportHeight = window.innerHeight;
+    const viewportWidth = window.innerWidth;
+    
+    // Count existing toasts to avoid overlap
+    const existingToasts = document.querySelectorAll('.toast:not(.toast-hide)');
+    const toastIndex = existingToasts.length;
+    const toastHeight = 80; // Approximate toast height
+    const spacing = 10; // Space between toasts
+    
+    // Check if there's an active modal to avoid overlapping
+    const hasModal = document.querySelector('.modal[aria-hidden="false"]') !== null;
+    
+    // Calculate corner positioning
+    let topPosition;
+    let leftPosition;
+    let rightPosition;
+    let bottomPosition;
+    
+    if (position === 'top-right' || (position === 'auto' && !hasModal)) {
+        // Top-right corner (default preferred position)
+        topPosition = 90; // Below navbar
+        rightPosition = 20;
+        leftPosition = 'auto';
+        bottomPosition = 'auto';
+    } else if (position === 'bottom-right' || hasModal) {
+        // Bottom-right corner (safer when modals are open)
+        bottomPosition = 20;
+        rightPosition = 20;
+        topPosition = 'auto';
+        leftPosition = 'auto';
+    } else if (position === 'top-left') {
+        // Top-left corner
+        topPosition = 90; // Below navbar
+        leftPosition = 20;
+        rightPosition = 'auto';
+        bottomPosition = 'auto';
+    } else if (position === 'bottom-left') {
+        // Bottom-left corner
+        bottomPosition = 20;
+        leftPosition = 20;
+        topPosition = 'auto';
+        rightPosition = 'auto';
+    }
+    
+    // Apply stacking for multiple toasts in the same corner
+    if (position === 'top-right' || (position === 'auto' && !hasModal)) {
+        topPosition = 90 + (toastIndex * (toastHeight + spacing));
+    } else if (position === 'bottom-right' || hasModal) {
+        bottomPosition = 20 + (toastIndex * (toastHeight + spacing));
+    } else if (position === 'top-left') {
+        topPosition = 90 + (toastIndex * (toastHeight + spacing));
+    } else if (position === 'bottom-left') {
+        bottomPosition = 20 + (toastIndex * (toastHeight + spacing));
+    }
+    
+    // Ensure toasts don't go off-screen on mobile (use full width in mobile)
+    if (viewportWidth <= 768) {
+        leftPosition = 10;
+        rightPosition = 10;
+        if (position === 'top-right' || position === 'top-left' || position === 'auto') {
+            topPosition = 80 + (toastIndex * (toastHeight + spacing));
+        } else {
+            bottomPosition = 20 + (toastIndex * (toastHeight + spacing));
+        }
+    }
+    
+    // Apply positioning styles with fixed positioning for corner display
+    const additionalStyles = `
+        position: fixed;
+        top: ${typeof topPosition === 'number' ? topPosition + 'px' : topPosition};
+        left: ${typeof leftPosition === 'number' ? leftPosition + 'px' : leftPosition};
+        right: ${typeof rightPosition === 'number' ? rightPosition + 'px' : rightPosition};
+        bottom: ${typeof bottomPosition === 'number' ? bottomPosition + 'px' : bottomPosition};
+        transform: none;
+        z-index: ${9999 + toastIndex};
+    `;
+    
+    toast.style.cssText += additionalStyles;
 }
 
 const style = document.createElement('style');
@@ -300,9 +513,7 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
-function formatCurrency(amount) {
-    return `₹${parseFloat(amount).toFixed(2)}`;
-}
+// formatCurrency moved to utils.js to avoid duplication
 
 function formatDate(dateString) {
     const date = new Date(dateString);
