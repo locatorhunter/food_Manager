@@ -14,50 +14,74 @@ const StorageManager = {
 
     // Initialize real-time listeners
     init() {
-        // Listen for hotels changes
-        const hotelsRef = firebaseRef(StorageManager.PATHS.HOTELS);
-        firebaseOnValue(hotelsRef, (snapshot) => {
-            const data = snapshot.val() || {};
-            // Convert object to array and dispatch event
-            const hotels = Object.values(data);
-            window.dispatchEvent(new CustomEvent('hotelsUpdated', { detail: hotels }));
-        });
+        try {
+            // Listen for hotels changes
+            const hotelsRef = firebaseRef(StorageManager.PATHS.HOTELS);
+            firebaseOnValue(hotelsRef, (snapshot) => {
+                try {
+                    const data = snapshot.val() || {};
+                    // Convert object to array and dispatch event
+                    const hotels = Object.values(data);
+                    window.dispatchEvent(new CustomEvent('hotelsUpdated', { detail: hotels }));
+                } catch (error) {
+                    console.error('Error processing hotels data:', error);
+                    showToast('Error loading hotel data. Please refresh.', 'error');
+                }
+            }, (error) => {
+                console.error('Error listening to hotels changes:', error);
+                showToast('Lost connection to hotel data. Attempting to reconnect...', 'error');
+            });
 
-        // Listen for orders changes
-        const ordersRef = firebaseRef(StorageManager.PATHS.ORDERS);
-        firebaseOnValue(ordersRef, (snapshot) => {
-            const data = snapshot.val() || {};
-            const orders = Object.values(data);
-            window.dispatchEvent(new CustomEvent('orderAdded', { detail: orders }));
-            window.dispatchEvent(new CustomEvent('orderDeleted', { detail: orders }));
-        });
+            // Listen for orders changes
+            const ordersRef = firebaseRef(StorageManager.PATHS.ORDERS);
+            firebaseOnValue(ordersRef, (snapshot) => {
+                try {
+                    const data = snapshot.val() || {};
+                    const orders = Object.values(data);
+                    window.dispatchEvent(new CustomEvent('orderAdded', { detail: orders }));
+                    window.dispatchEvent(new CustomEvent('orderDeleted', { detail: orders }));
+                } catch (error) {
+                    console.error('Error processing orders data:', error);
+                    showToast('Error loading order data. Please refresh.', 'error');
+                }
+            }, (error) => {
+                console.error('Error listening to orders changes:', error);
+                showToast('Lost connection to order data. Attempting to reconnect...', 'error');
+            });
+
+            // Initialize network monitoring
+            ErrorHandler.initNetworkMonitoring();
+        } catch (error) {
+            console.error('Error initializing storage listeners:', error);
+            showToast('Error initializing data sync. Please refresh the page.', 'error');
+        }
     },
     
     // ===== HOTEL MANAGEMENT =====
     async getHotels() {
-        try {
+        return await ErrorHandler.handleFirebaseOperation(async () => {
             const hotelsRef = firebaseRef(StorageManager.PATHS.HOTELS);
             const snapshot = await firebaseGet(hotelsRef);
             const data = snapshot.val() || {};
             return Object.values(data);
-        } catch (error) {
-            console.error('Error fetching hotels:', error);
-            return [];
-        }
+        }, { 
+            context: 'fetching hotels',
+            showToast: false // Don't show toast for data fetching operations
+        });
     },
 
     async setHotels(hotels) {
-        try {
+        return await ErrorHandler.handleFirebaseOperation(async () => {
             const hotelsRef = firebaseRef(StorageManager.PATHS.HOTELS);
             const hotelsObject = {};
             hotels.forEach(hotel => {
                 hotelsObject[hotel.id] = hotel;
             });
             await firebaseSet(hotelsRef, hotelsObject);
-        } catch (error) {
-            console.error('Error saving hotels:', error);
-            showToast('Error saving data. Check connection.', 'error');
-        }
+        }, { 
+            context: 'saving hotels',
+            customMessage: 'Failed to save hotels. Please check your connection and try again.'
+        });
     },
 
     async addHotel(hotelData) {
@@ -231,7 +255,7 @@ const StorageManager = {
     },
 
     async addOrder(order) {
-        try {
+        return await ErrorHandler.handleFirebaseOperation(async () => {
             order.id = Date.now().toString() + '_' + Math.random().toString(36).substr(2, 9);
             order.timestamp = new Date().toISOString();
             order.date = new Date().toDateString();
@@ -245,11 +269,10 @@ const StorageManager = {
             await firebaseSet(orderRef, order);
             // Event will be triggered by real-time listener
             return order;
-        } catch (error) {
-            console.error('Error adding order:', error);
-            showToast('Error placing order.', 'error');
-            return null;
-        }
+        }, { 
+            context: 'placing order',
+            customMessage: 'Failed to place your order. Please check your connection and try again.'
+        });
     },
 
     async getTodaysOrders() {

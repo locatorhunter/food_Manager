@@ -106,24 +106,35 @@
 
     <!-- Group Order Modal -->
     <div id="groupOrderModal" class="modal" style="display: none;">
-        <div class="modal-content group-order-modal-content">
+        <div class="modal-content group-ordering-modal-content">
             <span class="modal-close" onclick="closeGroupOrderModal()">&times;</span>
             <h2>👥 Create Group Order</h2>
-            <div id="groupOrderItemInfo" class="group-order-item-info">
+            <div id="groupOrderItemInfo" class="group-ordering-info">
                 <!-- Item info will be populated here -->
             </div>
-            <div class="group-order-participants">
-                <h3>Participants</h3>
-                <div id="participantsList" class="participants-list">
-                    <!-- Participants will be added here -->
+            <div class="group-size-selection">
+                <h3>How many people are sharing this order?</h3>
+                <div class="participant-count-selector">
+                    <button class="count-btn" onclick="adjustGroupOrderParticipantCount(-1)">−</button>
+                    <input type="number" id="groupOrderParticipantCount" class="participant-count-input" value="2" min="2" max="20" readonly>
+                    <button class="count-btn" onclick="adjustGroupOrderParticipantCount(1)">+</button>
+                    <span class="count-label">people</span>
                 </div>
-                <button type="button" class="btn btn-secondary" onclick="addParticipant()">➕ Add Participant</button>
+                <div class="group-size-hint">
+                    <small id="groupOrderSizeHint">💡 Enter the number of people sharing this order (2-20)</small>
+                </div>
             </div>
-            <div class="group-order-summary" id="groupOrderSummary">
-                <!-- Cost summary will be shown here -->
+            <div id="groupOrderParticipantNamesSection" class="participant-names-section" style="display: none;">
+                <h3>Enter Participant Names</h3>
+                <div id="groupOrderParticipantNamesList" class="participant-names-list">
+                    <!-- Name inputs will be added here -->
+                </div>
+                <div class="cost-breakdown" id="groupOrderCostBreakdown">
+                    <!-- Cost breakdown will be shown here -->
+                </div>
             </div>
             <div class="modal-actions">
-                <button id="confirmGroupOrderBtn" class="btn btn-primary" onclick="confirmGroupOrder()">Confirm Group Order</button>
+                <button id="confirmGroupOrderBtn" class="btn btn-primary" onclick="confirmGroupOrder()" style="display: none;">Confirm Group Order</button>
                 <button class="btn btn-secondary" onclick="closeGroupOrderModal()">Cancel</button>
             </div>
         </div>
@@ -146,7 +157,7 @@
                     <span class="count-label">people</span>
                 </div>
                 <div class="group-size-hint">
-                    <small>💡 Enter the number of people sharing this order (2-20)</small>
+                    <small id="groupSizeHint">💡 Enter the number of people sharing this order (2-20)</small>
                 </div>
             </div>
             <div id="participantNamesSection" class="participant-names-section" style="display: none;">

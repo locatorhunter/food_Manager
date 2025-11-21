@@ -47,8 +47,7 @@ window.cancelOrder = cancelOrder;
 window.showOrderModal = showOrderModal;
 window.showGroupOrderModal = showGroupOrderModal;
 window.closeGroupOrderModal = closeGroupOrderModal;
-window.addParticipant = addParticipant;
-window.removeParticipant = removeParticipant;
+window.adjustGroupOrderParticipantCount = adjustGroupOrderParticipantCount;
 window.confirmGroupOrder = confirmGroupOrder;
 window.showGroupOrderingModal = showGroupOrderingModal;
 window.closeGroupOrderingModal = closeGroupOrderingModal;
@@ -413,12 +412,14 @@ async function showGroupOrderingModal(total, maxAmount, items) {
 
     const excess = total - maxAmount;
     const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
+    const minPeopleNeeded = Math.ceil(total / maxAmount);
 
     const infoHtml = `
         <div class="limit-exceeded">⚠️ Order Total Exceeds Limit</div>
         <div class="current-total">Your order: ${formatCurrency(total)} (${totalItems} items)</div>
         <div class="limit-info">Individual limit: ${formatCurrency(maxAmount)} per person</div>
-        <div style="margin-top: 12px; color: var(--text-secondary);">
+        <div style="color: #ff6b6b; margin: 8px 0;"><strong>Minimum people needed:</strong> ${minPeopleNeeded} people</div>
+        <div style="margin-top: 8px; color: var(--text-secondary);">
             💡 <strong>Solution:</strong> Order with friends to share the cost!
         </div>
     `;
@@ -486,10 +487,16 @@ async function showGroupOrderingModal(total, maxAmount, items) {
     participantNamesSection.style.display = 'block';
     confirmGroupOrderingBtn.style.display = 'none';
 
-    // Initialize with 2 participants
-    selectedGroupSize = 2;
-    groupParticipantNames = ['', ''];
+    // Initialize with minimum participants needed
+    selectedGroupSize = Math.max(2, minPeopleNeeded);
+    groupParticipantNames = new Array(selectedGroupSize).fill('');
     participantCount.value = selectedGroupSize;
+
+    // Update hint text with minimum people needed
+    const hintElement = document.getElementById('groupSizeHint');
+    if (hintElement) {
+        hintElement.textContent = `💡 Minimum ${minPeopleNeeded} people needed • Enter the number of people sharing this order (2-20)`;
+    }
 
     // Generate initial name inputs
     updateParticipantNameInputs();
@@ -515,14 +522,27 @@ function closeGroupOrderingModal() {
     selectedGroupSize = null;
     groupParticipantNames = [];
     document.getElementById('participantCount').value = 2;
+
+    // Reset hint text
+    const hintElement = document.getElementById('groupSizeHint');
+    if (hintElement) {
+        hintElement.textContent = '💡 Enter the number of people sharing this order (2-20)';
+    }
 }
 
-function adjustParticipantCount(change) {
+async function adjustParticipantCount(change) {
     const currentCount = parseInt(document.getElementById('participantCount').value);
     const newCount = currentCount + change;
 
-    // Validate range (2-20)
-    if (newCount < 2 || newCount > 20) {
+    // Calculate minimum needed based on current cart total
+    const items = Object.values(selectedItems).filter(item => item.quantity > 0);
+    const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const maxAmount = await StorageManager.getMaxAmountPerPerson();
+    const minPeopleNeeded = Math.ceil(total / maxAmount);
+    const minAllowed = Math.max(2, minPeopleNeeded);
+
+    // Validate range (minAllowed-20)
+    if (newCount < minAllowed || newCount > 20) {
         return;
     }
 
@@ -546,15 +566,23 @@ function adjustParticipantCount(change) {
     groupParticipantNames = new Array(selectedGroupSize).fill('');
 }
 
-function updateCountButtonStates() {
+async function updateCountButtonStates() {
     const countInput = document.getElementById('participantCount');
     if (!countInput) return; // Modal not open yet
 
     const count = parseInt(countInput.value);
+
+    // Calculate minimum needed based on current cart total
+    const items = Object.values(selectedItems).filter(item => item.quantity > 0);
+    const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const maxAmount = await StorageManager.getMaxAmountPerPerson();
+    const minPeopleNeeded = Math.ceil(total / maxAmount);
+    const minAllowed = Math.max(2, minPeopleNeeded);
+
     const minusBtn = document.querySelector('.count-btn:first-child');
     const plusBtn = document.querySelector('.count-btn:last-child');
 
-    if (minusBtn) minusBtn.disabled = count <= 2;
+    if (minusBtn) minusBtn.disabled = count <= minAllowed;
     if (plusBtn) plusBtn.disabled = count >= 20;
 }
 
@@ -718,7 +746,14 @@ async function confirmGroupOrdering() {
         // Reset and close
         selectedItems = {};
         closeGroupOrderingModal();
-        await displayHotelsMenu();
+
+        // Handle potential errors in menu refresh gracefully
+        try {
+            await displayHotelsMenu();
+        } catch (menuError) {
+            console.error('Error refreshing menu after order:', menuError);
+            // Don't show error toast for menu refresh failures
+        }
     } catch (error) {
         console.error('Error placing group order:', error);
         showToast('Error placing order. Please try again.', 'error');
@@ -745,15 +780,34 @@ async function showOrderModal() {
         return;
     }
 
-    // Normal ordering flow - try to find existing modal elements
+    // Normal ordering flow - ensure modal exists and is properly configured
+    ensureOrderModal();
+    
+    const orderModal = document.getElementById('orderModal');
+    const orderPreview = document.getElementById('orderPreview');
+    const orderEmployeeName = document.getElementById('orderEmployeeName');
+
+    if (!orderModal || !orderPreview || !orderEmployeeName) {
+        console.error('Order modal elements not found');
+        showToast('Error: Order modal not available', 'error');
+        return;
+    }
+
+    // Now proceed with modal setup
+    const preview = `${totalItems} item(s) • Total: ${formatCurrency(total)}`;
+    orderPreview.textContent = preview;
+    orderEmployeeName.value = '';
+    orderModal.style.display = 'flex';
+    orderEmployeeName.focus();
+}
+
+function ensureOrderModal() {
     let orderModal = document.getElementById('orderModal');
-    let orderPreview = document.getElementById('orderPreview');
-    let orderEmployeeName = document.getElementById('orderEmployeeName');
-
-    // If modal doesn't exist, create it dynamically
+    
+    // If modal doesn't exist, create it
     if (!orderModal) {
-        console.log('Creating order modal dynamically');
-
+        console.log('Creating order modal');
+        
         const modalHtml = `
             <div id="orderModal" class="modal" style="display: none;">
                 <div class="modal-content order-modal-content">
@@ -774,83 +828,107 @@ async function showOrderModal() {
         `;
 
         document.body.insertAdjacentHTML('beforeend', modalHtml);
-
-        // Now get the references to the newly created elements
         orderModal = document.getElementById('orderModal');
-        orderPreview = document.getElementById('orderPreview');
-        orderEmployeeName = document.getElementById('orderEmployeeName');
+    }
+    
+    // Always setup event listeners to ensure they're properly bound
+    setupOrderModalEventListeners();
+}
 
-        // Re-setup modal event listeners for the dynamically created modal
-        const confirmBtn = document.getElementById('confirmOrderBtn');
-        const cancelBtn = document.getElementById('cancelOrderBtn');
-        const closeBtn = orderModal.querySelector('.modal-close');
+function setupOrderModalEventListeners() {
+    const orderModal = document.getElementById('orderModal');
+    if (!orderModal) return;
 
-        if (closeBtn) {
-            closeBtn.addEventListener('click', () => {
-                orderModal.style.display = 'none';
-            });
-        }
+    // Remove any existing listeners to prevent duplicates
+    const newModal = orderModal.cloneNode(true);
+    orderModal.parentNode.replaceChild(newModal, orderModal);
+    
+    const confirmBtn = newModal.querySelector('#confirmOrderBtn');
+    const cancelBtn = newModal.querySelector('#cancelOrderBtn');
+    const closeBtn = newModal.querySelector('.modal-close');
+    const employeeNameInput = newModal.querySelector('#orderEmployeeName');
 
-        cancelBtn.addEventListener('click', () => {
-            orderModal.style.display = 'none';
-        });
-
-        // Close modal when clicking outside
-        window.addEventListener('click', (e) => {
-            if (e.target === orderModal) {
-                orderModal.style.display = 'none';
-            }
-        });
-
-        confirmBtn.addEventListener('click', () => {
-            const employeeNameInput = document.getElementById('orderEmployeeName');
-            if (!employeeNameInput) {
-                showToast('Error: Name input not found', 'error');
-                return;
-            }
-
-            const employeeName = sanitizeInput(employeeNameInput.value);
-
-            if (!employeeName) {
-                showToast('Please enter your name', 'error');
-                return;
-            }
-
-            if (!isValidName(employeeName)) {
-                showToast('Name can only contain letters, spaces, hyphens, and apostrophes', 'error');
-                return;
-            }
-
-            orderModal.style.display = 'none';
-
-            const items = Object.values(selectedItems).filter(item => item.quantity > 0);
-            const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-            const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
-
-            // Group items by hotel for order
-            const ordersByHotel = {};
-            items.forEach(item => {
-                if (!ordersByHotel[item.hotelName]) {
-                    ordersByHotel[item.hotelName] = [];
-                }
-                ordersByHotel[item.hotelName].push({
-                    name: item.name,
-                    price: item.price,
-                    quantity: item.quantity,
-                    category: item.category
-                });
-            });
-
-            placeOrders(ordersByHotel, employeeName);
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+            newModal.style.display = 'none';
         });
     }
 
-    // Now proceed with modal setup
-    const preview = `${totalItems} item(s) • Total: ${formatCurrency(total)}`;
-    orderPreview.textContent = preview;
-    orderEmployeeName.value = '';
-    orderModal.style.display = 'flex';
-    orderEmployeeName.focus();
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', () => {
+            newModal.style.display = 'none';
+        });
+    }
+
+    // Close modal when clicking outside
+    newModal.addEventListener('click', (e) => {
+        if (e.target === newModal) {
+            newModal.style.display = 'none';
+        }
+    });
+
+    // Handle Enter key in name input
+    if (employeeNameInput) {
+        employeeNameInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                if (confirmBtn) confirmBtn.click();
+            }
+        });
+    }
+
+    // Handle confirm button click
+    if (confirmBtn) {
+        confirmBtn.addEventListener('click', handleConfirmOrder);
+    }
+}
+
+function handleConfirmOrder() {
+    const orderModal = document.getElementById('orderModal');
+    const employeeNameInput = document.getElementById('orderEmployeeName');
+    
+    if (!employeeNameInput) {
+        showToast('Error: Name input not found', 'error');
+        return;
+    }
+
+    const employeeName = sanitizeInput(employeeNameInput.value);
+
+    if (!employeeName) {
+        showToast('Please enter your name', 'error');
+        employeeNameInput.focus();
+        return;
+    }
+
+    if (!isValidName(employeeName)) {
+        showToast('Name can only contain letters, spaces, hyphens, and apostrophes', 'error');
+        employeeNameInput.focus();
+        return;
+    }
+
+    // Close modal
+    orderModal.style.display = 'none';
+
+    // Process the order
+    const items = Object.values(selectedItems).filter(item => item.quantity > 0);
+    const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
+
+    // Group items by hotel for order
+    const ordersByHotel = {};
+    items.forEach(item => {
+        if (!ordersByHotel[item.hotelName]) {
+            ordersByHotel[item.hotelName] = [];
+        }
+        ordersByHotel[item.hotelName].push({
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity,
+            category: item.category
+        });
+    });
+
+    placeOrders(ordersByHotel, employeeName);
 }
 
 function cancelOrder() {
@@ -862,25 +940,33 @@ function cancelOrder() {
 }
 
 async function placeOrders(ordersByHotel, employeeName) {
-    // Create separate order for each hotel
-    Object.entries(ordersByHotel).forEach(([hotelName, hotelItems]) => {
-        const hotelTotal = hotelItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    try {
+        // Create separate order for each hotel
+        const orderPromises = Object.entries(ordersByHotel).map(async ([hotelName, hotelItems]) => {
+            const hotelTotal = hotelItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
-        const order = {
-            employeeName,
-            items: hotelItems,
-            total: hotelTotal,
-            hotelName
-        };
+            const order = {
+                employeeName,
+                items: hotelItems,
+                total: hotelTotal,
+                hotelName
+            };
 
-        StorageManager.addOrder(order);
-    });
+            return await StorageManager.addOrder(order);
+        });
 
-    showToast('Order placed successfully!');
+        // Wait for all orders to be placed
+        await Promise.all(orderPromises);
+        
+        showToast('Order placed successfully!', 'success');
 
-    // Reset
-    selectedItems = {};
-    await displayHotelsMenu();
+        // Reset
+        selectedItems = {};
+        await displayHotelsMenu();
+    } catch (error) {
+        console.error('Error placing orders:', error);
+        showToast('Failed to place order. Please try again.', 'error');
+    }
 }
 
 async function showItemModal(hotelId, itemId) {
@@ -1316,22 +1402,24 @@ function updateCartModalTotals() {
 // Group Order Modal Functions
 let currentGroupOrderItem = null;
 let groupOrderParticipants = [];
+let selectedGroupOrderSize = null;
+let groupOrderParticipantNames = [];
 
 async function showGroupOrderModal(item, hotel) {
     currentGroupOrderItem = { ...item, hotelId: hotel.id, hotelName: hotel.name };
-    groupOrderParticipants = [{
-        name: '',
-        shareAmount: item.price
-    }];
+    selectedGroupOrderSize = null;
+    groupOrderParticipantNames = [];
 
     const maxAmount = await StorageManager.getMaxAmountPerPerson();
+    const minPeopleNeeded = Math.ceil(item.price / maxAmount);
 
     const itemInfoHtml = `
         <h3>${item.name}</h3>
         <p><strong>Price:</strong> ${formatCurrency(item.price)}</p>
         <p><strong>Hotel:</strong> ${hotel.name}</p>
         <p><strong>Limit per person:</strong> ${formatCurrency(maxAmount)}</p>
-        <p style="color: #ff6b6b;"><strong>Note:</strong> This item exceeds the ₹${maxAmount} limit and requires group ordering.</p>
+        <p style="color: #ff6b6b;"><strong>Minimum people needed:</strong> ${minPeopleNeeded} people</p>
+        <p style="color: var(--text-secondary);"><strong>Note:</strong> This item exceeds the ₹${maxAmount} limit and requires group ordering.</p>
     `;
 
     const groupOrderItemInfo = document.getElementById('groupOrderItemInfo');
@@ -1340,183 +1428,231 @@ async function showGroupOrderModal(item, hotel) {
         return;
     }
     groupOrderItemInfo.innerHTML = itemInfoHtml;
-    updateParticipantsList();
-    updateGroupOrderSummary();
+
+    // Initialize with minimum participants needed
+    selectedGroupOrderSize = Math.max(2, minPeopleNeeded);
+    groupOrderParticipantNames = new Array(selectedGroupOrderSize).fill('');
+    document.getElementById('groupOrderParticipantCount').value = selectedGroupOrderSize;
+
+    // Update hint text with minimum people needed
+    const hintElement = document.getElementById('groupOrderSizeHint');
+    if (hintElement) {
+        hintElement.textContent = `💡 Minimum ${minPeopleNeeded} people needed • Enter the number of people sharing this order (2-20)`;
+    }
+
+    // Show participant names section and generate inputs
+    document.getElementById('groupOrderParticipantNamesSection').style.display = 'block';
+    updateGroupOrderParticipantNameInputs();
+    updateGroupOrderCostBreakdown();
 
     document.getElementById('groupOrderModal').style.display = 'flex';
+
+    // Focus on first name input
+    setTimeout(() => {
+        const firstInput = document.getElementById('group-order-name-0');
+        if (firstInput) firstInput.focus();
+    }, 50);
 }
 
 function closeGroupOrderModal() {
     console.log('closeGroupOrderModal called');
     document.getElementById('groupOrderModal').style.display = 'none';
     currentGroupOrderItem = null;
-    groupOrderParticipants = [];
-}
+    selectedGroupOrderSize = null;
+    groupOrderParticipantNames = [];
+    document.getElementById('groupOrderParticipantCount').value = 2;
 
-function addParticipant() {
-    groupOrderParticipants.push({
-        name: '',
-        shareAmount: 0
-    });
-    updateParticipantsList();
-    updateGroupOrderSummary();
-}
-
-function removeParticipant(index) {
-    if (groupOrderParticipants.length > 1) {
-        groupOrderParticipants.splice(index, 1);
-        updateParticipantsList();
-        updateGroupOrderSummary();
+    // Reset hint text
+    const hintElement = document.getElementById('groupOrderSizeHint');
+    if (hintElement) {
+        hintElement.textContent = '💡 Enter the number of people sharing this order (2-20)';
     }
 }
 
-function updateParticipantsList() {
-    const listHtml = groupOrderParticipants.map((participant, index) => `
-        <div class="participant-item">
-            <input type="text"
-                   placeholder="Participant name"
-                   value="${participant.name}"
-                   oninput="updateParticipantName(${index}, this.value)">
-            <input type="number"
-                   placeholder="Share amount"
-                   value="${participant.shareAmount}"
-                   min="0"
-                   step="0.01"
-                   oninput="updateParticipantShare(${index}, this.value)">
-            ${groupOrderParticipants.length > 1 ?
-                `<button class="btn btn-danger btn-small" onclick="removeParticipant(${index})">Remove</button>` :
-                ''}
-        </div>
+async function adjustGroupOrderParticipantCount(change) {
+    const currentCount = parseInt(document.getElementById('groupOrderParticipantCount').value);
+    const newCount = currentCount + change;
+
+    // Calculate minimum needed
+    const maxAmount = await StorageManager.getMaxAmountPerPerson();
+    const minPeopleNeeded = Math.ceil(currentGroupOrderItem.price / maxAmount);
+    const minAllowed = Math.max(2, minPeopleNeeded);
+
+    // Validate range (minAllowed-20)
+    if (newCount < minAllowed || newCount > 20) {
+        return;
+    }
+
+    selectedGroupOrderSize = newCount;
+    document.getElementById('groupOrderParticipantCount').value = newCount;
+
+    // Adjust the names array
+    if (change > 0) {
+        // Adding participants
+        groupOrderParticipantNames.push('');
+    } else {
+        // Removing participants
+        groupOrderParticipantNames.pop();
+    }
+
+    updateGroupOrderParticipantNameInputs();
+    updateGroupOrderCostBreakdown();
+}
+
+function updateGroupOrderParticipantNameInputs() {
+    const namesListHtml = groupOrderParticipantNames.map((name, index) => `
+        <input type="text"
+               class="participant-name-input"
+               placeholder="Enter name for person ${index + 1}"
+               value="${name}"
+               id="group-order-name-${index}">
     `).join('');
 
-    const participantsList = document.getElementById('participantsList');
-    if (!participantsList) {
-        console.error('participantsList element not found');
+    const participantNamesList = document.getElementById('groupOrderParticipantNamesList');
+    if (!participantNamesList) {
+        console.error('groupOrderParticipantNamesList element not found');
         return;
     }
-    participantsList.innerHTML = listHtml;
+    participantNamesList.innerHTML = namesListHtml;
 }
 
-function updateParticipantName(index, name) {
-    // Bounds checking to prevent accessing undefined array indices
-    if (index >= 0 && index < groupOrderParticipants.length) {
-        groupOrderParticipants[index].name = sanitizeInput(name);
-        updateGroupOrderSummary();
-    }
-}
+async function updateGroupOrderCostBreakdown() {
+    if (!selectedGroupOrderSize || !currentGroupOrderItem) return;
 
-function updateParticipantShare(index, shareAmount) {
-    groupOrderParticipants[index].shareAmount = parseFloat(shareAmount) || 0;
-    updateGroupOrderSummary();
-}
-
-async function updateGroupOrderSummary() {
-    if (!currentGroupOrderItem) return;
-
-    const totalShares = groupOrderParticipants.reduce((sum, p) => sum + p.shareAmount, 0);
     const itemPrice = currentGroupOrderItem.price;
+    const perPersonShare = Math.ceil(itemPrice / selectedGroupOrderSize); // Round up to ensure coverage
+
     const maxAmount = await StorageManager.getMaxAmountPerPerson();
 
-    let summaryHtml = `
-        <h4>Order Summary</h4>
+    let breakdownHtml = `
+        <h4>Cost Breakdown</h4>
         <p><strong>Item Total:</strong> ${formatCurrency(itemPrice)}</p>
-        <p><strong>Total Participant Shares:</strong> ${formatCurrency(totalShares)}</p>
+        <p><strong>Number of People:</strong> ${selectedGroupOrderSize}</p>
+        <p class="per-person"><strong>Each Person Pays:</strong> ${formatCurrency(perPersonShare)}</p>
     `;
 
-    // Check for validation issues
-    const issues = [];
-
-    // Check if total shares match item price
-    if (Math.abs(totalShares - itemPrice) > 0.01) {
-        issues.push(`Total shares (${formatCurrency(totalShares)}) must equal item price (${formatCurrency(itemPrice)})`);
-    }
-
-    // Check individual limits
-    groupOrderParticipants.forEach((participant, index) => {
-        if (participant.shareAmount > maxAmount) {
-            issues.push(`${participant.name || `Participant ${index + 1}`} exceeds limit of ${formatCurrency(maxAmount)}`);
-        }
-        if (!participant.name.trim()) {
-            issues.push(`Participant ${index + 1} name is required`);
-        }
-    });
-
-    if (issues.length > 0) {
-        summaryHtml += '<div style="color: #ff6b6b; margin-top: 10px;">';
-        summaryHtml += '<strong>Issues to fix:</strong><ul>';
-        issues.forEach(issue => {
-            summaryHtml += `<li>${issue}</li>`;
-        });
-        summaryHtml += '</ul></div>';
-        document.getElementById('confirmGroupOrderBtn').disabled = true;
+    if (perPersonShare > maxAmount) {
+        breakdownHtml += `
+            <p style="color: #ff6b6b; font-weight: bold;">
+                ⚠️ Each person would pay ${formatCurrency(perPersonShare)}, which exceeds the limit of ${formatCurrency(maxAmount)}.
+            </p>
+            <p style="color: var(--text-secondary);">
+                Try adding more people or reducing items in your order.
+            </p>
+        `;
     } else {
-        summaryHtml += '<p style="color: #51cf66; margin-top: 10px;"><strong>✓ All validations passed!</strong></p>';
-        document.getElementById('confirmGroupOrderBtn').disabled = false;
+        breakdownHtml += `
+            <p style="color: #51cf66; font-weight: bold;">
+                ✅ Each person pays within the ${formatCurrency(maxAmount)} limit!
+            </p>
+        `;
     }
 
-    const groupOrderSummary = document.getElementById('groupOrderSummary');
-    if (!groupOrderSummary) {
-        console.error('groupOrderSummary element not found');
+    const costBreakdown = document.getElementById('groupOrderCostBreakdown');
+    if (!costBreakdown) {
+        console.error('groupOrderCostBreakdown element not found');
         return;
     }
-    groupOrderSummary.innerHTML = summaryHtml;
+    costBreakdown.innerHTML = breakdownHtml;
+
+    // Enable the button
+    const button = document.getElementById('confirmGroupOrderBtn');
+    if (button) {
+        button.style.display = 'inline-block';
+        button.disabled = false;
+        button.style.opacity = '1';
+        button.style.cursor = 'pointer';
+    }
 }
 
+
 async function confirmGroupOrder() {
-    if (!currentGroupOrderItem) return;
+    try {
+        if (!currentGroupOrderItem || !selectedGroupOrderSize) return;
 
-    // Final validation
-    const totalShares = groupOrderParticipants.reduce((sum, p) => sum + p.shareAmount, 0);
-    const itemPrice = currentGroupOrderItem.price;
-    const maxAmount = await StorageManager.getMaxAmountPerPerson();
+        // Collect names directly from input fields
+        const participantNames = [];
+        for (let i = 0; i < selectedGroupOrderSize; i++) {
+            const input = document.getElementById(`group-order-name-${i}`);
+            if (input) {
+                const name = input.value.trim();
+                if (!name) {
+                    showToast(`Please enter name for person ${i + 1}`, 'error');
+                    input.focus();
+                    return;
+                }
+                if (!isValidName(name)) {
+                    showToast('Names can only contain letters, spaces, hyphens, and apostrophes', 'error');
+                    input.focus();
+                    return;
+                }
+                participantNames.push(name);
+            } else {
+                showToast('Error: Input field not found', 'error');
+                return;
+            }
+        }
 
-    if (Math.abs(totalShares - itemPrice) > 0.01) {
-        showToast('Total participant shares must equal item price', 'error');
-        return;
-    }
+        const itemPrice = currentGroupOrderItem.price;
+        const perPersonShare = Math.ceil(itemPrice / selectedGroupOrderSize);
 
-    // Check individual limits and names
-    for (const participant of groupOrderParticipants) {
-        if (participant.shareAmount > maxAmount) {
-            showToast(`Individual share cannot exceed ${formatCurrency(maxAmount)}`, 'error');
+        const maxAmount = await StorageManager.getMaxAmountPerPerson();
+        if (perPersonShare > maxAmount) {
+            showToast(`Each person would pay ${formatCurrency(perPersonShare)}, which exceeds the limit`, 'error');
             return;
         }
-        if (!participant.name.trim()) {
-            showToast('All participant names are required', 'error');
-            return;
+
+        // Create participants array
+        const participants = participantNames.map(name => ({
+            name: name,
+            shareAmount: perPersonShare
+        }));
+
+        // Adjust the last person's share to account for rounding
+        const totalShares = participants.reduce((sum, p) => sum + p.shareAmount, 0);
+        if (totalShares > itemPrice) {
+            participants[participants.length - 1].shareAmount -= (totalShares - itemPrice);
         }
-    }
 
-    // Create the group order
-    const order = {
-        employeeName: groupOrderParticipants[0].name, // Primary participant
-        items: [{
-            name: currentGroupOrderItem.name,
-            price: currentGroupOrderItem.price,
-            quantity: 1,
-            category: currentGroupOrderItem.category
-        }],
-        total: currentGroupOrderItem.price,
-        hotelName: currentGroupOrderItem.hotelName,
-        isGroupOrder: true,
-        participants: groupOrderParticipants.map(p => ({
-            name: p.name.trim(),
-            shareAmount: p.shareAmount
-        }))
-    };
-
-    const result = await StorageManager.addOrder(order);
-    if (result) {
-        showToast('Group order placed successfully!');
-        closeGroupOrderModal();
-
-        // Add to selected items for UI consistency
-        const itemKey = `${currentGroupOrderItem.hotelId}-${currentGroupOrderItem.id}`;
-        selectedItems[itemKey] = {
-            ...currentGroupOrderItem,
-            quantity: 1
+        // Create the group order
+        const order = {
+            employeeName: participants[0].name, // Primary participant
+            items: [{
+                name: currentGroupOrderItem.name,
+                price: currentGroupOrderItem.price,
+                quantity: 1,
+                category: currentGroupOrderItem.category
+            }],
+            total: currentGroupOrderItem.price,
+            hotelName: currentGroupOrderItem.hotelName,
+            isGroupOrder: true,
+            participants: participants
         };
-        await displayHotelsMenu();
+
+        const result = await StorageManager.addOrder(order);
+        if (result) {
+            showToast('Group order placed successfully!');
+
+            // Handle potential errors in post-order operations gracefully
+            try {
+                closeGroupOrderModal();
+
+                // Add to selected items for UI consistency
+                const itemKey = `${currentGroupOrderItem.hotelId}-${currentGroupOrderItem.id}`;
+                selectedItems[itemKey] = {
+                    ...currentGroupOrderItem,
+                    quantity: 1
+                };
+
+                await displayHotelsMenu();
+            } catch (postOrderError) {
+                console.error('Error in post-order operations:', postOrderError);
+                // Don't show error toast for post-order operation failures
+            }
+        }
+    } catch (error) {
+        console.error('Error placing group order:', error);
+        showToast('Error placing order. Please try again.', 'error');
     }
 }
 
