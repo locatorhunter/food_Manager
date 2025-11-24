@@ -1951,3 +1951,484 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Make ErrorBoundary globally available
 window.ErrorBoundary = ErrorBoundary;
+
+// ========================================
+// Security Enhancements
+// ========================================
+
+const SecurityFramework = {
+    /**
+     * Rate limiting for API calls
+     */
+    rateLimitMap: new Map(),
+
+    /**
+     * Check rate limit for operations
+     * @param {string} key - Operation key
+     * @param {number} maxCalls - Maximum calls allowed
+     * @param {number} timeWindow - Time window in milliseconds
+     * @returns {boolean} True if allowed
+     */
+    checkRateLimit(key, maxCalls = 10, timeWindow = 60000) {
+        const now = Date.now();
+        const userKey = `${key}_${Math.floor(now / timeWindow)}`;
+
+        if (!this.rateLimitMap.has(userKey)) {
+            this.rateLimitMap.set(userKey, 0);
+        }
+
+        const currentCount = this.rateLimitMap.get(userKey);
+        if (currentCount >= maxCalls) {
+            console.warn(`Rate limit exceeded for ${key}`);
+            return false;
+        }
+
+        this.rateLimitMap.set(userKey, currentCount + 1);
+        return true;
+    },
+
+    /**
+     * Generate CSRF token
+     * @returns {string} CSRF token
+     */
+    generateCSRFToken() {
+        return btoa(Math.random().toString()).substring(0, 12);
+    },
+
+    /**
+     * Validate password strength
+     * @param {string} password - Password to validate
+     * @returns {Object} Validation result
+     */
+    validatePassword(password) {
+        const result = {
+            isValid: true,
+            errors: [],
+            strength: 'weak'
+        };
+
+        if (!password || typeof password !== 'string') {
+            result.isValid = false;
+            result.errors.push('Password is required');
+            return result;
+        }
+
+        // Length check
+        if (password.length < 8) {
+            result.isValid = false;
+            result.errors.push('Password must be at least 8 characters long');
+        }
+
+        // Character requirements
+        const hasUpperCase = /[A-Z]/.test(password);
+        const hasLowerCase = /[a-z]/.test(password);
+        const hasNumbers = /\d/.test(password);
+        const hasSpecialChars = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
+        const hasNoSpaces = !/\s/.test(password);
+
+        if (!hasUpperCase) {
+            result.isValid = false;
+            result.errors.push('Password must contain at least one uppercase letter');
+        }
+
+        if (!hasLowerCase) {
+            result.isValid = false;
+            result.errors.push('Password must contain at least one lowercase letter');
+        }
+
+        if (!hasNumbers) {
+            result.isValid = false;
+            result.errors.push('Password must contain at least one number');
+        }
+
+        if (!hasNoSpaces) {
+            result.isValid = false;
+            result.errors.push('Password cannot contain spaces');
+        }
+
+        // Calculate strength
+        let strengthScore = 0;
+        if (hasUpperCase) strengthScore++;
+        if (hasLowerCase) strengthScore++;
+        if (hasNumbers) strengthScore++;
+        if (hasSpecialChars) strengthScore++;
+        if (password.length >= 12) strengthScore++;
+        if (password.length >= 16) strengthScore++;
+
+        if (strengthScore >= 5) {
+            result.strength = 'strong';
+        } else if (strengthScore >= 3) {
+            result.strength = 'medium';
+        } else {
+            result.strength = 'weak';
+        }
+
+        return result;
+    },
+
+    /**
+     * Enhanced input sanitization
+     * @param {string} input - Input to sanitize
+     * @returns {string} Sanitized input
+     */
+    sanitizeInput(input) {
+        if (typeof input !== 'string') return '';
+
+        // Remove dangerous patterns
+        return input
+            .replace(/[<>]/g, '') // Remove angle brackets
+            .replace(/javascript:/gi, '') // Remove javascript: protocol
+            .replace(/on\w+\s*=/gi, '') // Remove event handlers
+            .replace(/<script[^>]*>.*?<\/script>/gi, '') // Remove script tags
+            .replace(/<iframe[^>]*>.*?<\/iframe>/gi, '') // Remove iframe tags
+            .replace(/<object[^>]*>.*?<\/object>/gi, '') // Remove object tags
+            .replace(/<embed[^>]*>.*?<\/embed>/gi, '') // Remove embed tags
+            .replace(/data:\s*text\/html/gi, '') // Remove data URLs
+            .trim();
+    },
+
+    /**
+     * Validate email with enhanced security
+     * @param {string} email - Email to validate
+     * @returns {Object} Validation result
+     */
+    validateEmail(email) {
+        const result = {
+            isValid: true,
+            errors: [],
+            sanitized: email
+        };
+
+        if (!email || typeof email !== 'string') {
+            result.isValid = false;
+            result.errors.push('Email is required');
+            return result;
+        }
+
+        const trimmed = email.trim();
+        result.sanitized = trimmed;
+
+        // Basic email regex
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(trimmed)) {
+            result.isValid = false;
+            result.errors.push('Invalid email format');
+        }
+
+        // Length checks
+        if (trimmed.length > 254) {
+            result.isValid = false;
+            result.errors.push('Email address too long');
+        }
+
+        // Domain checks
+        const domain = trimmed.split('@')[1];
+        if (domain) {
+            if (domain.length > 253) {
+                result.isValid = false;
+                result.errors.push('Email domain too long');
+            }
+
+            // Check for suspicious patterns
+            const suspiciousPatterns = [
+                /\.{2,}/, // Multiple consecutive dots
+                /^\./, // Starts with dot
+                /\.$/, // Ends with dot
+                /@.*@/, // Multiple @ symbols
+            ];
+
+            if (suspiciousPatterns.some(pattern => pattern.test(trimmed))) {
+                result.isValid = false;
+                result.errors.push('Invalid email format');
+            }
+        }
+
+        // Security checks
+        const xssPattern = /<script|javascript:|on\w+=|data:/i;
+        if (xssPattern.test(trimmed)) {
+            result.isValid = false;
+            result.errors.push('Email contains unsafe content');
+        }
+
+        return result;
+    },
+
+    /**
+     * Validate numeric input with bounds
+     * @param {string|number} value - Value to validate
+     * @param {number} min - Minimum value
+     * @param {number} max - Maximum value
+     * @returns {Object} Validation result
+     */
+    validateNumeric(value, min = 0, max = Number.MAX_SAFE_INTEGER) {
+        const result = {
+            isValid: true,
+            errors: [],
+            sanitized: value,
+            numeric: null
+        };
+
+        const num = parseFloat(value);
+
+        if (isNaN(num)) {
+            result.isValid = false;
+            result.errors.push('Value must be a valid number');
+            return result;
+        }
+
+        if (!isFinite(num)) {
+            result.isValid = false;
+            result.errors.push('Value must be finite');
+            return result;
+        }
+
+        if (num < min) {
+            result.isValid = false;
+            result.errors.push(`Value must be at least ${min}`);
+        }
+
+        if (num > max) {
+            result.isValid = false;
+            result.errors.push(`Value must not exceed ${max}`);
+        }
+
+        result.numeric = num;
+        result.sanitized = num.toString();
+
+        return result;
+    },
+
+    /**
+     * Secure local storage operations
+     */
+    secureStorage: {
+        /**
+         * Set item with encryption (basic obfuscation)
+         * @param {string} key - Storage key
+         * @param {any} value - Value to store
+         */
+        setItem(key, value) {
+            try {
+                const serialized = JSON.stringify(value);
+                const encoded = btoa(encodeURIComponent(serialized));
+                localStorage.setItem(`secure_${key}`, encoded);
+            } catch (error) {
+                console.error('Error storing secure data:', error);
+            }
+        },
+
+        /**
+         * Get item with decryption
+         * @param {string} key - Storage key
+         * @returns {any} Retrieved value
+         */
+        getItem(key) {
+            try {
+                const encoded = localStorage.getItem(`secure_${key}`);
+                if (!encoded) return null;
+
+                const decoded = decodeURIComponent(atob(encoded));
+                return JSON.parse(decoded);
+            } catch (error) {
+                console.error('Error retrieving secure data:', error);
+                return null;
+            }
+        },
+
+        /**
+         * Remove secure item
+         * @param {string} key - Storage key
+         */
+        removeItem(key) {
+            localStorage.removeItem(`secure_${key}`);
+        }
+    },
+
+    /**
+     * Initialize security features
+     */
+    init() {
+        // Add security headers simulation (client-side)
+        this.addSecurityHeaders();
+
+        // Initialize rate limiting cleanup
+        this.setupRateLimitCleanup();
+
+        // Add input validation listeners
+        this.addInputValidation();
+
+        console.log('Security framework initialized');
+    },
+
+    /**
+     * Add security headers (client-side simulation)
+     */
+    addSecurityHeaders() {
+        // Add CSP meta tag if not present
+        if (!document.querySelector('meta[http-equiv="Content-Security-Policy"]')) {
+            const cspMeta = document.createElement('meta');
+            cspMeta.httpEquiv = 'Content-Security-Policy';
+            cspMeta.content = "default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://foodmanager-19cbb.firebaseio.com https://foodmanager-19cbb-default-rtdb.firebaseio.com;";
+            document.head.appendChild(cspMeta);
+        }
+    },
+
+    /**
+     * Setup rate limit cleanup
+     */
+    setupRateLimitCleanup() {
+        // Clean up old rate limit entries every 5 minutes
+        setInterval(() => {
+            const now = Date.now();
+            const keysToDelete = [];
+
+            for (const [key, timestamp] of this.rateLimitMap.entries()) {
+                // Remove entries older than 10 minutes
+                if (now - timestamp > 600000) {
+                    keysToDelete.push(key);
+                }
+            }
+
+            keysToDelete.forEach(key => this.rateLimitMap.delete(key));
+        }, 300000);
+    },
+
+    /**
+     * Add input validation to forms
+     */
+    addInputValidation() {
+        // Add validation to all forms
+        document.addEventListener('DOMContentLoaded', () => {
+            const forms = document.querySelectorAll('form');
+            forms.forEach(form => {
+                this.addFormValidation(form);
+            });
+        });
+    },
+
+    /**
+     * Add validation to a specific form
+     * @param {HTMLFormElement} form - Form element
+     */
+    addFormValidation(form) {
+        const inputs = form.querySelectorAll('input, select, textarea');
+
+        inputs.forEach(input => {
+            // Real-time validation
+            input.addEventListener('input', () => {
+                this.validateInput(input);
+            });
+
+            input.addEventListener('blur', () => {
+                this.validateInput(input);
+            });
+        });
+
+        // Form submission validation
+        form.addEventListener('submit', (e) => {
+            const isValid = this.validateForm(form);
+            if (!isValid) {
+                e.preventDefault();
+                showToast('Please correct the errors in the form', 'error');
+            }
+        });
+    },
+
+    /**
+     * Validate a single input
+     * @param {HTMLInputElement} input - Input element
+     */
+    validateInput(input) {
+        const value = input.value;
+        let validationResult;
+
+        switch (input.type) {
+            case 'email':
+                validationResult = this.validateEmail(value);
+                break;
+            case 'password':
+                validationResult = this.validatePassword(value);
+                break;
+            case 'number':
+                const min = input.min ? parseFloat(input.min) : 0;
+                const max = input.max ? parseFloat(input.max) : Number.MAX_SAFE_INTEGER;
+                validationResult = this.validateNumeric(value, min, max);
+                break;
+            default:
+                // Basic sanitization for text inputs
+                validationResult = {
+                    isValid: true,
+                    errors: [],
+                    sanitized: this.sanitizeInput(value)
+                };
+        }
+
+        // Update input state
+        this.updateInputValidationState(input, validationResult);
+
+        return validationResult;
+    },
+
+    /**
+     * Update input validation state
+     * @param {HTMLInputElement} input - Input element
+     * @param {Object} validationResult - Validation result
+     */
+    updateInputValidationState(input, validationResult) {
+        // Remove previous states
+        input.classList.remove('is-valid', 'is-invalid');
+
+        // Remove existing error message
+        const existingError = input.parentNode.querySelector('.validation-error');
+        if (existingError) {
+            existingError.remove();
+        }
+
+        // Apply new state
+        if (validationResult.isValid) {
+            input.classList.add('is-valid');
+        } else {
+            input.classList.add('is-invalid');
+
+            // Add error message
+            if (validationResult.errors && validationResult.errors.length > 0) {
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'validation-error';
+                errorDiv.textContent = validationResult.errors[0]; // Show first error
+                input.parentNode.appendChild(errorDiv);
+            }
+        }
+
+        // Update value with sanitized version if valid
+        if (validationResult.isValid && validationResult.sanitized !== undefined) {
+            input.value = validationResult.sanitized;
+        }
+    },
+
+    /**
+     * Validate entire form
+     * @param {HTMLFormElement} form - Form element
+     * @returns {boolean} True if form is valid
+     */
+    validateForm(form) {
+        const inputs = form.querySelectorAll('input, select, textarea');
+        let isFormValid = true;
+
+        inputs.forEach(input => {
+            const result = this.validateInput(input);
+            if (!result.isValid) {
+                isFormValid = false;
+            }
+        });
+
+        return isFormValid;
+    }
+};
+
+// Initialize security framework
+document.addEventListener('DOMContentLoaded', () => {
+    SecurityFramework.init();
+});
+
+// Make SecurityFramework globally available
+window.SecurityFramework = SecurityFramework;

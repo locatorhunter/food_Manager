@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://*.firebaseio.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://www.gstatic.com https://identitytoolkit.googleapis.com https://firestore.googleapis.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com;">
+    <title>Sign Up - Lunch Manager</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="signup-container">
+        <div class="signup-card">
+            <div class="signup-header">
+                <h1>🍽️ Join Lunch Manager</h1>
+                <p>Create your account to start ordering lunch</p>
+            </div>
+
+            <form id="signupForm" class="signup-form">
+                <!-- Step 1: Basic Information -->
+                <div class="signup-step" id="step1">
+                    <h3>Step 1: Account Information</h3>
+
+                    <div class="form-group">
+                        <label for="signupEmail">Email Address *</label>
+                        <input type="email" id="signupEmail" placeholder="your.email@company.com" required>
+                        <small class="form-help">We'll send a verification email to this address</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="signupPassword">Password *</label>
+                        <div class="password-input-wrapper">
+                            <input type="password" id="signupPassword" required>
+                            <button type="button" class="password-toggle" onclick="togglePassword('signupPassword')">👁️</button>
+                        </div>
+                        <div class="password-strength" id="passwordStrength">
+                            <div class="strength-meter">
+                                <div class="strength-fill" id="strengthFill"></div>
+                            </div>
+                            <small id="strengthText">Password strength: Weak</small>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="signupConfirmPassword">Confirm Password *</label>
+                        <div class="password-input-wrapper">
+                            <input type="password" id="signupConfirmPassword" required>
+                            <button type="button" class="password-toggle" onclick="togglePassword('signupConfirmPassword')">👁️</button>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="signupDisplayName">Full Name *</label>
+                        <input type="text" id="signupDisplayName" placeholder="John Doe" required>
+                    </div>
+
+                    <button type="button" class="btn btn-primary" id="nextStepBtn">Next Step</button>
+                </div>
+
+                <!-- Step 2: Role Selection and Terms -->
+                <div class="signup-step" id="step2" style="display: none;">
+                    <h3>Step 2: Role & Agreement</h3>
+
+                    <div class="form-group">
+                        <label>Choose Your Role *</label>
+                        <div class="role-selection">
+                            <div class="role-option" data-role="employee">
+                                <div class="role-icon">👤</div>
+                                <div class="role-info">
+                                    <h4>Employee</h4>
+                                    <p>Regular employee who orders lunch</p>
+                                    <small>✓ Immediate access after approval</small>
+                                </div>
+                                <input type="radio" name="userRole" value="employee" checked>
+                            </div>
+
+                            <div class="role-option" data-role="manager">
+                                <div class="role-icon">👔</div>
+                                <div class="role-info">
+                                    <h4>Manager</h4>
+                                    <p>Team lead or supervisor</p>
+                                    <small>⏳ Requires admin approval</small>
+                                </div>
+                                <input type="radio" name="userRole" value="manager">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="signupDepartment">Department (Optional)</label>
+                        <input type="text" id="signupDepartment" placeholder="e.g., Engineering, HR, Sales">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="signupEmployeeId">Employee ID (Optional)</label>
+                        <input type="text" id="signupEmployeeId" placeholder="e.g., EMP001">
+                    </div>
+
+                    <div class="form-group terms-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="acceptTerms" required>
+                            <span>I accept the <a href="#" onclick="showTermsOfService()">Terms of Service</a> and <a href="#" onclick="showPrivacyPolicy()">Privacy Policy</a> *</span>
+                        </label>
+                    </div>
+
+                    <div class="form-group terms-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="acceptMarketing" checked>
+                            <span>I agree to receive lunch menu updates and notifications</span>
+                        </label>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="prevStep(1)">Back</button>
+                        <button type="submit" class="btn btn-primary">Create Account</button>
+                    </div>
+                </div>
+            </form>
+
+            <div class="signup-footer">
+                <p>Already have an account? <a href="login.html">Sign In</a></p>
+                <p class="signup-help">Having trouble? <a href="#" onclick="showSignupHelp()">Get Help</a></p>
+            </div>
+
+            <script>
+                // Help function for signup issues
+                function showSignupHelp() {
+                    const helpText = `Signup Help:
+
+1. Email Requirements:
+   - Use your official company email
+   - Email must be valid and accessible
+
+2. Password Requirements:
+   - At least 8 characters long
+   - Include uppercase, lowercase, numbers, and special characters
+
+3. Account Approval:
+   - Employee accounts are auto-approved
+   - Manager accounts require admin approval
+
+4. Email Verification:
+   - Check your email for verification link
+   - Verify your email before signing in
+
+For technical issues, contact your administrator.`;
+                    alert(helpText);
+                }
+
+                // Make help function globally available
+                window.showSignupHelp = showSignupHelp;
+            </script>
+        </div>
+    </div>
+
+    <!-- Terms of Service Modal -->
+    <div id="termsModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="modal-close">&times;</span>
+            <h2>Terms of Service</h2>
+            <div class="terms-content">
+                <h3>1. Acceptance of Terms</h3>
+                <p>By accessing and using Lunch Manager, you accept and agree to be bound by the terms and provision of this agreement.</p>
+
+                <h3>2. Use License</h3>
+                <p>Permission is granted to temporarily use Lunch Manager for personal, non-commercial transitory viewing only.</p>
+
+                <h3>3. Account Responsibilities</h3>
+                <ul>
+                    <li>You are responsible for maintaining the confidentiality of your account</li>
+                    <li>You agree to accept responsibility for all activities that occur under your account</li>
+                    <li>You must be an authorized employee to create an account</li>
+                </ul>
+
+                <h3>4. Order Policies</h3>
+                <ul>
+                    <li>All orders are subject to availability</li>
+                    <li>Orders cannot be modified once confirmed</li>
+                    <li>Cancellation must be done within 30 minutes of ordering</li>
+                </ul>
+
+                <h3>5. Privacy</h3>
+                <p>Your personal information is protected and will only be used for lunch ordering purposes.</p>
+
+                <h3>6. Termination</h3>
+                <p>We may terminate or suspend access to our service immediately, without prior notice, for any reason.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Privacy Policy Modal -->
+    <div id="privacyModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="modal-close">&times;</span>
+            <h2>Privacy Policy</h2>
+            <div class="terms-content">
+                <h3>Information We Collect</h3>
+                <ul>
+                    <li>Name and email address</li>
+                    <li>Department and employee ID (optional)</li>
+                    <li>Order history and preferences</li>
+                    <li>Login and logout times</li>
+                </ul>
+
+                <h3>How We Use Your Information</h3>
+                <ul>
+                    <li>To provide lunch ordering services</li>
+                    <li>To communicate about your orders</li>
+                    <li>To improve our services</li>
+                    <li>To ensure system security</li>
+                </ul>
+
+                <h3>Information Sharing</h3>
+                <p>We do not sell, trade, or otherwise transfer your personal information to third parties without your consent, except as described in this policy.</p>
+
+                <h3>Data Security</h3>
+                <p>We implement appropriate security measures to protect your personal information against unauthorized access, alteration, disclosure, or destruction.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCLzX2loYEmPjk0AgH0caHLFBso9yPYTCc",
+            authDomain: "foodmanager-19cbb.firebaseapp.com",
+            projectId: "foodmanager-19cbb",
+            storageBucket: "foodmanager-19cbb.firebasestorage.app",
+            messagingSenderId: "853074932493",
+            appId: "1:853074932493:web:779a3bd8e5e501cb86f644",
+            measurementId: "G-639Z6PMW6R"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // Configure Firebase Auth settings
+        auth.useDeviceLanguage();
+
+        // Configure email verification action URL
+        auth.settings = {
+            appVerificationDisabledForTesting: false
+        };
+
+        // Set up action code settings for email verification
+        window.actionCodeSettings = {
+            url: window.location.origin + '/login.html',
+            handleCodeInApp: false
+        };
+        
+        // Log the current origin for debugging
+        console.log('Action code URL:', window.actionCodeSettings.url);
+
+        // Make Firebase available globally
+        window.firebaseDB = database;
+        window.auth = auth;
+        window.db = db;
+    </script>
+
+    <script src="js/common.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/signup.js"></script>
+</body>
+</html>

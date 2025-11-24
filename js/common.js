@@ -64,6 +64,9 @@ function initializeMobileUX() {
 }
 
 function initializeNavbar() {
+    const user = window.authService ? window.authService.getCurrentUser() : null;
+    const isAdmin = user && user.role === 'admin';
+
     const navbarHtml = `
         <div class="navbar" role="navigation" aria-label="Main navigation">
             <div class="navbar-container">
@@ -71,58 +74,61 @@ function initializeNavbar() {
                     <div class="navbar-logo" aria-hidden="true">🍽️</div>
                     <span>Lunch Manager</span>
                 </a>
-                
-                <button class="mobile-menu-toggle" 
-                        id="mobileMenuToggle" 
+
+                <button class="mobile-menu-toggle"
+                        id="mobileMenuToggle"
                         aria-label="Toggle mobile menu"
                         aria-expanded="false"
                         aria-controls="navbarNav">☰</button>
-                
+
                 <ul class="navbar-nav" id="navbarNav" role="menubar">
-                    <li role="none"><a href="index.html" 
-                                        class="nav-link" 
-                                        data-page="index" 
-                                        role="menuitem"
-                                        aria-label="Home page">Home</a></li>
-                    <li role="none"><a href="menu.html" 
-                                        class="nav-link" 
-                                        data-page="menu" 
+                    <li role="none"><a href="menu.html"
+                                        class="nav-link"
+                                        data-page="menu"
                                         role="menuitem"
                                         aria-label="View menu and place orders">Menu</a></li>
-                    <li role="none"><a href="dashboard.html" 
-                                        class="nav-link" 
-                                        data-page="dashboard" 
+                    <li role="none"><a href="dashboard.html"
+                                        class="nav-link"
+                                        data-page="dashboard"
                                         role="menuitem"
                                         aria-label="View order dashboard and analytics">Dashboard</a></li>
-                    <li role="none"><a href="admin.html" 
-                                        class="nav-link" 
-                                        data-page="admin" 
+                    ${isAdmin ? `<li role="none"><a href="admin.html"
+                                        class="nav-link"
+                                        data-page="admin"
                                         role="menuitem"
-                                        aria-label="Admin panel for managing hotels and menus">Admin</a></li>
+                                        aria-label="Admin panel for managing hotels and menus">Admin</a></li>` : ''}
+                    <li role="none"><a href="#"
+                                        class="nav-link"
+                                        onclick="window.authService.logout()"
+                                        role="menuitem"
+                                        aria-label="Logout">Logout</a></li>
                 </ul>
 
-                <button class="theme-toggle" 
-                        id="themeToggle" 
-                        title="Toggle theme"
-                        aria-label="Switch between light and dark themes"
-                        aria-describedby="themeStatus">🌙</button>
-                <span id="themeStatus" class="sr-only" aria-live="polite">Current theme: Light</span>
+                <div class="navbar-user">
+                    ${user ? `<span class="user-greeting">Welcome, ${user.name}</span>` : ''}
+                    <button class="theme-toggle"
+                            id="themeToggle"
+                            title="Toggle theme"
+                            aria-label="Switch between light and dark themes"
+                            aria-describedby="themeStatus">🌙</button>
+                    <span id="themeStatus" class="sr-only" aria-live="polite">Current theme: Light</span>
+                </div>
             </div>
         </div>
     `;
-    
+
     const navbarContainer = document.getElementById('navbar');
     if (navbarContainer) {
         navbarContainer.innerHTML = navbarHtml;
-        
+
         const mobileToggle = document.getElementById('mobileMenuToggle');
         const navbarNav = document.getElementById('navbarNav');
-        
+
         if (mobileToggle && navbarNav) {
             mobileToggle.addEventListener('click', () => {
                 const isExpanded = navbarNav.classList.toggle('active');
                 mobileToggle.setAttribute('aria-expanded', isExpanded);
-                
+
                 // Focus management for accessibility
                 if (isExpanded) {
                     // Focus first menu item when opened
@@ -132,7 +138,7 @@ function initializeNavbar() {
                     }
                 }
             });
-            
+
             // Enhanced keyboard navigation
             const navLinks = navbarNav.querySelectorAll('.nav-link');
             navLinks.forEach((link, index) => {
@@ -140,7 +146,7 @@ function initializeNavbar() {
                     navbarNav.classList.remove('active');
                     mobileToggle.setAttribute('aria-expanded', 'false');
                 });
-                
+
                 // Arrow key navigation
                 link.addEventListener('keydown', (e) => {
                     let targetIndex;
@@ -161,7 +167,7 @@ function initializeNavbar() {
                     }
                 });
             });
-            
+
             // ESC key to close mobile menu
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'Escape' && navbarNav.classList.contains('active')) {
@@ -176,8 +182,20 @@ function initializeNavbar() {
 
 async function initializeTheme() {
     // Load saved theme (defaults to retro-light arcade pastel theme)
-    const savedTheme = await StorageManager.getTheme();
-    setTheme(savedTheme);
+    try {
+        // Check if StorageManager and getTheme are available
+        if (typeof StorageManager !== 'undefined' && typeof StorageManager.getTheme === 'function') {
+            const savedTheme = await StorageManager.getTheme();
+            setTheme(savedTheme);
+        } else {
+            // Fallback to localStorage if StorageManager not available
+            const savedTheme = localStorage.getItem('lunchManager_theme') || 'retro-light';
+            setTheme(savedTheme);
+        }
+    } catch (error) {
+        console.warn('Error loading theme, using default:', error);
+        setTheme('retro-light');
+    }
 
     // Add theme toggle event listener
     const themeToggle = document.getElementById('themeToggle');
@@ -237,7 +255,18 @@ async function toggleTheme() {
     }
 
     setTheme(newTheme);
-    await StorageManager.setTheme(newTheme);
+    
+    // Save theme - try StorageManager first, fallback to localStorage
+    try {
+        if (typeof StorageManager !== 'undefined' && typeof StorageManager.setTheme === 'function') {
+            await StorageManager.setTheme(newTheme);
+        } else {
+            localStorage.setItem('lunchManager_theme', newTheme);
+        }
+    } catch (error) {
+        console.warn('Error saving theme:', error);
+        localStorage.setItem('lunchManager_theme', newTheme);
+    }
 
     // Update ARIA label
     const themeToggle = document.getElementById('themeToggle');
@@ -274,6 +303,12 @@ async function initializeBanner() {
 }
 
 async function updateBanner() {
+    const bannerContainer = document.getElementById('banner');
+    if (!bannerContainer) return;
+
+    // Show skeleton loading initially
+    showBannerSkeleton(bannerContainer);
+
     try {
         const selectedHotels = await StorageManager.getSelectedHotelsData();
 
@@ -287,10 +322,7 @@ async function updateBanner() {
                     </div>
                 </div>
             `;
-            const bannerContainer = document.getElementById('banner');
-            if (bannerContainer) {
-                bannerContainer.innerHTML = bannerHtml;
-            }
+            bannerContainer.innerHTML = bannerHtml;
             return;
         }
 
@@ -320,10 +352,7 @@ async function updateBanner() {
             </div>
         `;
 
-        const bannerContainer = document.getElementById('banner');
-        if (bannerContainer) {
-            bannerContainer.innerHTML = bannerHtml;
-        }
+        bannerContainer.innerHTML = bannerHtml;
     } catch (error) {
         console.error('Error updating banner:', error);
         const bannerHtml = `
@@ -334,11 +363,26 @@ async function updateBanner() {
                 </div>
             </div>
         `;
-        const bannerContainer = document.getElementById('banner');
-        if (bannerContainer) {
-            bannerContainer.innerHTML = bannerHtml;
-        }
+        bannerContainer.innerHTML = bannerHtml;
     }
+}
+
+function showBannerSkeleton(container) {
+    const skeletonHtml = `
+        <div class="banner skeleton-banner">
+            <div class="skeleton skeleton-banner-title"></div>
+            <div class="skeleton skeleton-banner-text"></div>
+            <div class="delivery-animation">
+                <div class="sky-clouds">
+                    <div class="cloud cloud-1">☁️</div>
+                    <div class="cloud cloud-2">☁️</div>
+                    <div class="cloud cloud-3">☁️</div>
+                    <div class="cloud cloud-4">☁️</div>
+                </div>
+            </div>
+        </div>
+    `;
+    container.innerHTML = skeletonHtml;
 }
 
 
@@ -377,7 +421,7 @@ function showToast(message, type = 'success', duration = 4000, position = 'auto'
         margin-left: 8px;
         opacity: 0.8;
     `;
-    
+
     dismissBtn.addEventListener('click', () => {
         toast.classList.add('toast-hide');
         setTimeout(() => toast.remove(), 300);
@@ -403,7 +447,7 @@ function showToast(message, type = 'success', duration = 4000, position = 'auto'
 
     // Position the toast based on current viewport
     positionToast(toast, position);
-    
+
     document.body.appendChild(toast);
 
     // Auto-dismiss with configurable duration
@@ -411,6 +455,53 @@ function showToast(message, type = 'success', duration = 4000, position = 'auto'
         toast.classList.add('toast-hide');
         setTimeout(() => toast.remove(), 300);
     }, duration);
+}
+
+// Loading utilities
+function showLoadingOverlay(message = 'Loading...') {
+    const existingOverlay = document.querySelector('.skeleton-loading-overlay');
+    if (existingOverlay) return;
+
+    const overlay = document.createElement('div');
+    overlay.className = 'skeleton-loading-overlay';
+    overlay.innerHTML = `
+        <div class="skeleton-loading-content">
+            <div class="skeleton-loading-spinner"></div>
+            <div class="skeleton-loading-text">${message}</div>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+}
+
+function hideLoadingOverlay() {
+    const overlay = document.querySelector('.skeleton-loading-overlay');
+    if (overlay) {
+        overlay.remove();
+    }
+}
+
+function showElementLoading(element, message = 'Loading...') {
+    if (!element) return;
+
+    const originalContent = element.innerHTML;
+    element.setAttribute('data-original-content', originalContent);
+
+    element.innerHTML = `
+        <div class="skeleton-loading-content" style="position: relative; padding: 20px;">
+            <div class="skeleton-loading-spinner"></div>
+            <div class="skeleton-loading-text">${message}</div>
+        </div>
+    `;
+}
+
+function hideElementLoading(element) {
+    if (!element) return;
+
+    const originalContent = element.getAttribute('data-original-content');
+    if (originalContent !== null) {
+        element.innerHTML = originalContent;
+        element.removeAttribute('data-original-content');
+    }
 }
 
 /**
@@ -536,65 +627,95 @@ function formatDateOnly(dateString) {
 }
 
 function displayOrderSummary() {
-    const orders = StorageManager.getTodaysOrders();
+    const container = document.getElementById('orderSummary');
+    if (!container) return;
 
-    // Group by hotel, then by item
-    const hotelGroups = {};
+    // Show skeleton loading initially
+    showOrderSummarySkeleton(container);
 
-    orders.forEach(order => {
-        if (!hotelGroups[order.hotelName]) {
-            hotelGroups[order.hotelName] = {};
-        }
-        order.items.forEach(item => {
-            if (!hotelGroups[order.hotelName][item.name]) {
-                hotelGroups[order.hotelName][item.name] = 0;
+    // Simulate async operation (in real app this might be fetching from server)
+    setTimeout(() => {
+        const orders = StorageManager.getTodaysOrders();
+
+        // Group by hotel, then by item
+        const hotelGroups = {};
+
+        orders.forEach(order => {
+            if (!hotelGroups[order.hotelName]) {
+                hotelGroups[order.hotelName] = {};
             }
-            hotelGroups[order.hotelName][item.name] += item.quantity;
-        });
-    });
-
-    let html = '<h2>Today\'s Order Summary</h2>';
-
-    if (Object.keys(hotelGroups).length === 0) {
-        html += '<p class="empty-message">No orders placed yet today.</p>';
-    } else {
-        Object.entries(hotelGroups).forEach(([hotel, items]) => {
-            const itemEntries = Object.entries(items);
-            const totalItems = itemEntries.reduce((sum, [, qty]) => sum + qty, 0);
-
-            html += `<div class="hotel-order-summary">
-                <h3>🏨 ${hotel}</h3>
-                <div class="orders-table-container">
-                    <table class="orders-table">
-                        <thead>
-                            <tr>
-                                <th style="width: 60px;">S.No</th>
-                                <th>Item Name</th>
-                                <th style="width: 100px;">Quantity</th>
-                            </tr>
-                        </thead>
-                        <tbody>`;
-
-            itemEntries.forEach(([item, qty], index) => {
-                html += `<tr>
-                    <td style="text-align: center; font-weight: 600;">${index + 1}</td>
-                    <td>${item}</td>
-                    <td style="text-align: center; font-weight: 600;">${qty}</td>
-                </tr>`;
+            order.items.forEach(item => {
+                if (!hotelGroups[order.hotelName][item.name]) {
+                    hotelGroups[order.hotelName][item.name] = 0;
+                }
+                hotelGroups[order.hotelName][item.name] += item.quantity;
             });
-
-            html += `</tbody>
-                        <tfoot>
-                            <tr style="background: var(--bg-tertiary);">
-                                <td colspan="2" style="text-align: right; font-weight: 700;">Total Items:</td>
-                                <td style="text-align: center; font-weight: 700; color: var(--primary-color);">${totalItems}</td>
-                            </tr>
-                        </tfoot>
-                    </table>
-                </div>
-            </div>`;
         });
-    }
 
-    document.getElementById('orderSummary').innerHTML = html;
+        let html = '<h2>Today\'s Order Summary</h2>';
+
+        if (Object.keys(hotelGroups).length === 0) {
+            html += '<p class="empty-message">No orders placed yet today.</p>';
+        } else {
+            Object.entries(hotelGroups).forEach(([hotel, items]) => {
+                const itemEntries = Object.entries(items);
+                const totalItems = itemEntries.reduce((sum, [, qty]) => sum + qty, 0);
+
+                html += `<div class="hotel-order-summary">
+                    <h3>🏨 ${hotel}</h3>
+                    <div class="orders-table-container">
+                        <table class="orders-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 60px;">S.No</th>
+                                    <th>Item Name</th>
+                                    <th style="width: 100px;">Quantity</th>
+                                </tr>
+                            </thead>
+                            <tbody>`;
+
+                itemEntries.forEach(([item, qty], index) => {
+                    html += `<tr>
+                        <td style="text-align: center; font-weight: 600;">${index + 1}</td>
+                        <td>${item}</td>
+                        <td style="text-align: center; font-weight: 600;">${qty}</td>
+                    </tr>`;
+                });
+
+                html += `</tbody>
+                            <tfoot>
+                                <tr style="background: var(--bg-tertiary);">
+                                    <td colspan="2" style="text-align: right; font-weight: 700;">Total Items:</td>
+                                    <td style="text-align: center; font-weight: 700; color: var(--primary-color);">${totalItems}</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>`;
+            });
+        }
+
+        container.innerHTML = html;
+    }, 800); // Simulate loading delay
+}
+
+function showOrderSummarySkeleton(container) {
+    const skeletonHtml = `
+        <div class="skeleton-order-summary">
+            <div class="skeleton skeleton-order-summary-title"></div>
+            <div class="skeleton-order-item">
+                <div class="skeleton skeleton-order-item-name"></div>
+                <div class="skeleton skeleton-order-item-qty"></div>
+            </div>
+            <div class="skeleton-order-item">
+                <div class="skeleton skeleton-order-item-name"></div>
+                <div class="skeleton skeleton-order-item-qty"></div>
+            </div>
+            <div class="skeleton-order-item">
+                <div class="skeleton skeleton-order-item-name"></div>
+                <div class="skeleton skeleton-order-item-qty"></div>
+            </div>
+        </div>
+    `;
+    container.innerHTML = skeletonHtml;
 }

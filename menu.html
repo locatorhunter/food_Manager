@@ -3,10 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://*.firebaseio.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://www.gstatic.com https://identitytoolkit.googleapis.com https://firestore.googleapis.com; frame-src https://*.firebaseio.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com;">
     <title>Lunch Manager - Menu</title>
     <link rel="stylesheet" href="css/style.css?v=1.0.0">
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <script>
         // Firebase configuration
@@ -23,6 +26,8 @@
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
+        const auth = firebase.auth();
+        const db = firebase.firestore();
 
         // Make Firebase available globally
         window.firebaseDB = database;
@@ -33,6 +38,10 @@
         window.firebasePush = (ref) => ref.push();
         window.firebaseUpdate = (ref, data) => ref.update(data);
         window.firebaseRemove = (ref) => ref.remove();
+
+        // Firebase Auth & Firestore
+        window.auth = auth;
+        window.db = db;
     </script>
 </head>
 <body>
@@ -179,6 +188,7 @@
     <script src="js/storage.js?v=1.0.0"></script>
     <script src="js/common.js?v=1.0.0"></script>
     <script src="js/utils.js?v=1.0.0"></script>
+    <script src="js/auth.js?v=1.0.0"></script>
     <script src="js/menu.js?v=1.0.0"></script>
 </body>
 </html>

@@ -3,12 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://*.firebaseio.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://www.gstatic.com https://identitytoolkit.googleapis.com https://firestore.googleapis.com; frame-src https://*.firebaseio.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com;">
     <title>Lunch Manager - Dashboard</title>
     <link rel="stylesheet" href="css/style.css?v=1.0.4">
     <!-- jsPDF for PDF generation -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <script>
         // Firebase configuration
@@ -25,9 +28,13 @@
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
+        const auth = firebase.auth();
+        const db = firebase.firestore();
 
         // Make Firebase available globally
         window.firebaseDB = database;
+        window.auth = auth;
+        window.db = db;
         window.firebaseRef = (path) => database.ref(path);
         window.firebaseSet = (ref, data) => ref.set(data);
         window.firebaseGet = (ref) => ref.once('value');
@@ -141,90 +148,32 @@
         <p>&copy; 2025 Lunch Manager. All rights reserved. | Developed by Vijay</p>
     </footer>
     
-    <!-- Password Modal - Temporarily Hidden -->
-    <div id="passwordModal" class="modal" style="display: none;">
-        <div class="modal-content password-modal-content">
-            <div class="password-modal-header">
-                <h2>📊 Dashboard Access</h2>
-                <p class="password-subtitle">Please enter the dashboard password to continue</p>
-            </div>
-            <form id="passwordForm" class="password-form">
-                <div class="form-group">
-                    <label for="adminPassword">Password</label>
-                    <div class="password-input-wrapper">
-                        <input type="password" id="adminPassword" placeholder="Enter password" required autocomplete="current-password">
-                        <button type="button" class="password-toggle" id="passwordToggle">
-                            <span class="eye-icon">👁️</span>
-                        </button>
-                    </div>
-                </div>
-                <div class="password-actions">
-                    <button type="submit" class="btn btn-primary btn-block">Access Dashboard</button>
-                    <button type="button" class="btn btn-secondary btn-block" onclick="goHome()">Back to Home</button>
-                </div>
-                <div id="passwordError" class="password-error" style="display: none;">
-                    <span class="error-icon">⚠️</span>
-                    Incorrect password. Please try again.
-                </div>
-            </form>
-        </div>
-    </div>
 
-    <script>
-        // Password protection for Dashboard page
-        const correctPassword = '1';
-
-        document.addEventListener('DOMContentLoaded', function() {
-            const passwordForm = document.getElementById('passwordForm');
-            const passwordInput = document.getElementById('adminPassword');
-            const passwordToggle = document.getElementById('passwordToggle');
-            const passwordError = document.getElementById('passwordError');
-            const passwordModal = document.getElementById('passwordModal');
-
-            // Toggle password visibility
-            passwordToggle.addEventListener('click', function() {
-                const type = passwordInput.type === 'password' ? 'text' : 'password';
-                passwordInput.type = type;
-                passwordToggle.querySelector('.eye-icon').textContent = type === 'password' ? '👁️' : '🙈';
-            });
-
-            // Handle form submission
-            passwordForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                const enteredPassword = passwordInput.value.trim();
-
-                if (enteredPassword === correctPassword) {
-                    // Hide modal with animation
-                    passwordModal.style.opacity = '0';
-                    setTimeout(() => {
-                        passwordModal.style.display = 'none';
-                    }, 300);
-                } else {
-                    // Show error
-                    passwordError.style.display = 'block';
-                    passwordInput.value = '';
-                    passwordInput.focus();
-
-                    // Shake animation
-                    passwordModal.classList.add('shake');
-                    setTimeout(() => {
-                        passwordModal.classList.remove('shake');
-                    }, 500);
-                }
-            });
-
-            // Auto-focus password input
-            passwordInput.focus();
-        });
-
-        function goHome() {
-            window.location.href = 'index.html';
-        }
-    </script>
     <script src="js/modal.js?v=1.0.3"></script>
     <script src="js/storage.js?v=1.0.3"></script>
     <script src="js/common.js?v=1.0.3"></script>
     <script src="js/utils.js?v=1.0.3"></script>
+    <script src="js/auth.js?v=1.0.0"></script>
     <script src="js/dashboard.js?v=1.0.3"></script>
+    <script>
+        // Dashboard page authentication check
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check authentication status
+            const user = window.authService ? window.authService.getCurrentUser() : null;
+            if (!user || (user.role !== 'admin' && user.role !== 'manager')) {
+                // Redirect to login if not authenticated or not admin/manager
+                window.location.href = 'login.html';
+                return;
+            }
+
+            // Initialize dashboard functionality
+            initializeDashboardPage();
+        });
+
+        function initializeDashboardPage() {
+            // Dashboard page specific initialization can go here
+            console.log('Dashboard page initialized for user:', window.authService.getCurrentUser().name);
+        }
+    </script>
 </body>
 </html>

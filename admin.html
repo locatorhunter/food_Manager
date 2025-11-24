@@ -3,10 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://*.firebaseio.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://www.gstatic.com https://identitytoolkit.googleapis.com https://firestore.googleapis.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com;">
     <title>Lunch Manager - Admin</title>
     <link rel="stylesheet" href="css/style.css?v=1.0.4">
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <script>
         // Firebase configuration
@@ -23,9 +26,13 @@
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
+        const auth = firebase.auth();
+        const db = firebase.firestore();
 
         // Make Firebase available globally
         window.firebaseDB = database;
+        window.auth = auth;
+        window.db = db;
         window.firebaseRef = (path) => database.ref(path);
         window.firebaseSet = (ref, data) => ref.set(data);
         window.firebaseGet = (ref) => ref.once('value');
@@ -42,131 +49,407 @@
     <main class="container">
         <h1>Admin Panel</h1>
         
-        <section class="admin-section">
-            <!-- Select Hotels for Today -->
-            <div class="card">
-                <h2>🏨 Select Hotels for Today</h2>
-                <p class="card-description">Choose which restaurants will provide lunch today</p>
-                <div id="hotelSelectionList"></div>
-            </div>
+        <!-- Tab Navigation -->
+        <div class="admin-tabs">
+            <button class="tab-button active" data-tab="hotels-tab">
+                🏨 Manage Hotels & Menus
+            </button>
+            <button class="tab-button" data-tab="users-tab">
+                👥 Manage Users
+            </button>
+        </div>
 
-            <!-- Add New Hotel -->
-            <div class="card">
-                <h2>➕ Add New Hotel</h2>
-                <p class="card-description">Register a new restaurant to the system</p>
-                <form id="hotelForm">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="hotelName">Hotel Name</label>
-                            <input type="text" id="hotelName" placeholder="Enter restaurant name" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="hotelType">Type</label>
-                            <select id="hotelType" required>
-                                <option value="veg">🥬 Vegetarian</option>
-                                <option value="non-veg">🍖 Non-Vegetarian</option>
-                            </select>
-                        </div>
-                        <div class="form-group form-group-button">
-                            <button type="submit" class="btn btn-primary">Add Hotel</button>
-                        </div>
+        <!-- Tab Content -->
+        <div class="tab-content">
+            <!-- Tab 1: Hotels & Menus Management -->
+            <div id="hotels-tab" class="tab-panel active">
+                <section class="admin-section">
+                    <!-- Select Hotels for Today -->
+                    <div class="card">
+                        <h2>🏨 Select Hotels for Today</h2>
+                        <p class="card-description">Choose which restaurants will provide lunch today</p>
+                        <div id="hotelSelectionList"></div>
                     </div>
-                </form>
-            </div>
 
-            <!-- Manage Hotels and Menus -->
-            <div class="card">
-                <h2>⚙️ Manage Hotels & Menus</h2>
-                <p class="card-description">Edit restaurant details and manage their menu items</p>
-
-                <!-- Search and Filter Controls -->
-                <div class="admin-controls">
-                    <div class="control-group">
-                        <label for="hotelSearch">🔍 Search Hotels</label>
-                        <input type="text" id="hotelSearch" placeholder="Search by hotel name..." class="search-input">
-                    </div>
-                    <div class="control-group">
-                        <label for="hotelTypeFilter">🏷️ Filter by Type</label>
-                        <select id="hotelTypeFilter" class="filter-select">
-                            <option value="all">All Types</option>
-                            <option value="veg">🥬 Vegetarian</option>
-                            <option value="non-veg">🍖 Non-Vegetarian</option>
-                        </select>
-                    </div>
-                    <div class="control-group">
-                        <label for="hotelStatusFilter">📊 Filter by Status</label>
-                        <select id="hotelStatusFilter" class="filter-select">
-                            <option value="all">All Hotels</option>
-                            <option value="selected">Selected for Today</option>
-                            <option value="not-selected">Not Selected</option>
-                        </select>
-                    </div>
-                    <div class="control-group">
-                        <button id="expandAllBtn" class="btn btn-secondary" title="Expand All Menus">📂 Expand All</button>
-                        <button id="collapseAllBtn" class="btn btn-secondary" title="Collapse All Menus">📁 Collapse All</button>
-                    </div>
-                </div>
-
-                <div id="hotelsManagement"></div>
-
-                <!-- Edit Hotel Details Modal -->
-                <div id="editHotelModal" class="modal" style="display: none;">
-                    <div class="modal-content">
-                        <span class="modal-close" onclick="closeEditHotelModal()">&times;</span>
-                        <h2>Edit Hotel Details</h2>
-                        <form id="editHotelForm">
-                            <input type="hidden" id="editHotelId">
-                            <div class="form-group">
-                                <label for="editHotelName">Hotel Name</label>
-                                <input type="text" id="editHotelName" required>
+                    <!-- Add New Hotel -->
+                    <div class="card">
+                        <h2>➕ Add New Hotel</h2>
+                        <p class="card-description">Register a new restaurant to the system</p>
+                        <form id="hotelForm">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="hotelName">Hotel Name</label>
+                                    <input type="text" id="hotelName" placeholder="Enter restaurant name" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="hotelType">Type</label>
+                                    <select id="hotelType" required>
+                                        <option value="veg">🥬 Vegetarian</option>
+                                        <option value="non-veg">🍖 Non-Vegetarian</option>
+                                    </select>
+                                </div>
+                                <div class="form-group form-group-button">
+                                    <button type="submit" class="btn btn-primary">Add Hotel</button>
+                                </div>
                             </div>
-                            <div class="form-group">
-                                <label for="editHotelReviews">Google Reviews (1-5)</label>
-                                <input type="number" id="editHotelReviews" min="1" max="5" step="0.1" placeholder="4.5">
+                        </form>
+                    </div>
+
+                    <!-- Manage Hotels and Menus -->
+                    <div class="card">
+                        <h2>⚙️ Manage Hotels & Menus</h2>
+                        <p class="card-description">Edit restaurant details and manage their menu items</p>
+
+                        <!-- Search and Filter Controls -->
+                        <div class="admin-controls">
+                            <div class="control-group">
+                                <label for="hotelSearch">🔍 Search Hotels</label>
+                                <input type="text" id="hotelSearch" placeholder="Search by hotel name..." class="search-input">
                             </div>
-                            <div class="form-group">
-                                <label for="editHotelLocation">Location</label>
-                                <input type="text" id="editHotelLocation" placeholder="e.g., MG Road, Bangalore">
-                            </div>
-                            <div class="form-group">
-                                <label for="editHotelType">Type</label>
-                                <select id="editHotelType" required>
+                            <div class="control-group">
+                                <label for="hotelTypeFilter">🏷️ Filter by Type</label>
+                                <select id="hotelTypeFilter" class="filter-select">
+                                    <option value="all">All Types</option>
                                     <option value="veg">🥬 Vegetarian</option>
                                     <option value="non-veg">🍖 Non-Vegetarian</option>
                                 </select>
                             </div>
-                            <button type="submit" class="btn btn-primary">Update Hotel</button>
+                            <div class="control-group">
+                                <label for="hotelStatusFilter">📊 Filter by Status</label>
+                                <select id="hotelStatusFilter" class="filter-select">
+                                    <option value="all">All Hotels</option>
+                                    <option value="selected">Selected for Today</option>
+                                    <option value="not-selected">Not Selected</option>
+                                </select>
+                            </div>
+                            <div class="control-group">
+                                <button id="expandAllBtn" class="btn btn-secondary" title="Expand All Menus">📂 Expand All</button>
+                                <button id="collapseAllBtn" class="btn btn-secondary" title="Collapse All Menus">📁 Collapse All</button>
+                            </div>
+                        </div>
+
+                        <div id="hotelsManagement"></div>
+
+                        <!-- Edit Hotel Details Modal -->
+                        <div id="editHotelModal" class="modal" style="display: none;">
+                            <div class="modal-content">
+                                <span class="modal-close" onclick="closeEditHotelModal()">&times;</span>
+                                <h2>Edit Hotel Details</h2>
+                                <form id="editHotelForm">
+                                    <input type="hidden" id="editHotelId">
+                                    <div class="form-group">
+                                        <label for="editHotelName">Hotel Name</label>
+                                        <input type="text" id="editHotelName" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="editHotelReviews">Google Reviews (1-5)</label>
+                                        <input type="number" id="editHotelReviews" min="1" max="5" step="0.1" placeholder="4.5">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="editHotelLocation">Location</label>
+                                        <input type="text" id="editHotelLocation" placeholder="e.g., MG Road, Bangalore">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="editHotelType">Type</label>
+                                        <select id="editHotelType" required>
+                                            <option value="veg">🥬 Vegetarian</option>
+                                            <option value="non-veg">🍖 Non-Vegetarian</option>
+                                        </select>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">Update Hotel</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Group Ordering Settings -->
+                    <div class="card">
+                        <h2>👥 Group Ordering Settings</h2>
+                        <p class="card-description">Configure amount limits and group ordering preferences</p>
+                        <form id="groupSettingsForm">
+                            <div class="form-group">
+                                <label for="maxAmountPerPerson">Maximum Amount Per Person (₹)</label>
+                                <input type="number" id="maxAmountPerPerson" placeholder="300" min="50" max="2000" step="10" required>
+                                <small class="form-help">Items costing more than this amount will require group ordering</small>
+                            </div>
+                            <div id="currentLimitDisplay" class="setting-display">
+                                <strong>Current Limit:</strong> <span id="currentLimitValue">₹300</span>
+                                <br><small>Last updated: <span id="currentLimitUpdated">Never</span></small>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Update Setting</button>
                         </form>
                     </div>
-                </div>
+                </section>
             </div>
 
-            <!-- Group Ordering Settings -->
-            <div class="card">
-                <h2>👥 Group Ordering Settings</h2>
-                <p class="card-description">Configure amount limits and group ordering preferences</p>
-                <form id="groupSettingsForm">
-                    <div class="form-group">
-                        <label for="maxAmountPerPerson">Maximum Amount Per Person (₹)</label>
-                        <input type="number" id="maxAmountPerPerson" placeholder="300" min="50" max="2000" step="10" required>
-                        <small class="form-help">Items costing more than this amount will require group ordering</small>
+            <!-- Tab 2: Users Management -->
+            <div id="users-tab" class="tab-panel">
+                <section class="admin-section">
+                    <!-- User Approvals -->
+                    <div class="card">
+                        <h2>✅ User Approvals</h2>
+                        <p class="card-description">Review and approve new user registration requests</p>
+                        <div id="pendingApprovals">
+                            <!-- Pending approvals will be loaded here -->
+                        </div>
                     </div>
-                    <div id="currentLimitDisplay" class="setting-display">
-                        <strong>Current Limit:</strong> <span id="currentLimitValue">₹300</span>
-                        <br><small>Last updated: <span id="currentLimitUpdated">Never</span></small>
-                    </div>
-                    <button type="submit" class="btn btn-primary">Update Setting</button>
-                </form>
-            </div>
 
-            <!-- Danger Zone -->
-            <div class="card danger-zone">
-                <h2>⚠️ Danger Zone</h2>
-                <p class="card-description">Irreversible actions - use with caution</p>
-                <button id="clearOrdersBtn" class="btn btn-danger">Clear All Orders</button>
-                <button id="resetAllBtn" class="btn btn-danger">Reset Everything</button>
+                    <!-- User Management -->
+                    <div class="card">
+                        <h2>👥 User Management</h2>
+                        <p class="card-description">Manage user accounts, roles, and permissions</p>
+
+                        <!-- User Statistics -->
+                        <div id="userStatistics" class="user-statistics">
+                            <!-- Statistics will be loaded here -->
+                        </div>
+
+                        <!-- Create New User -->
+                        <div class="card">
+                            <h3>➕ Create New User</h3>
+                            <p class="card-description">Add a new user to the system. They will receive login instructions via email.</p>
+
+                            <!-- Creation Status Indicator -->
+                            <div id="creationStatus" class="creation-status" style="display: none;">
+                                <div class="status-step active" data-step="0">
+                                    <span class="step-icon">☁️</span>
+                                    <span class="step-text">Checking Firestore</span>
+                                </div>
+                                <div class="status-step" data-step="1">
+                                    <span class="step-icon">📝</span>
+                                    <span class="step-text">Validating</span>
+                                </div>
+                                <div class="status-step" data-step="2">
+                                    <span class="step-icon">💾</span>
+                                    <span class="step-text">Saving</span>
+                                </div>
+                                <div class="status-step" data-step="3">
+                                    <span class="step-icon">✅</span>
+                                    <span class="step-text">Complete</span>
+                                </div>
+                            </div>
+
+                            <!-- User Creation Form -->
+                            <form id="createUserForm" class="user-creation-form">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="userEmail">
+                                            <span class="required">*</span> Email Address
+                                        </label>
+                                        <input type="email" id="userEmail" placeholder="user@company.com" required>
+                                        <small class="form-help">User will sign in with this email</small>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="userDisplayName">
+                                            <span class="required">*</span> Full Name
+                                        </label>
+                                        <input type="text" id="userDisplayName" placeholder="John Doe" required>
+                                        <small class="form-help">Display name shown in the system</small>
+                                    </div>
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="userRole">
+                                            <span class="required">*</span> Role
+                                        </label>
+                                        <select id="userRole" required>
+                                            <option value="">Select a role</option>
+                                            <option value="employee">👤 Employee</option>
+                                            <option value="manager">👔 Manager</option>
+                                            <option value="admin">⚡ Admin</option>
+                                        </select>
+                                        <small class="form-help">Managers require approval before they can sign in</small>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="userDepartment">Department</label>
+                                        <input type="text" id="userDepartment" placeholder="IT, HR, Sales, etc.">
+                                        <small class="form-help">Optional department information</small>
+                                    </div>
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="userEmployeeId">Employee ID</label>
+                                        <input type="text" id="userEmployeeId" placeholder="EMP001">
+                                        <small class="form-help">Optional employee identification number</small>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="userPassword">
+                                            <span class="required">*</span> Temporary Password
+                                        </label>
+                                        <div class="password-input-group">
+                                            <input type="password" id="userPassword" placeholder="Min 8 characters" autocomplete="new-password" required>
+                                            <button type="button" class="password-toggle" onclick="togglePassword('userPassword')" title="Toggle password visibility">
+                                                👁️
+                                            </button>
+                                        </div>
+                                        <small class="form-help">User will change this after first login</small>
+                                    </div>
+                                </div>
+
+                                <!-- Password Strength Indicator -->
+                                <div id="passwordStrengthContainer" class="password-strength-container" style="display: none;">
+                                    <div class="password-strength-bar">
+                                        <div id="passwordStrengthFill" class="password-strength-fill"></div>
+                                    </div>
+                                    <small id="passwordStrengthText" class="password-strength-text"></small>
+                                </div>
+
+                                <!-- Form Actions -->
+                                <div class="form-actions">
+                                    <button type="button" id="previewUserBtn" class="btn btn-secondary" onclick="previewUserCreation()">
+                                        👁️ Preview
+                                    </button>
+                                    <button type="submit" class="btn btn-primary" id="createUserBtn">
+                                        <span class="btn-text">➕ Create User</span>
+                                        <span class="btn-loading" style="display: none;">
+                                            <span class="spinner"></span> Creating...
+                                        </span>
+                                    </button>
+                                    <button type="button" class="btn btn-outline" onclick="resetUserForm()">
+                                        🔄 Reset
+                                    </button>
+                                </div>
+                            </form>
+
+                            <!-- User Preview Modal -->
+                            <div id="userPreviewModal" class="modal" style="display: none;">
+                                <div class="modal-content">
+                                    <span class="modal-close" onclick="closeUserPreviewModal()">&times;</span>
+                                    <h3>👁️ User Creation Preview</h3>
+                                    <div id="userPreviewContent" class="user-preview-content">
+                                        <!-- Preview content will be inserted here -->
+                                    </div>
+                                    <div class="modal-actions">
+                                        <button class="btn btn-secondary" onclick="closeUserPreviewModal()">Edit Details</button>
+                                        <button class="btn btn-primary" onclick="confirmUserCreation()">✓ Create User</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- User Search and Filters -->
+                        <div class="admin-controls">
+                            <div class="control-group">
+                                <label for="userSearch">🔍 Search Users</label>
+                                <input type="text" id="userSearch" placeholder="Search by name or email..." class="search-input">
+                            </div>
+                            <div class="control-group">
+                                <label for="userRoleFilter">👤 Filter by Role</label>
+                                <select id="userRoleFilter" class="filter-select">
+                                    <option value="all">All Roles</option>
+                                    <option value="admin">⚡ Admin</option>
+                                    <option value="manager">👔 Manager</option>
+                                    <option value="employee">👤 Employee</option>
+                                </select>
+                            </div>
+                            <div class="control-group">
+                                <label for="userStatusFilter">📊 Filter by Status</label>
+                                <select id="userStatusFilter" class="filter-select">
+                                    <option value="all">All Users</option>
+                                    <option value="active">✓ Active</option>
+                                    <option value="inactive">✗ Inactive</option>
+                                    <option value="pending">⏳ Pending Approval</option>
+                                </select>
+                            </div>
+                            <div class="control-group">
+                                <button id="refreshUsersBtn" class="btn btn-primary" title="Refresh User Data">
+                                    🔄 Refresh
+                                </button>
+                                <button id="exportUsersBtn" class="btn btn-secondary" title="Export Users to CSV">
+                                    📥 Export CSV
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Bulk Actions Bar -->
+                        <div id="bulkActionsContainer" class="bulk-actions-bar" style="display: none;">
+                            <div class="bulk-actions-info">
+                                <input type="checkbox" id="selectAllUsers">
+                                <label for="selectAllUsers">Select All</label>
+                                <span id="selectedUserCount" class="selected-count">0 users selected</span>
+                            </div>
+                            <div class="bulk-actions-buttons">
+                                <button id="bulkEnableBtn" class="btn btn-success btn-small">✓ Enable Selected</button>
+                                <button id="bulkDisableBtn" class="btn btn-warning btn-small">⏸️ Disable Selected</button>
+                                <button id="bulkDeleteBtn" class="btn btn-danger btn-small">🗑️ Delete Selected</button>
+                            </div>
+                        </div>
+
+                        <!-- Users Management Grid -->
+                        <div id="usersManagement">
+                            <!-- Users will be loaded here -->
+                        </div>
+
+                        <!-- Edit User Modal -->
+                        <div id="editUserModal" class="modal" style="display: none;">
+                            <div class="modal-content">
+                                <span class="modal-close">&times;</span>
+                                <h2>Edit User</h2>
+                                <form id="editUserForm">
+                                    <input type="hidden" id="editUserId">
+                                    <div class="form-group">
+                                        <label for="editUserEmail">Email Address</label>
+                                        <input type="email" id="editUserEmail" readonly>
+                                        <small class="form-help">Email cannot be changed</small>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="editUserDisplayName">Display Name</label>
+                                        <input type="text" id="editUserDisplayName" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="editUserRole">Role</label>
+                                        <select id="editUserRole" required>
+                                            <option value="employee">👤 Employee</option>
+                                            <option value="manager">👔 Manager</option>
+                                            <option value="admin">⚡ Admin</option>
+                                        </select>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">Update User</button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- Approval Modal -->
+                        <div id="approvalModal" class="modal" style="display: none;">
+                            <div class="modal-content">
+                                <span class="modal-close">&times;</span>
+                                <h2>Review User Approval</h2>
+                                <div id="approvalDetails">
+                                    <!-- Approval details will be loaded here -->
+                                </div>
+                                <div class="form-group">
+                                    <label for="approvalNotes">Notes (Optional)</label>
+                                    <textarea id="approvalNotes" rows="3" placeholder="Add any notes about this approval decision..."></textarea>
+                                </div>
+                                <div class="modal-actions">
+                                    <button class="btn btn-success" onclick="approveUser()">✓ Approve</button>
+                                    <button class="btn btn-danger" onclick="rejectUser()">✗ Reject</button>
+                                    <button class="btn btn-secondary" onclick="closeApprovalModal()">Cancel</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
             </div>
-        </section>
+        </div>
+
+        <!-- Migration Tools -->
+        <div class="card migration-tools">
+            <h2>🔄 Migration Tools</h2>
+            <p class="card-description">Migrate existing users to Firestore database</p>
+            <a href="migrate-users.html" class="btn btn-primary">🚀 Migrate Users to Firestore</a>
+            <p><small>If users aren't showing in the management section, use this tool to migrate them from Firebase Auth to Firestore.</small></p>
+        </div>
+
+        <!-- Danger Zone - Moved outside tabs for visibility -->
+        <div class="card danger-zone">
+            <h2>⚠️ Danger Zone</h2>
+            <p class="card-description">Irreversible actions - use with caution</p>
+            <button id="clearOrdersBtn" class="btn btn-danger">Clear All Orders</button>
+            <button id="resetAllBtn" class="btn btn-danger">Reset Everything</button>
+        </div>
     </main>
     
     <footer>
@@ -229,90 +512,27 @@
         </div>
     </div>
 
-    <!-- Password Modal - Temporarily Hidden -->
-    <div id="passwordModal" class="modal" style="display: none;">
-        <div class="modal-content password-modal-content">
-            <div class="password-modal-header">
-                <h2>🔐 Admin Access</h2>
-                <p class="password-subtitle">Please enter the admin password to continue</p>
-            </div>
-            <form id="passwordForm" class="password-form">
-                <div class="form-group">
-                    <label for="adminPassword">Password</label>
-                    <div class="password-input-wrapper">
-                        <input type="password" id="adminPassword" placeholder="Enter password" required autocomplete="current-password">
-                        <button type="button" class="password-toggle" id="passwordToggle">
-                            <span class="eye-icon">👁️</span>
-                        </button>
-                    </div>
-                </div>
-                <div class="password-actions">
-                    <button type="submit" class="btn btn-primary btn-block">Access Admin Panel</button>
-                    <button type="button" class="btn btn-secondary btn-block" onclick="goHome()">Back to Home</button>
-                </div>
-                <div id="passwordError" class="password-error" style="display: none;">
-                    <span class="error-icon">⚠️</span>
-                    Incorrect password. Please try again.
-                </div>
-            </form>
-        </div>
-    </div>
 
-    <script>
-        // Password protection for Admin page
-        const correctPassword = '1';
-
-        document.addEventListener('DOMContentLoaded', function() {
-            const passwordForm = document.getElementById('passwordForm');
-            const passwordInput = document.getElementById('adminPassword');
-            const passwordToggle = document.getElementById('passwordToggle');
-            const passwordError = document.getElementById('passwordError');
-            const passwordModal = document.getElementById('passwordModal');
-
-            // Toggle password visibility
-            passwordToggle.addEventListener('click', function() {
-                const type = passwordInput.type === 'password' ? 'text' : 'password';
-                passwordInput.type = type;
-                passwordToggle.querySelector('.eye-icon').textContent = type === 'password' ? '👁️' : '🙈';
-            });
-
-            // Handle form submission
-            passwordForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                const enteredPassword = passwordInput.value.trim();
-
-                if (enteredPassword === correctPassword) {
-                    // Hide modal with animation
-                    passwordModal.style.opacity = '0';
-                    setTimeout(() => {
-                        passwordModal.style.display = 'none';
-                    }, 300);
-                } else {
-                    // Show error
-                    passwordError.style.display = 'block';
-                    passwordInput.value = '';
-                    passwordInput.focus();
-
-                    // Shake animation
-                    passwordModal.classList.add('shake');
-                    setTimeout(() => {
-                        passwordModal.classList.remove('shake');
-                    }, 500);
-                }
-            });
-
-            // Auto-focus password input
-            passwordInput.focus();
-        });
-
-        function goHome() {
-            window.location.href = 'index.html';
-        }
-    </script>
     <script src="js/modal.js?v=1.0.3"></script>
     <script src="js/storage.js?v=1.0.3"></script>
-    <script src="js/common.js?v=1.0.3"></script>
     <script src="js/utils.js?v=1.0.3"></script>
+    <script src="js/common.js?v=1.0.3"></script>
+    <script src="js/auth.js?v=1.0.0"></script>
     <script src="js/admin.js?v=1.0.3"></script>
+    <script>
+        // Admin page authentication check
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check authentication status
+            const user = window.authService ? window.authService.getCurrentUser() : null;
+            if (!user || user.role !== 'admin') {
+                // Redirect to login if not authenticated or not admin
+                window.location.href = 'login.html';
+                return;
+            }
+
+            // Initialize admin functionality (this will be handled by admin.js)
+            console.log('Admin page initialized for user:', window.authService.getCurrentUser().name);
+        });
+    </script>
 </body>
 </html>

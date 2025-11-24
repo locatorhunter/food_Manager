@@ -204,6 +204,9 @@ async function displayHotelsMenu() {
     const container = document.getElementById('hotelsMenuContainer');
     if (!container) return;
 
+    // Show skeleton loading initially
+    showMenuSkeleton(container);
+
     try {
         const selectedHotels = await StorageManager.getSelectedHotelsData();
 
@@ -237,6 +240,56 @@ async function displayHotelsMenu() {
         console.error('Error displaying hotels menu:', error);
         container.innerHTML = '<p class="empty-message">Error loading menu. Please refresh.</p>';
     }
+}
+
+function showMenuSkeleton(container) {
+    // Create skeleton for 2-3 hotels with 3-4 items each
+    let skeletonHtml = '';
+
+    for (let i = 0; i < 3; i++) {
+        skeletonHtml += `
+            <div class="hotel-menu-section">
+                <div class="hotel-header-clickable skeleton">
+                    <h3 class="skeleton-text" style="width: 200px; height: 24px;"></h3>
+                    <span class="expand-icon">▶</span>
+                </div>
+                <div class="hotel-menu-items expanded">
+                    <div class="menu-items-grid card-size-${cardSize}">
+                        ${generateMenuItemSkeletons(4)}
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    container.innerHTML = skeletonHtml;
+}
+
+function generateMenuItemSkeletons(count) {
+    let html = '';
+    for (let i = 0; i < count; i++) {
+        html += `
+            <div class="menu-item-card skeleton-menu-item">
+                <div class="skeleton skeleton-menu-item-image"></div>
+                <div class="menu-item-content">
+                    <div class="menu-item-header">
+                        <div class="skeleton skeleton-menu-item-title"></div>
+                        <div class="skeleton skeleton-menu-item-price"></div>
+                    </div>
+                    <div class="skeleton skeleton-menu-item-subtitle"></div>
+                    <div class="menu-item-actions">
+                        <div class="menu-item-quantity">
+                            <button class="quantity-btn skeleton" disabled>−</button>
+                            <input type="number" class="quantity-input skeleton" value="0" readonly disabled>
+                            <button class="quantity-btn skeleton" disabled>+</button>
+                        </div>
+                        <button class="btn-upload skeleton" disabled>📷</button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    return html;
 }
 
 async function toggleHotelMenu(hotelId) {
@@ -697,6 +750,9 @@ async function confirmGroupOrdering() {
         return;
     }
 
+    // Show loading overlay
+    showLoadingOverlay('Placing group order...');
+
     // Create participants array
     const participants = participantNames.map(name => ({
         name: name,
@@ -723,6 +779,9 @@ async function confirmGroupOrdering() {
         });
     });
 
+    // Get current user information
+    const currentUser = window.authService ? window.authService.getCurrentUser() : null;
+
     // Create orders for each hotel
     const orderPromises = Object.entries(ordersByHotel).map(([hotelName, hotelItems]) => {
         const hotelTotal = hotelItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
@@ -733,7 +792,11 @@ async function confirmGroupOrdering() {
             total: hotelTotal,
             hotelName,
             isGroupOrder: true,
-            participants: participants
+            participants: participants,
+            userId: currentUser ? currentUser.id : null,
+            userEmail: currentUser ? currentUser.email : null,
+            userRole: currentUser ? currentUser.role : 'employee',
+            orderTimestamp: new Date().toISOString()
         };
 
         return StorageManager.addOrder(order);
@@ -741,6 +804,10 @@ async function confirmGroupOrdering() {
 
     try {
         await Promise.all(orderPromises);
+
+        // Hide loading overlay
+        hideLoadingOverlay();
+
         showToast(`Group order placed successfully for ${selectedGroupSize} people!`);
 
         // Reset and close
@@ -756,6 +823,7 @@ async function confirmGroupOrdering() {
         }
     } catch (error) {
         console.error('Error placing group order:', error);
+        hideLoadingOverlay();
         showToast('Error placing order. Please try again.', 'error');
     }
 }
@@ -941,6 +1009,12 @@ function cancelOrder() {
 
 async function placeOrders(ordersByHotel, employeeName) {
     try {
+        // Show loading overlay
+        showLoadingOverlay('Placing your order...');
+
+        // Get current user information
+        const currentUser = window.authService ? window.authService.getCurrentUser() : null;
+
         // Create separate order for each hotel
         const orderPromises = Object.entries(ordersByHotel).map(async ([hotelName, hotelItems]) => {
             const hotelTotal = hotelItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
@@ -949,7 +1023,11 @@ async function placeOrders(ordersByHotel, employeeName) {
                 employeeName,
                 items: hotelItems,
                 total: hotelTotal,
-                hotelName
+                hotelName,
+                userId: currentUser ? currentUser.id : null,
+                userEmail: currentUser ? currentUser.email : null,
+                userRole: currentUser ? currentUser.role : 'employee',
+                orderTimestamp: new Date().toISOString()
             };
 
             return await StorageManager.addOrder(order);
@@ -957,7 +1035,10 @@ async function placeOrders(ordersByHotel, employeeName) {
 
         // Wait for all orders to be placed
         await Promise.all(orderPromises);
-        
+
+        // Hide loading overlay
+        hideLoadingOverlay();
+
         showToast('Order placed successfully!', 'success');
 
         // Reset
@@ -965,6 +1046,7 @@ async function placeOrders(ordersByHotel, employeeName) {
         await displayHotelsMenu();
     } catch (error) {
         console.error('Error placing orders:', error);
+        hideLoadingOverlay();
         showToast('Failed to place order. Please try again.', 'error');
     }
 }
@@ -1032,12 +1114,25 @@ async function uploadItemImage(hotelId, itemId) {
     input.onchange = async function(e) {
         const file = e.target.files[0];
         if (file) {
+            // Show loading overlay for image upload
+            showLoadingOverlay('Uploading image...');
+
             const reader = new FileReader();
             reader.onload = async function(event) {
-                const imageData = event.target.result;
-                StorageManager.addImageToMenuItem(hotelId, itemId, imageData);
-                showToast('Image uploaded successfully!');
-                await displayHotelsMenu(); // Refresh to show new image
+                try {
+                    const imageData = event.target.result;
+                    await StorageManager.addImageToMenuItem(hotelId, itemId, imageData);
+
+                    // Hide loading overlay
+                    hideLoadingOverlay();
+
+                    showToast('Image uploaded successfully!');
+                    await displayHotelsMenu(); // Refresh to show new image
+                } catch (error) {
+                    console.error('Error uploading image:', error);
+                    hideLoadingOverlay();
+                    showToast('Failed to upload image. Please try again.', 'error');
+                }
             };
             reader.readAsDataURL(file);
         }
@@ -1602,6 +1697,9 @@ async function confirmGroupOrder() {
             return;
         }
 
+        // Show loading overlay
+        showLoadingOverlay('Creating group order...');
+
         // Create participants array
         const participants = participantNames.map(name => ({
             name: name,
@@ -1613,6 +1711,9 @@ async function confirmGroupOrder() {
         if (totalShares > itemPrice) {
             participants[participants.length - 1].shareAmount -= (totalShares - itemPrice);
         }
+
+        // Get current user information
+        const currentUser = window.authService ? window.authService.getCurrentUser() : null;
 
         // Create the group order
         const order = {
@@ -1626,11 +1727,18 @@ async function confirmGroupOrder() {
             total: currentGroupOrderItem.price,
             hotelName: currentGroupOrderItem.hotelName,
             isGroupOrder: true,
-            participants: participants
+            participants: participants,
+            userId: currentUser ? currentUser.id : null,
+            userEmail: currentUser ? currentUser.email : null,
+            userRole: currentUser ? currentUser.role : 'employee',
+            orderTimestamp: new Date().toISOString()
         };
 
         const result = await StorageManager.addOrder(order);
         if (result) {
+            // Hide loading overlay
+            hideLoadingOverlay();
+
             showToast('Group order placed successfully!');
 
             // Handle potential errors in post-order operations gracefully
@@ -1652,6 +1760,7 @@ async function confirmGroupOrder() {
         }
     } catch (error) {
         console.error('Error placing group order:', error);
+        hideLoadingOverlay();
         showToast('Error placing order. Please try again.', 'error');
     }
 }
