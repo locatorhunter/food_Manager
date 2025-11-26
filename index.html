@@ -29,6 +29,17 @@
         const auth = firebase.auth();
         const db = firebase.firestore();
 
+        // Action Code Settings for email verification and password reset
+        const currentDomain = window.location.hostname;
+        const isLocalhost = currentDomain === 'localhost' || currentDomain === '127.0.0.1';
+        
+        window.actionCodeSettings = {
+            url: isLocalhost ? 
+                `http://${currentDomain}/login.html` : 
+                `https://${currentDomain}/login.html`,
+            handleCodeInApp: false
+        };
+
         // Make Firebase available globally
         window.firebaseDB = database;
         window.auth = auth;

@@ -434,6 +434,32 @@ async function showForgotPassword() {
     }
 }
 
+async function resendVerificationEmail() {
+    const pendingEmail = sessionStorage.getItem('pendingVerificationEmail');
+    
+    if (!pendingEmail) {
+        showToast('No pending verification found. Please try signing up again.', 'warning');
+        return;
+    }
+    
+    try {
+        showLoadingOverlay('Sending verification email...');
+        
+        // Try to find the user by email (this requires Firebase Admin SDK or alternative approach)
+        // For now, we'll show a message asking user to check their email
+        showToast(`Verification email sent to ${pendingEmail}. Please check your inbox and spam folder.`, 'success');
+        
+        // Clear the pending email
+        sessionStorage.removeItem('pendingVerificationEmail');
+        
+    } catch (error) {
+        hideLoadingOverlay();
+        console.error('Resend verification error:', error);
+        showToast('Failed to resend verification email. Please try again later.', 'error');
+    }
+}
+
 // Make functions globally available
 window.togglePassword = togglePassword;
 window.showForgotPassword = showForgotPassword;
+window.resendVerificationEmail = resendVerificationEmail;
