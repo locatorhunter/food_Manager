@@ -250,14 +250,16 @@ For technical issues, contact your administrator.`;
             appVerificationDisabledForTesting: false
         };
 
-        // Set up action code settings for email verification
+        // Action Code Settings for email verification and password reset
+        const currentDomain = window.location.hostname;
+        const isLocalhost = currentDomain === 'localhost' || currentDomain === '127.0.0.1';
+        
         window.actionCodeSettings = {
-            url: window.location.origin + '/login.html',
+            url: isLocalhost ? 
+                `http://${currentDomain}/login.html` : 
+                `https://${currentDomain}/login.html`,
             handleCodeInApp: false
         };
-        
-        // Log the current origin for debugging
-        console.log('Action code URL:', window.actionCodeSettings.url);
 
         // Make Firebase available globally
         window.firebaseDB = database;

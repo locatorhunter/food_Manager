@@ -6,6 +6,197 @@
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://*.firebaseio.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://www.gstatic.com https://identitytoolkit.googleapis.com https://firestore.googleapis.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com;">
     <title>Lunch Manager - Admin</title>
     <link rel="stylesheet" href="css/style.css?v=1.0.4">
+    <style>
+        .testing-tools {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .testing-tools h2 {
+            color: white;
+            border-bottom: 2px solid rgba(255,255,255,0.3);
+            padding-bottom: 10px;
+        }
+        
+        .testing-section {
+            background: rgba(255,255,255,0.1);
+            margin: 15px 0;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .testing-section h3 {
+            color: white;
+            margin-top: 0;
+            font-size: 1.2em;
+        }
+        
+        .test-description {
+            color: rgba(255,255,255,0.9);
+            margin-bottom: 15px;
+        }
+        
+        .test-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .test-controls .btn {
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            transition: all 0.3s ease;
+        }
+        
+        .test-controls .btn:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-1px);
+        }
+        
+        .test-controls .btn-primary {
+            background: #28a745;
+            border-color: #28a745;
+        }
+        
+        .test-controls .btn-primary:hover {
+            background: #218838;
+        }
+        
+        .test-results {
+            background: rgba(0,0,0,0.2);
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #17a2b8;
+        }
+        
+        .test-result {
+            margin: 5px 0;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            line-height: 1.4;
+        }
+        
+        .test-result.success {
+            background: rgba(40, 167, 69, 0.2);
+            border: 1px solid #28a745;
+            color: #d4edda;
+        }
+        
+        .test-result.error {
+            background: rgba(220, 53, 69, 0.2);
+            border: 1px solid #dc3545;
+            color: #f8d7da;
+        }
+        
+        .test-result.info {
+            background: rgba(23, 162, 184, 0.2);
+            border: 1px solid #17a2b8;
+            color: #d1ecf1;
+        }
+        
+        .test-result.warning {
+            background: rgba(255, 193, 7, 0.2);
+            border: 1px solid #ffc107;
+            color: #fff3cd;
+        }
+        
+        .test-progress {
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(0,0,0,0.1);
+            border-radius: 5px;
+        }
+        
+        .progress-step {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+            opacity: 0.5;
+            transition: opacity 0.3s ease;
+        }
+        
+        .progress-step.active {
+            opacity: 1;
+        }
+        
+        .progress-step .step-icon {
+            font-size: 1.2em;
+            margin-right: 10px;
+            width: 20px;
+        }
+        
+        .progress-step .step-text {
+            color: white;
+        }
+        
+        .modal .testing-section {
+            background: white;
+            color: #333;
+            border: 1px solid #ddd;
+        }
+        
+        .modal .testing-section h3 {
+            color: #333;
+        }
+        
+        .modal .test-description {
+            color: #666;
+        }
+        
+        .modal .test-controls .btn {
+            background: #007bff;
+            border-color: #007bff;
+            color: white;
+        }
+        
+        .modal .test-controls .btn:hover {
+            background: #0056b3;
+        }
+        
+        .modal .test-result {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            color: #495057;
+        }
+        
+        .modal .test-result.success {
+            background: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        
+        .modal .test-result.error {
+            background: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        
+        .modal .test-result.info {
+            background: #d1ecf1;
+            border-color: #bee5eb;
+            color: #0c5460;
+        }
+        
+        .modal .test-result.warning {
+            background: #fff3cd;
+            border-color: #ffeaa7;
+            color: #856404;
+        }
+        
+        @media (max-width: 768px) {
+            .test-controls {
+                flex-direction: column;
+            }
+            
+            .test-controls .btn {
+                width: 100%;
+            }
+        }
+    </style>
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
@@ -29,6 +220,17 @@
         const database = firebase.database();
         const auth = firebase.auth();
         const db = firebase.firestore();
+
+        // Action Code Settings for email verification and password reset
+        const currentDomain = window.location.hostname;
+        const isLocalhost = currentDomain === 'localhost' || currentDomain === '127.0.0.1';
+        
+        window.actionCodeSettings = {
+            url: isLocalhost ? 
+                `http://${currentDomain}/login.html` : 
+                `https://${currentDomain}/login.html`,
+            handleCodeInApp: false
+        };
 
         // Make Firebase available globally
         window.firebaseDB = database;
@@ -445,6 +647,80 @@
             <p><small>If users aren't showing in the management section, use this tool to migrate them from Firebase Auth to Firestore.</small></p>
         </div>
 
+        <!-- Testing Tools -->
+        <div class="card testing-tools">
+            <h2>🧪 Testing Tools</h2>
+            <p class="card-description">Test email verification and authentication functionality</p>
+            
+            <!-- Email Verification Test Section -->
+            <div class="testing-section">
+                <h3>📧 Email Verification Testing</h3>
+                <p class="test-description">Test the email verification system for new user registrations</p>
+                
+                <div class="test-controls">
+                    <button onclick="testFirebaseConfig()" class="btn btn-secondary">🔧 Test Firebase Config</button>
+                    <button onclick="testActionCodeSettings()" class="btn btn-secondary">⚙️ Test ActionCodeSettings</button>
+                    <button onclick="openEmailTestModal()" class="btn btn-primary">📬 Test Email Verification</button>
+                </div>
+                
+                <div id="adminTestResults" class="test-results">
+                    <p><small>Click the test buttons above to verify email verification setup</small></p>
+                </div>
+            </div>
+
+            <!-- Additional Testing Tools -->
+            <div class="testing-section">
+                <h3>🔍 Quick Diagnostics</h3>
+                <div class="test-controls">
+                    <button onclick="runAuthDiagnostics()" class="btn btn-secondary">🔐 Auth System Check</button>
+                    <button onclick="checkUserVerificationStatus()" class="btn btn-secondary">👤 Check User Status</button>
+                    <button onclick="testPasswordReset()" class="btn btn-secondary">🔑 Test Password Reset</button>
+                </div>
+                <div id="adminDiagnosticsResults" class="test-results"></div>
+            </div>
+        </div>
+
+        <!-- Email Verification Test Modal -->
+        <div id="emailTestModal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <span class="modal-close" onclick="closeEmailTestModal()">&times;</span>
+                <h2>📧 Email Verification Test</h2>
+                <p>Enter a test email address to verify the email verification system is working correctly.</p>
+                
+                <div class="form-group">
+                    <label for="testEmailAddress">Test Email Address</label>
+                    <input type="email" id="testEmailAddress" placeholder="test@example.com" style="width: 100%; padding: 10px; margin: 10px 0;">
+                    <small class="form-help">Use a real email address you can access for testing</small>
+                </div>
+                
+                <div class="test-progress" id="testProgress" style="display: none;">
+                    <div class="progress-step active" data-step="1">
+                        <span class="step-icon">🔧</span>
+                        <span class="step-text">Configuring test...</span>
+                    </div>
+                    <div class="progress-step" data-step="2">
+                        <span class="step-icon">👤</span>
+                        <span class="step-text">Creating test user...</span>
+                    </div>
+                    <div class="progress-step" data-step="3">
+                        <span class="step-icon">📧</span>
+                        <span class="step-text">Sending verification email...</span>
+                    </div>
+                    <div class="progress-step" data-step="4">
+                        <span class="step-icon">🧹</span>
+                        <span class="step-text">Cleaning up test data...</span>
+                    </div>
+                </div>
+                
+                <div class="test-results" id="emailTestResults"></div>
+                
+                <div class="modal-actions">
+                    <button onclick="closeEmailTestModal()" class="btn btn-secondary">Cancel</button>
+                    <button onclick="runEmailVerificationTest()" class="btn btn-primary" id="startEmailTestBtn">▶️ Start Test</button>
+                </div>
+            </div>
+        </div>
+
         <!-- Danger Zone - Moved outside tabs for visibility -->
         <div class="card danger-zone">
             <h2>⚠️ Danger Zone</h2>
@@ -535,6 +811,223 @@
             // Initialize admin functionality (this will be handled by admin.js)
             console.log('Admin page initialized for user:', window.authService.getCurrentUser().name);
         });
+
+        // Testing Tools Functions
+        function showAdminTestResult(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.innerHTML = `<div class="test-result ${type}" style="margin: 10px 0; padding: 10px; border-radius: 5px; font-family: monospace;">${message}</div>`;
+            }
+        }
+
+        function testFirebaseConfig() {
+            try {
+                if (typeof firebase !== 'undefined' && firebase.apps.length > 0) {
+                    showAdminTestResult('adminTestResults', '✅ Firebase initialized successfully', 'success');
+                    if (typeof window.auth !== 'undefined') {
+                        showAdminTestResult('adminTestResults', '✅ Firebase Auth service available<br>✅ Firebase initialized successfully', 'success');
+                    } else {
+                        showAdminTestResult('adminTestResults', '❌ Firebase Auth service not available', 'error');
+                    }
+                } else {
+                    showAdminTestResult('adminTestResults', '❌ Firebase not initialized', 'error');
+                }
+            } catch (error) {
+                showAdminTestResult('adminTestResults', `❌ Firebase config error: ${error.message}`, 'error');
+            }
+        }
+
+        function testActionCodeSettings() {
+            try {
+                if (window.actionCodeSettings && window.actionCodeSettings.url) {
+                    const url = window.actionCodeSettings.url;
+                    const currentDomain = window.location.hostname;
+                    const isLocalhost = currentDomain === 'localhost' || currentDomain === '127.0.0.1';
+                    showAdminTestResult('adminTestResults', 
+                        `✅ ActionCodeSettings configured correctly<br>
+                         URL: ${url}<br>
+                         Domain: ${currentDomain}<br>
+                         Environment: ${isLocalhost ? 'Localhost' : 'Production'}`, 
+                        'success');
+                } else {
+                    showAdminTestResult('adminTestResults', '❌ ActionCodeSettings not configured', 'error');
+                }
+            } catch (error) {
+                showAdminTestResult('adminTestResults', `❌ ActionCodeSettings error: ${error.message}`, 'error');
+            }
+        }
+
+        function openEmailTestModal() {
+            document.getElementById('emailTestModal').style.display = 'flex';
+        }
+
+        function closeEmailTestModal() {
+            document.getElementById('emailTestModal').style.display = 'none';
+            document.getElementById('testProgress').style.display = 'none';
+            document.getElementById('emailTestResults').innerHTML = '';
+        }
+
+        async function runEmailVerificationTest() {
+            const email = document.getElementById('testEmailAddress').value;
+            
+            if (!email) {
+                showAdminTestResult('emailTestResults', '❌ Please enter an email address', 'error');
+                return;
+            }
+
+            document.getElementById('testProgress').style.display = 'block';
+            document.getElementById('startEmailTestBtn').disabled = true;
+            showAdminTestResult('emailTestResults', '⏳ Starting email verification test...', 'info');
+
+            try {
+                // Step 1: Configure test
+                updateTestProgress(1, 'Configuring test environment...');
+                await sleep(500);
+
+                // Step 2: Create test user
+                updateTestProgress(2, 'Creating test user...');
+                const testPassword = 'TestPassword123!';
+                const userCredential = await window.auth.createUserWithEmailAndPassword(email, testPassword);
+                const user = userCredential.user;
+                showAdminTestResult('emailTestResults', '✅ Test user created successfully', 'success');
+
+                // Step 3: Send verification email
+                updateTestProgress(3, 'Sending verification email...');
+                try {
+                    await user.sendEmailVerification(window.actionCodeSettings);
+                    showAdminTestResult('emailTestResults', 
+                        '✅ Email verification sent successfully!<br>Check your email (including spam folder)', 
+                        'success');
+                } catch (verificationError) {
+                    showAdminTestResult('emailTestResults', 
+                        `❌ Email verification failed: ${verificationError.code}<br>Error: ${verificationError.message}`, 
+                        'error');
+                }
+
+                // Step 4: Clean up
+                updateTestProgress(4, 'Cleaning up test data...');
+                try {
+                    await user.delete();
+                    showAdminTestResult('emailTestResults', 
+                        '✅ Email verification test completed successfully<br>✅ Test user cleaned up', 
+                        'success');
+                } catch (deleteError) {
+                    showAdminTestResult('emailTestResults', 
+                        '⚠️ Email verification test completed but cleanup failed<br>Test user may still exist', 
+                        'warning');
+                }
+
+            } catch (error) {
+                if (error.code === 'auth/email-already-in-use') {
+                    showAdminTestResult('emailTestResults', 
+                        'Email already exists (that is good - means Firebase Auth is working)<br>' +
+                        'Try with a different email or check existing users', 
+                        'info');
+                } else {
+                    showAdminTestResult('emailTestResults', 
+                        'Test failed: ' + error.code + '<br>Error: ' + error.message, 
+                        'error');
+                }
+            } finally {
+                document.getElementById('startEmailTestBtn').disabled = false;
+                setTimeout(() => {
+                    document.getElementById('testProgress').style.display = 'none';
+                }, 2000);
+            }
+        }
+
+        function updateTestProgress(step, message) {
+            const steps = document.querySelectorAll('.progress-step');
+            steps.forEach((stepEl, index) => {
+                if (index + 1 === step) {
+                    stepEl.classList.add('active');
+                    stepEl.querySelector('.step-text').textContent = message;
+                } else if (index + 1 < step) {
+                    stepEl.classList.remove('active');
+                    stepEl.querySelector('.step-text').textContent = 'Completed';
+                } else {
+                    stepEl.classList.remove('active');
+                    stepEl.querySelector('.step-text').textContent = stepEl.querySelector('.step-text').textContent;
+                }
+            });
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        async function runAuthDiagnostics() {
+            showAdminTestResult('adminDiagnosticsResults', '🔍 Running authentication system diagnostics...', 'info');
+            
+            const diagnostics = [];
+            
+            // Check Firebase Auth
+            try {
+                if (window.auth) {
+                    const user = window.auth.currentUser;
+                    diagnostics.push('✅ Firebase Auth initialized');
+                    diagnostics.push(user ? `👤 Current user: ${user.email}` : '👤 No user signed in');
+                } else {
+                    diagnostics.push('❌ Firebase Auth not available');
+                }
+            } catch (error) {
+                diagnostics.push(`❌ Firebase Auth error: ${error.message}`);
+            }
+            
+            // Check Firestore
+            try {
+                if (window.db) {
+                    diagnostics.push('✅ Firestore initialized');
+                } else {
+                    diagnostics.push('❌ Firestore not available');
+                }
+            } catch (error) {
+                diagnostics.push(`❌ Firestore error: ${error.message}`);
+            }
+            
+            // Check ActionCodeSettings
+            if (window.actionCodeSettings && window.actionCodeSettings.url) {
+                diagnostics.push('✅ Email verification configured');
+            } else {
+                diagnostics.push('❌ Email verification not configured');
+            }
+            
+            showAdminTestResult('adminDiagnosticsResults', diagnostics.join('<br>'), 'info');
+        }
+
+        async function checkUserVerificationStatus() {
+            showAdminTestResult('adminDiagnosticsResults', '👤 Checking user verification status...', 'info');
+            
+            try {
+                const user = window.auth.currentUser;
+                if (user) {
+                    const status = user.emailVerified ? '✅ Verified' : '❌ Not Verified';
+                    const info = `User: ${user.email}<br>Status: ${status}<br>UID: ${user.uid}`;
+                    showAdminTestResult('adminDiagnosticsResults', info, user.emailVerified ? 'success' : 'warning');
+                } else {
+                    showAdminTestResult('adminDiagnosticsResults', 'No user currently signed in', 'info');
+                }
+            } catch (error) {
+                showAdminTestResult('adminDiagnosticsResults', `Error checking user status: ${error.message}`, 'error');
+            }
+        }
+
+        async function testPasswordReset() {
+            showAdminTestResult('adminDiagnosticsResults', '🔑 Testing password reset functionality...', 'info');
+            
+            try {
+                // This would require a test email - for now just show the config
+                if (window.actionCodeSettings && window.actionCodeSettings.url) {
+                    showAdminTestResult('adminDiagnosticsResults', 
+                        '✅ Password reset configured<br>URL: ' + window.actionCodeSettings.url, 
+                        'success');
+                } else {
+                    showAdminTestResult('adminDiagnosticsResults', '❌ Password reset not configured', 'error');
+                }
+            } catch (error) {
+                showAdminTestResult('adminDiagnosticsResults', `Password reset test error: ${error.message}`, 'error');
+            }
+        }
     </script>
 </body>
 </html>

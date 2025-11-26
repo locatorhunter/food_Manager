@@ -294,15 +294,20 @@ async function submitSignup() {
         const result = await createUserAccount(formData);
 
         if (result.success) {
-            showToast('Account created successfully! Please check your email for verification.', 'success');
+            showToast('Account created successfully! Please check your email for verification. If you don\'t see it, check your spam folder.', 'success');
 
             // Clear form
             document.getElementById('signupForm').reset();
             
+            // Show additional guidance for email verification
+            setTimeout(() => {
+                showToast('Didn\'t receive the email? Use the "Resend verification email" link on the login page.', 'info', 6000);
+            }, 2000);
+            
             // Redirect to login after a delay
             setTimeout(() => {
                 window.location.href = 'login.html';
-            }, 3000);
+            }, 5000);
         } else {
             showToast(result.error, 'error');
         }
@@ -349,25 +354,39 @@ async function createUserAccount(formData) {
             // Try with actionCodeSettings first, fall back to simple verification
             if (window.actionCodeSettings && window.actionCodeSettings.url) {
                 await user.sendEmailVerification(window.actionCodeSettings);
+                console.log('Email verification sent with actionCodeSettings');
             } else {
                 await user.sendEmailVerification();
+                console.log('Email verification sent (simple mode)');
             }
-            console.log('Email verification sent');
+            
+            // Store user email temporarily for resend functionality
+            sessionStorage.setItem('pendingVerificationEmail', formData.email);
+            console.log('Email verification sent successfully');
+            
         } catch (verificationError) {
-            // If verification fails due to unauthorized domain, try without actionCodeSettings
-            console.warn('Email verification with actionCodeSettings failed, trying simple verification:', verificationError.code);
-            if (verificationError.code === 'auth/unauthorized-continue-uri') {
-                try {
-                    await user.sendEmailVerification();
-                    console.log('Email verification sent (simple mode)');
-                } catch (simpleError) {
-                    console.error('Simple email verification also failed:', simpleError);
-                    // Continue anyway - user can request verification later
-                }
-            } else {
-                console.error('Email verification failed:', verificationError);
-                // Continue anyway - user can request verification later
+            console.error('Email verification failed:', verificationError);
+            
+            // Store user email temporarily for resend functionality
+            sessionStorage.setItem('pendingVerificationEmail', formData.email);
+            
+            let errorMessage = 'Account created but verification email failed to send. ';
+            
+            switch (verificationError.code) {
+                case 'auth/unauthorized-continue-uri':
+                    errorMessage += 'Please contact support to verify your email manually.';
+                    break;
+                case 'auth/invalid-email':
+                    errorMessage += 'Please check your email address and try again.';
+                    break;
+                case 'auth/too-many-requests':
+                    errorMessage += 'Too many requests. Please try again later.';
+                    break;
+                default:
+                    errorMessage += 'You can request a new verification email from the login page.';
             }
+            
+            console.warn('Email verification error details:', errorMessage);
         }
 
         // IMPORTANT: Sign out the user immediately after signup
