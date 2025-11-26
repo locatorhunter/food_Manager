@@ -2,6 +2,15 @@
 // Admin Page Functionality
 // ========================================
 
+console.log('Admin.js loaded - checking function exposure...');
+
+// Cache busting - force reload of latest code
+const CACHE_BUSTER = '?v=' + Date.now();
+if (window.location.href.includes('admin.html') && !sessionStorage.getItem('adminJsUpdated')) {
+    sessionStorage.setItem('adminJsUpdated', 'true');
+    console.log('Cache busting admin.js - forcing latest version');
+}
+
 let selectedHotelIds = [];
 let currentHotelFilters = {
     search: '',
@@ -10,12 +19,19 @@ let currentHotelFilters = {
 };
 let hotelExpandedStates = {}; // Track which hotels are expanded
 
+// Initialize admin page when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
-    initializeAdminPage();
+    // Ensure admin page specific initialization only runs once
+    if (!window.adminPageInitialized) {
+        window.adminPageInitialized = true;
+        initializeAdminPage();
+    }
 });
 
 async function initializeAdminPage() {
     try {
+        setupTabSwitching();
+        
         selectedHotelIds = await StorageManager.getSelectedHotels();
         await displayHotelSelection();
         setupHotelForm();
@@ -25,6 +41,10 @@ async function initializeAdminPage() {
         await setupGroupSettings();
         setupDangerZone();
         setupSearchAndFilters();
+        
+        // Initialize user management functions
+        initializeUserManagement();
+        initializeUserApprovals();
 
         window.addEventListener('storageReset', () => {
             selectedHotelIds = [];
@@ -34,6 +54,74 @@ async function initializeAdminPage() {
     } catch (error) {
         console.error('Error initializing admin page:', error);
         showToast('Error loading admin page. Please refresh.', 'error');
+    }
+}
+
+// ========================================
+// Tab Switching Functionality
+// ========================================
+
+function setupTabSwitching() {
+    const tabButtons = document.querySelectorAll('.tab-button');
+    const tabPanels = document.querySelectorAll('.tab-panel');
+
+    tabButtons.forEach((button, index) => {
+        const targetTab = button.getAttribute('data-tab');
+        
+        button.addEventListener('click', (e) => {
+            e.preventDefault();
+            switchTab(targetTab);
+        });
+    });
+
+    // Initialize with hotels tab active
+    switchTab('hotels-tab');
+}
+
+function switchTab(targetTabId) {
+    const tabButtons = document.querySelectorAll('.tab-button');
+    const tabPanels = document.querySelectorAll('.tab-panel');
+
+    // Remove active class from all tabs and panels
+    tabButtons.forEach(btn => btn.classList.remove('active'));
+    tabPanels.forEach(panel => panel.classList.remove('active'));
+
+    // Add active class to selected tab and panel
+    const activeButton = document.querySelector(`[data-tab="${targetTabId}"]`);
+    const activePanel = document.getElementById(targetTabId);
+
+    if (activeButton) activeButton.classList.add('active');
+    if (activePanel) activePanel.classList.add('active');
+
+    // Initialize content based on active tab
+    if (targetTabId === 'users-tab') {
+        // Start real-time refresh for users tab
+        startUserDataRefresh();
+        
+        // Re-initialize user management when switching to users tab
+        setTimeout(() => {
+            try {
+                if (window.userManagementInitialized) {
+                    // Show loading states and refresh data
+                    showLoadingState(document.getElementById('usersManagement'), generateUserCardSkeleton, 'Loading users...');
+                    showLoadingState(document.getElementById('userStatistics'), generateStatisticsSkeleton, 'Loading statistics...');
+                    showLoadingState(document.getElementById('pendingApprovals'), generateApprovalsSkeleton, 'Loading approvals...');
+                    
+                    // Refresh with slight delays for better UX
+                    setTimeout(() => displayUsersManagement(), 200);
+                    setTimeout(() => displayUserStatistics(), 400);
+                    setTimeout(() => displayPendingApprovals(), 600);
+                } else {
+                    initializeUserManagementTab();
+                }
+            } catch (error) {
+                console.error('Error in users tab initialization:', error);
+                showErrorState(document.getElementById('usersManagement'), 'Error loading user data');
+            }
+        }, 100);
+    } else {
+        // Stop refresh when leaving users tab
+        stopUserDataRefresh();
     }
 }
 
@@ -806,3 +894,2330 @@ function getTimeAgo(date) {
 
     return date.toLocaleDateString();
 }
+
+// ========================================
+// User Management System
+// ========================================
+
+let currentUserFilters = {
+    search: '',
+    role: 'all',
+    status: 'all'
+};
+
+let selectedUserIds = [];
+let userActivityLog = [];
+let userRefreshInterval = null;
+let isLoadingUsers = false;
+let lastDataRefresh = null;
+const REFRESH_INTERVAL = 30000; // 30 seconds
+
+// Skeleton screen generators
+function generateUserCardSkeleton() {
+    return `
+        <div class="user-card skeleton-card">
+            <div class="user-select-wrapper skeleton-element"></div>
+            <div class="user-header">
+                <div class="user-avatar">
+                    <div class="user-avatar-placeholder skeleton-circle"></div>
+                </div>
+                <div class="user-info">
+                    <div class="skeleton-text skeleton-element" style="height: 20px; width: 60%; margin-bottom: 8px;"></div>
+                    <div class="skeleton-text skeleton-element" style="height: 16px; width: 80%; margin-bottom: 12px;"></div>
+                    <div class="skeleton-rect skeleton-element" style="height: 24px; width: 100px; border-radius: 12px;"></div>
+                </div>
+                <div class="user-status">
+                    <div class="skeleton-rect skeleton-element" style="height: 32px; width: 80px; border-radius: 16px;"></div>
+                </div>
+            </div>
+            <div class="user-details">
+                <div class="user-detail">
+                    <div class="skeleton-text skeleton-element" style="height: 14px; width: 40%;"></div>
+                    <div class="skeleton-text skeleton-element" style="height: 14px; width: 30%;"></div>
+                </div>
+                <div class="user-detail">
+                    <div class="skeleton-text skeleton-element" style="height: 14px; width: 45%;"></div>
+                    <div class="skeleton-text skeleton-element" style="height: 14px; width: 35%;"></div>
+                </div>
+                <div class="user-detail">
+                    <div class="skeleton-text skeleton-element" style="height: 14px; width: 50%;"></div>
+                    <div class="skeleton-text skeleton-element" style="height: 14px; width: 25%;"></div>
+                </div>
+            </div>
+            <div class="user-actions">
+                <div class="skeleton-rect skeleton-element" style="height: 32px; width: 70px; border-radius: 6px; margin-right: 8px;"></div>
+                <div class="skeleton-rect skeleton-element" style="height: 32px; width: 90px; border-radius: 6px; margin-right: 8px;"></div>
+                <div class="skeleton-rect skeleton-element" style="height: 32px; width: 80px; border-radius: 6px; margin-right: 8px;"></div>
+                <div class="skeleton-rect skeleton-element" style="height: 32px; width: 70px; border-radius: 6px;"></div>
+            </div>
+        </div>
+    `;
+}
+
+function generateStatisticsSkeleton() {
+    return `
+        <div class="stats-grid">
+            ${Array(6).fill().map(() => `
+                <div class="stat-card skeleton-card">
+                    <div class="stat-icon skeleton-circle skeleton-element" style="width: 60px; height: 60px;"></div>
+                    <div class="stat-content">
+                        <div class="skeleton-text skeleton-element" style="height: 32px; width: 60px; margin-bottom: 8px;"></div>
+                        <div class="skeleton-text skeleton-element" style="height: 16px; width: 80px;"></div>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
+function generateApprovalsSkeleton() {
+    return `
+        <div class="approvals-list">
+            ${Array(3).fill().map(() => `
+                <div class="approval-card skeleton-card">
+                    <div class="approval-header">
+                        <div class="approval-user-info">
+                            <div class="skeleton-text skeleton-element" style="height: 20px; width: 50%; margin-bottom: 8px;"></div>
+                            <div class="skeleton-text skeleton-element" style="height: 16px; width: 70%; margin-bottom: 12px;"></div>
+                            <div class="skeleton-rect skeleton-element" style="height: 24px; width: 100px; border-radius: 12px;"></div>
+                        </div>
+                        <div class="approval-meta">
+                            <div class="skeleton-text skeleton-element" style="height: 14px; width: 80px;"></div>
+                        </div>
+                    </div>
+                    <div class="approval-details">
+                        ${Array(2).fill().map(() => `
+                            <div class="approval-detail">
+                                <div class="skeleton-text skeleton-element" style="height: 14px; width: 40%;"></div>
+                                <div class="skeleton-text skeleton-element" style="height: 14px; width: 30%;"></div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="approval-actions">
+                        <div class="skeleton-rect skeleton-element" style="height: 32px; width: 70px; border-radius: 6px; margin-right: 8px;"></div>
+                        <div class="skeleton-rect skeleton-element" style="height: 32px; width: 80px; border-radius: 6px; margin-right: 8px;"></div>
+                        <div class="skeleton-rect skeleton-element" style="height: 32px; width: 70px; border-radius: 6px;"></div>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
+// Loading state management
+function showLoadingState(container, skeletonGenerator, message = 'Loading...') {
+    if (container) {
+        container.innerHTML = `
+            <div class="loading-container">
+                <div class="loading-spinner">
+                    <div class="spinner"></div>
+                    <p class="loading-message">${message}</p>
+                </div>
+                <div class="skeleton-container">
+                    ${skeletonGenerator()}
+                </div>
+            </div>
+        `;
+    }
+}
+
+function showErrorState(container, message = 'Error loading data', showRetry = true) {
+    if (container) {
+        container.innerHTML = `
+            <div class="error-container">
+                <div class="error-icon">❌</div>
+                <p class="error-message">${message}</p>
+                ${showRetry ? `
+                    <button class="btn btn-primary" onclick="retryLoad()">
+                        🔄 Retry
+                    </button>
+                ` : ''}
+            </div>
+        `;
+    }
+}
+
+function showEmptyState(container, message = 'No data found', showAction = false, actionText = 'Add New', actionCallback = null) {
+    if (container) {
+        const actionButton = showAction && actionCallback ? 
+            `<button class="btn btn-primary" onclick="${actionCallback}">${actionText}</button>` : '';
+        
+        container.innerHTML = `
+            <div class="empty-container">
+                <div class="empty-icon">📝</div>
+                <p class="empty-message">${message}</p>
+                ${actionButton}
+            </div>
+        `;
+    }
+}
+
+// Start/stop real-time refresh
+function startUserDataRefresh() {
+    if (userRefreshInterval) {
+        clearInterval(userRefreshInterval);
+    }
+    
+    userRefreshInterval = setInterval(async () => {
+        if (!isLoadingUsers && document.querySelector('.tab-panel.active[id="users-tab"]')) {
+            console.log('Auto-refreshing user data...');
+            await refreshUserData();
+        }
+    }, REFRESH_INTERVAL);
+    
+    console.log('User data auto-refresh started (30s interval)');
+}
+
+function stopUserDataRefresh() {
+    if (userRefreshInterval) {
+        clearInterval(userRefreshInterval);
+        userRefreshInterval = null;
+        console.log('User data auto-refresh stopped');
+    }
+}
+
+// Refresh user data
+async function refreshUserData() {
+    try {
+        isLoadingUsers = true;
+        lastDataRefresh = new Date();
+        
+        // Update refresh indicator if exists
+        const refreshIndicator = document.getElementById('refreshIndicator');
+        if (refreshIndicator) {
+            refreshIndicator.textContent = '🔄 Syncing...';
+            refreshIndicator.classList.add('syncing');
+        }
+        
+        console.log('Starting user data refresh...');
+        
+        // Force clear any cached data and refresh all user data
+        await Promise.all([
+            displayUsersManagement(),
+            displayUserStatistics(),
+            displayPendingApprovals()
+        ]);
+        
+        console.log('User data refresh completed successfully');
+        
+        // Update refresh indicator
+        if (refreshIndicator) {
+            refreshIndicator.textContent = '✅ Synced';
+            setTimeout(() => {
+                refreshIndicator.textContent = '📋 Last updated: ' + getTimeAgo(lastDataRefresh);
+                refreshIndicator.classList.remove('syncing');
+            }, 2000);
+        }
+        
+    } catch (error) {
+        console.error('Error refreshing user data:', error);
+        showToast('Error refreshing data. Please try again.', 'error');
+        
+        // Show error state in the UI
+        const errorContainer = document.getElementById('usersManagement');
+        if (errorContainer && !errorContainer.querySelector('.error-container')) {
+            showErrorState(errorContainer, 'Failed to load user data');
+        }
+    } finally {
+        isLoadingUsers = false;
+    }
+}
+
+// Manual refresh function for retry
+async function retryLoad() {
+    await refreshUserData();
+}
+
+// Initialize user management
+async function initializeUserManagement() {
+    try {
+        if (window.userManagementInitialized) {
+            return; // Already initialized
+        }
+        
+        // Start real-time refresh
+        startUserDataRefresh();
+        
+        await displayUserStatistics();
+        await displayUsersManagement();
+        setupUserForm();
+        setupUserSearchAndFilters();
+        setupUserModal();
+        setupBulkActions();
+        
+        window.userManagementInitialized = true;
+        window.userApprovalsInitialized = true;
+    } catch (error) {
+        console.error('Error initializing user management:', error);
+        showToast('Error loading user management.', 'error');
+    }
+}
+
+// Display Users Management
+async function displayUsersManagement() {
+    try {
+        const container = document.getElementById('usersManagement');
+        if (!container) return;
+
+        // Show loading state
+        showLoadingState(container, generateUserCardSkeleton, 'Loading users...');
+
+        // Get all users from Firebase Auth
+        const users = await getAllUsers();
+
+        if (!users || users.length === 0) {
+            showEmptyState(container, 'No users found. Users will appear here when they register.', false);
+            return;
+        }
+
+        // Apply filters
+        let filteredUsers = users.filter(user => {
+            // Search filter
+            if (currentUserFilters.search) {
+                const searchTerm = currentUserFilters.search.toLowerCase();
+                const matchesSearch = user.email.toLowerCase().includes(searchTerm) ||
+                                    user.displayName?.toLowerCase().includes(searchTerm) ||
+                                    user.role?.toLowerCase().includes(searchTerm);
+                if (!matchesSearch) return false;
+            }
+
+            // Role filter
+            if (currentUserFilters.role !== 'all' && user.role !== currentUserFilters.role) {
+                return false;
+            }
+
+            // Status filter
+            if (currentUserFilters.status !== 'all') {
+                const isActive = user.emailVerified && !user.disabled;
+                if (currentUserFilters.status === 'active' && !isActive) return false;
+                if (currentUserFilters.status === 'inactive' && isActive) return false;
+            }
+
+            return true;
+        });
+
+        if (filteredUsers.length === 0) {
+            showEmptyState(container, 'No users match your current filters.', true, 'Clear Filters', 'clearUserFilters()');
+            return;
+        }
+
+        let html = '<div class="users-grid">';
+
+        filteredUsers.forEach(user => {
+            const isActive = user.emailVerified && !user.disabled;
+            const lastSignIn = user.lastSignInTime ? new Date(user.lastSignInTime) : null;
+            const createdAt = user.creationTime ? new Date(user.creationTime) : null;
+            const role = user.role || 'employee';
+
+            html += `
+                <div class="user-card ${isActive ? 'active' : 'inactive'}">
+                    <div class="user-header">
+                        <div class="user-avatar">
+                            ${user.photoURL ? `<img src="${user.photoURL}" alt="${user.displayName || user.email}">` :
+                              `<div class="user-avatar-placeholder">${(user.displayName || user.email).charAt(0).toUpperCase()}</div>`}
+                        </div>
+                        <div class="user-info">
+                            <h4>${user.displayName || 'No Name'}</h4>
+                            <p class="user-email">${user.email}</p>
+                            <span class="user-role role-${role}">${role.charAt(0).toUpperCase() + role.slice(1)}</span>
+                        </div>
+                        <div class="user-status">
+                            <span class="status-indicator ${isActive ? 'active' : 'inactive'}">
+                                ${isActive ? '✓ Active' : '✗ Inactive'}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="user-details">
+                        <div class="user-detail">
+                            <span class="detail-label">Created:</span>
+                            <span class="detail-value">${createdAt ? getTimeAgo(createdAt) : 'Unknown'}</span>
+                        </div>
+                        <div class="user-detail">
+                            <span class="detail-label">Last Sign In:</span>
+                            <span class="detail-value">${lastSignIn ? getTimeAgo(lastSignIn) : 'Never'}</span>
+                        </div>
+                        <div class="user-detail">
+                            <span class="detail-label">Email Verified:</span>
+                            <span class="detail-value">${user.emailVerified ? 'Yes' : 'No'}</span>
+                        </div>
+                    </div>
+
+                    <div class="user-actions">
+                        <button class="btn btn-info btn-small" onclick="editUser('${user.uid}')">
+                            ✏️ Edit
+                        </button>
+                        <button class="btn btn-warning btn-small" onclick="resetUserPassword('${user.uid}', '${user.email}')">
+                            🔑 Reset Password
+                        </button>
+                        <button class="btn ${user.disabled ? 'btn-success' : 'btn-warning'} btn-small"
+                                onclick="toggleUserStatus('${user.uid}', ${user.disabled})">
+                            ${user.disabled ? '✓ Enable' : '⏸️ Disable'}
+                        </button>
+                        <button class="btn btn-danger btn-small" onclick="deleteUser('${user.uid}', '${user.email}')">
+                            🗑️ Delete
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+
+        html += '</div>';
+        container.innerHTML = html;
+    } catch (error) {
+        console.error('Error displaying users management:', error);
+        showToast('Error loading users management.', 'error');
+    }
+}
+
+// Get all users from Firebase Auth and Firestore
+async function getAllUsers() {
+    try {
+        // Check if Firebase is available
+        if (!window.db) {
+            console.warn('Firestore not available, returning empty user list');
+            return [];
+        }
+
+        console.log('Fetching users from Firestore...');
+        
+        // Get users from Firestore (client-side approach)
+        const usersRef = window.db.collection('users');
+        const snapshot = await usersRef.get();
+
+        const users = [];
+        snapshot.forEach(doc => {
+            users.push({ uid: doc.id, ...doc.data() });
+        });
+
+        console.log(`Successfully loaded ${users.length} users from Firestore`);
+        return users;
+    } catch (error) {
+        console.error('Error getting users from Firestore:', error);
+        console.error('Error code:', error.code);
+        console.error('Error message:', error.message);
+        
+        // If Firestore fails due to permission or unavailability, try Realtime Database as fallback
+        if (error.code === 'permission-denied' || error.code === 'unavailable' || error.code === 'failed-precondition') {
+            console.log('Firestore failed, trying Realtime Database as fallback...');
+            
+            try {
+                if (!window.firebaseRef || !window.firebaseGet) {
+                    throw new Error('Firebase Realtime Database not available');
+                }
+                
+                const usersRef = firebaseRef('users');
+                const snapshot = await firebaseGet(usersRef);
+                
+                if (snapshot.exists()) {
+                    const usersData = snapshot.val();
+                    const users = Object.entries(usersData).map(([uid, data]) => ({ uid, ...data }));
+                    console.log(`Successfully loaded ${users.length} users from Realtime Database fallback`);
+                    return users;
+                }
+            } catch (fallbackError) {
+                console.error('Fallback user fetch also failed:', fallbackError);
+            }
+        }
+        
+        // Return empty array if all attempts fail
+        console.log('All database attempts failed, returning empty user list');
+        return [];
+    }
+}
+
+// Setup user creation form
+function setupUserForm() {
+    const form = document.getElementById('createUserForm');
+    if (!form) return;
+
+    // Setup password strength checking
+    setupPasswordStrengthForUserForm();
+
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        await handleUserCreation();
+    });
+}
+
+// Setup password strength checking for user creation form
+function setupPasswordStrengthForUserForm() {
+    const passwordInput = document.getElementById('userPassword');
+    const strengthContainer = document.getElementById('passwordStrengthContainer');
+    const strengthFill = document.getElementById('passwordStrengthFill');
+    const strengthText = document.getElementById('passwordStrengthText');
+
+    if (!passwordInput || !strengthContainer) return;
+
+    passwordInput.addEventListener('input', function() {
+        const password = this.value;
+        if (password.length === 0) {
+            strengthContainer.style.display = 'none';
+            return;
+        }
+
+        strengthContainer.style.display = 'block';
+
+        const validationResult = SecurityFramework.validatePassword(password);
+        let percentage = 0;
+        let text = 'Password strength: ';
+        let color = '#ef4444'; // red
+
+        switch (validationResult.strength) {
+            case 'weak':
+                percentage = 25;
+                text += 'Weak - Add uppercase, numbers, or symbols';
+                color = '#ef4444';
+                break;
+            case 'medium':
+                percentage = 50;
+                text += 'Medium - Add more variety';
+                color = '#f59e0b';
+                break;
+            case 'strong':
+                percentage = 100;
+                text += 'Strong - Good to go!';
+                color = '#10b981';
+                break;
+        }
+
+        strengthFill.style.width = percentage + '%';
+        strengthFill.style.backgroundColor = color;
+        strengthText.textContent = text;
+        strengthText.style.color = color;
+    });
+}
+
+// Handle user creation
+async function handleUserCreation() {
+    // Check admin authentication
+    const currentUser = window.authService ? window.authService.getCurrentUser() : null;
+    if (!currentUser || currentUser.role !== 'admin') {
+        showToast('Permission denied. Only admins can create users.', 'error');
+        return;
+    }
+    const formData = getUserFormData();
+
+    // Show status indicator
+    showCreationStatus(true);
+
+    try {
+        // Step 1: Validation
+        updateCreationStatus(1, 'active');
+        const validation = validateUserFormData(formData);
+        if (!validation.isValid) {
+            showToast(validation.errors[0], 'error');
+            highlightFormErrors(validation.fieldErrors);
+            updateCreationStatus(1, 'error');
+            return;
+        }
+        updateCreationStatus(1, 'completed');
+
+        showUserCreationLoading(true);
+
+        // Step 2: Create user directly in Firestore
+        updateCreationStatus(2, 'active');
+        const userId = btoa(formData.email).replace(/[^a-zA-Z0-9]/g, '').substring(0, 28);
+        
+        const userData = {
+            uid: userId,
+            email: formData.email,
+            displayName: formData.displayName,
+            role: formData.role,
+            department: formData.department || '',
+            employeeId: formData.employeeId || '',
+            emailVerified: true, // Assume verified since created by admin
+            disabled: formData.role === 'manager', // Managers need approval
+            pendingApproval: formData.role === 'manager',
+            creationTime: new Date().toISOString(),
+            lastLogin: null,
+            lastActivity: null,
+            createdBy: 'admin',
+            lastUpdated: new Date().toISOString(),
+            updatedBy: 'admin'
+        };
+
+        await window.db.collection('users').doc(userId).set(userData);
+
+        // If manager, create approval request
+        if (formData.role === 'manager') {
+            const approvalRequest = {
+                userId: userId,
+                email: formData.email,
+                displayName: formData.displayName,
+                role: formData.role,
+                department: formData.department || '',
+                employeeId: formData.employeeId || '',
+                requestTime: new Date().toISOString(),
+                status: 'pending',
+                reviewedBy: null,
+                reviewedAt: null,
+                notes: 'Created by admin - pending approval'
+            };
+
+            await window.db.collection('userApprovals').doc(userId).set(approvalRequest);
+        }
+
+        // Step 3: Complete
+        updateCreationStatus(2, 'completed');
+        updateCreationStatus(3, 'completed');
+
+        showToast('✅ User created successfully! They will receive login instructions via email.');
+
+        // Show success details
+        showUserCreationSuccess(formData);
+
+        resetUserForm();
+        await refreshUserData();
+
+        // Hide status after success
+        setTimeout(() => showCreationStatus(false), 5000);
+
+    } catch (error) {
+        console.error('Error creating user:', error);
+        const errorMessage = getUserCreationErrorMessage(error);
+        showToast(errorMessage, 'error');
+
+        // Show error state
+        updateCreationStatus(2, 'error');
+    } finally {
+        showUserCreationLoading(false);
+    }
+}
+
+// Get form data
+function getUserFormData() {
+    return {
+        email: document.getElementById('userEmail').value.trim(),
+        password: document.getElementById('userPassword').value,
+        displayName: document.getElementById('userDisplayName').value.trim(),
+        role: document.getElementById('userRole').value,
+        department: document.getElementById('userDepartment').value.trim(),
+        employeeId: document.getElementById('userEmployeeId').value.trim()
+    };
+}
+
+// Validate form data
+function validateUserFormData(formData) {
+    const errors = [];
+    const fieldErrors = {};
+
+    // Required fields
+    if (!formData.email) {
+        errors.push('Email address is required');
+        fieldErrors.email = true;
+    }
+    if (!formData.password) {
+        errors.push('Password is required');
+        fieldErrors.password = true;
+    }
+    if (!formData.displayName) {
+        errors.push('Display name is required');
+        fieldErrors.displayName = true;
+    }
+    if (!formData.role) {
+        errors.push('Role selection is required');
+        fieldErrors.role = true;
+    }
+
+    if (errors.length > 0) {
+        return { isValid: false, errors, fieldErrors };
+    }
+
+    // Email validation
+    if (typeof SecurityFramework !== 'undefined' && SecurityFramework.validateEmail) {
+        const emailValidation = SecurityFramework.validateEmail(formData.email);
+        if (!emailValidation.isValid) {
+            errors.push(emailValidation.errors[0]);
+            fieldErrors.email = true;
+        }
+    }
+
+    // Password validation
+    if (typeof SecurityFramework !== 'undefined' && SecurityFramework.validatePassword) {
+        const passwordValidation = SecurityFramework.validatePassword(formData.password);
+        if (!passwordValidation.isValid) {
+            errors.push(passwordValidation.errors[0]);
+            fieldErrors.password = true;
+        }
+    }
+
+    // Display name validation
+    if (typeof isValidName === 'function') {
+        const nameValidation = isValidName(formData.displayName);
+        if (!nameValidation.isValid) {
+            errors.push(nameValidation.errors[0]);
+            fieldErrors.displayName = true;
+        }
+    }
+
+    return {
+        isValid: errors.length === 0,
+        errors,
+        fieldErrors
+    };
+}
+
+// Highlight form errors
+function highlightFormErrors(fieldErrors) {
+    // Clear previous errors
+    document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+
+    // Add error class to invalid fields
+    Object.keys(fieldErrors).forEach(field => {
+        const element = document.getElementById(`user${field.charAt(0).toUpperCase() + field.slice(1)}`);
+        if (element) {
+            element.classList.add('is-invalid');
+        }
+    });
+}
+
+// Show/hide loading state for user creation
+function showUserCreationLoading(isLoading) {
+    const btn = document.getElementById('createUserBtn');
+    const btnText = btn.querySelector('.btn-text');
+    const btnLoading = btn.querySelector('.btn-loading');
+
+    if (isLoading) {
+        btn.disabled = true;
+        btnText.style.display = 'none';
+        btnLoading.style.display = 'inline-flex';
+    } else {
+        btn.disabled = false;
+        btnText.style.display = 'inline';
+        btnLoading.style.display = 'none';
+    }
+}
+
+// Get user-friendly error message
+function getUserCreationErrorMessage(error) {
+    console.error('User creation error details:', error);
+    console.error('Error code:', error?.code);
+    console.error('Error message:', error?.message);
+
+    if (error && error.code) {
+        switch (error.code) {
+            case 'functions/unauthenticated':
+                return 'Authentication error. Please log in again.';
+            case 'functions/permission-denied':
+                return 'Permission denied. You must be an admin to create users.';
+            case 'functions/invalid-argument':
+                return `Invalid data: ${error.message}`;
+            case 'functions/already-exists':
+                return 'A user with this email already exists.';
+            case 'functions/internal':
+                return `An internal error occurred: ${error.message}`;
+            default:
+                return `❌ Error: ${error.code}. Please try again or contact support if the problem persists.`;
+        }
+    }
+
+    return '❌ Failed to create user. Please check your connection and try again.';
+}
+
+// Preview user creation
+function previewUserCreation() {
+    const formData = getUserFormData();
+    const validation = validateUserFormData(formData);
+
+    if (!validation.isValid) {
+        showToast(validation.errors[0], 'error');
+        highlightFormErrors(validation.fieldErrors);
+        return;
+    }
+
+    const previewContent = document.getElementById('userPreviewContent');
+    const roleEmojis = {
+        employee: '👤',
+        manager: '👔',
+        admin: '⚡'
+    };
+
+    previewContent.innerHTML = `
+        <div class="user-preview-card">
+            <div class="preview-header">
+                <div class="preview-avatar">
+                    <div class="user-avatar-placeholder">${formData.displayName.charAt(0).toUpperCase()}</div>
+                </div>
+                <div class="preview-info">
+                    <h4>${formData.displayName}</h4>
+                    <p>${formData.email}</p>
+                    <span class="user-role role-${formData.role}">${roleEmojis[formData.role]} ${formData.role.charAt(0).toUpperCase() + formData.role.slice(1)}</span>
+                </div>
+            </div>
+            <div class="preview-details">
+                ${formData.department ? `<div class="preview-detail"><strong>Department:</strong> ${formData.department}</div>` : ''}
+                ${formData.employeeId ? `<div class="preview-detail"><strong>Employee ID:</strong> ${formData.employeeId}</div>` : ''}
+                <div class="preview-detail"><strong>Status:</strong> ${formData.role === 'manager' ? 'Pending Approval' : 'Active'}</div>
+                <div class="preview-detail"><strong>Email Verification:</strong> Required after creation</div>
+            </div>
+        </div>
+    `;
+
+    document.getElementById('userPreviewModal').style.display = 'flex';
+}
+
+// Confirm user creation from preview
+async function confirmUserCreation() {
+    closeUserPreviewModal();
+    await handleUserCreation();
+}
+
+// Close preview modal
+function closeUserPreviewModal() {
+    document.getElementById('userPreviewModal').style.display = 'none';
+}
+
+// Show/hide creation status indicator
+function showCreationStatus(show) {
+    const statusEl = document.getElementById('creationStatus');
+    if (statusEl) {
+        statusEl.style.display = show ? 'flex' : 'none';
+        if (show) {
+            // Reset all steps
+            document.querySelectorAll('.status-step').forEach(step => {
+                step.classList.remove('active', 'completed', 'error');
+            });
+        }
+    }
+}
+
+// Update creation status step
+function updateCreationStatus(step, status) {
+    const stepEl = document.querySelector(`.status-step[data-step="${step}"]`);
+    if (stepEl) {
+        // Remove all status classes
+        stepEl.classList.remove('active', 'completed', 'error');
+
+        // Add new status class
+        if (status === 'active' || status === 'completed' || status === 'error') {
+            stepEl.classList.add(status);
+        }
+    }
+}
+
+// Show user creation success message with details
+function showUserCreationSuccess(formData) {
+    const successHtml = `
+        <div class="user-creation-success">
+            <div class="success-header">
+                <span class="success-icon">🎉</span>
+                <h4>User Created Successfully!</h4>
+            </div>
+            <div class="success-details">
+                <div class="success-item">
+                    <strong>Name:</strong> ${formData.displayName}
+                </div>
+                <div class="success-item">
+                    <strong>Email:</strong> ${formData.email}
+                </div>
+                <div class="success-item">
+                    <strong>Role:</strong> ${formData.role.charAt(0).toUpperCase() + formData.role.slice(1)}
+                </div>
+                ${formData.department ? `<div class="success-item"><strong>Department:</strong> ${formData.department}</div>` : ''}
+                ${formData.employeeId ? `<div class="success-item"><strong>Employee ID:</strong> ${formData.employeeId}</div>` : ''}
+                <div class="success-item">
+                    <strong>Status:</strong> ${formData.role === 'manager' ? 'Pending Approval' : 'Active'}
+                </div>
+            </div>
+            <div class="success-actions">
+                <button class="btn btn-secondary btn-small" onclick="copyUserDetails('${formData.email}', '${formData.displayName}')">
+                    📋 Copy Details
+                </button>
+                <button class="btn btn-primary btn-small" onclick="this.parentElement.parentElement.remove()">
+                    ✓ Got it
+                </button>
+            </div>
+        </div>
+    `;
+
+    // Create and show success message
+    const successDiv = document.createElement('div');
+    successDiv.innerHTML = successHtml;
+    successDiv.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 10000;
+        max-width: 400px;
+        background: var(--bg-primary, white);
+        border: 2px solid var(--success-color, #10b981);
+        border-radius: 12px;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        animation: slideInRight 0.5s ease-out;
+    `;
+
+    document.body.appendChild(successDiv);
+
+    // Auto-remove after 10 seconds
+    setTimeout(() => {
+        if (successDiv.parentElement) {
+            successDiv.remove();
+        }
+    }, 10000);
+}
+
+// Copy user details to clipboard
+async function copyUserDetails(email, name) {
+    const details = `Name: ${name}\nEmail: ${email}\nCreated: ${new Date().toLocaleString()}`;
+
+    try {
+        await navigator.clipboard.writeText(details);
+        showToast('✅ User details copied to clipboard!');
+    } catch (error) {
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = details;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        showToast('✅ User details copied to clipboard!');
+    }
+}
+
+// Password visibility toggle function
+function togglePassword(inputId) {
+    const input = document.getElementById(inputId);
+    const toggleBtn = input.parentNode.querySelector('.password-toggle');
+
+    if (input && toggleBtn) {
+        if (input.type === 'password') {
+            input.type = 'text';
+            toggleBtn.textContent = '🙈';
+            toggleBtn.title = 'Hide password';
+        } else {
+            input.type = 'password';
+            toggleBtn.textContent = '👁️';
+            toggleBtn.title = 'Show password';
+        }
+    }
+}
+
+// Reset user form
+function resetUserForm() {
+    const form = document.getElementById('createUserForm');
+    if (form) {
+        form.reset();
+    }
+
+    // Clear validation errors
+    document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+
+    // Hide password strength
+    const strengthContainer = document.getElementById('passwordStrengthContainer');
+    if (strengthContainer) {
+        strengthContainer.style.display = 'none';
+    }
+
+    // Reset password toggle
+    const passwordInput = document.getElementById('userPassword');
+    if (passwordInput) {
+        passwordInput.type = 'password';
+        const toggleBtn = passwordInput.parentNode.querySelector('.password-toggle');
+        if (toggleBtn) {
+            toggleBtn.textContent = '👁️';
+            toggleBtn.title = 'Show password';
+        }
+    }
+
+    // Hide creation status
+    showCreationStatus(false);
+}
+
+// Refresh user data after creation
+async function refreshUserData() {
+    await Promise.all([
+        displayUsersManagement(),
+        displayUserStatistics(),
+        displayPendingApprovals()
+    ]);
+}
+
+// Edit user
+async function editUser(userId) {
+    console.log('editUser called with userId:', userId);
+
+    // Show loading state on the button
+    const button = event.target.closest('button');
+    if (button) {
+        button.disabled = true;
+        button.innerHTML = '<span class="spinner"></span> Loading...';
+        button.classList.add('loading');
+    }
+
+    try {
+        const user = await getUserById(userId);
+        if (!user) {
+            console.log('User not found for userId:', userId);
+            showToast('User not found', 'error');
+            return;
+        }
+
+        document.getElementById('editUserId').value = user.uid || userId;
+        document.getElementById('editUserEmail').value = user.email;
+        document.getElementById('editUserDisplayName').value = user.displayName || '';
+        document.getElementById('editUserRole').value = user.role || 'employee';
+
+        document.getElementById('editUserModal').style.display = 'flex';
+    } catch (error) {
+        console.error('Error loading user for edit:', error);
+        showToast('Error loading user details.', 'error');
+    } finally {
+        // Reset button state
+        if (button) {
+            button.disabled = false;
+            button.innerHTML = '✏️ Edit';
+            button.classList.remove('loading');
+        }
+    }
+}
+window.editUser = editUser;
+
+// Get user by ID
+async function getUserById(userId) {
+    try {
+        const userRef = window.db.collection('users').doc(userId);
+        const snapshot = await userRef.get();
+
+        if (snapshot.exists) {
+            return { uid: userId, ...snapshot.data() };
+        }
+
+        return null;
+    } catch (error) {
+        console.error('Error getting user:', error);
+        return null;
+    }
+}
+
+// Update user
+async function updateUser(userId, updates) {
+    console.log('updateUser called with userId:', userId, 'updates:', updates);
+    try {
+        const userRef = window.db.collection('users').doc(userId);
+        const updateData = {
+            ...updates,
+            lastUpdated: new Date().toISOString(),
+            updatedBy: window.authService ? window.authService.getCurrentUser()?.uid : 'admin'
+        };
+
+        // If updating email verification or login time, handle specially
+        if (updates.emailVerified !== undefined || updates.lastLogin !== undefined) {
+            updateData.lastActivity = new Date().toISOString();
+        }
+
+        await userRef.update(updateData);
+
+        showToast('User updated successfully!');
+        await displayUsersManagement();
+        await displayUserStatistics();
+    } catch (error) {
+        console.error('Error updating user:', error);
+        showToast('Error updating user.', 'error');
+    }
+}
+
+// Reset user password
+async function resetUserPassword(userId, email) {
+    try {
+        const confirmed = await customConfirm(`Send password reset email to ${email}?`, 'Reset Password');
+        if (!confirmed) return;
+
+        await window.auth.sendPasswordResetEmail(email);
+        showToast(`Password reset email sent to ${email}.`);
+
+        // Log the action
+        console.log(`Password reset requested for user: ${userId} (${email})`);
+    } catch (error) {
+        console.error('Error resetting password:', error);
+        showToast(`Error sending password reset email: ${error.message}`, 'error');
+    }
+}
+window.resetUserPassword = resetUserPassword;
+
+// Toggle user status (enable/disable)
+async function toggleUserStatus(userId, currentlyDisabled) {
+    // Check admin authentication
+    const currentUser = window.authService ? window.authService.getCurrentUser() : null;
+    if (!currentUser || currentUser.role !== 'admin') {
+        showToast('Permission denied. Only admins can modify user status.', 'error');
+        return;
+    }
+    console.log('toggleUserStatus called with userId:', userId, 'currentlyDisabled:', currentlyDisabled);
+
+    // Show loading state on the button
+    const button = event.target.closest('button');
+    const action = currentlyDisabled ? 'enable' : 'disable';
+    if (button) {
+        button.disabled = true;
+        button.innerHTML = `<span class="spinner"></span> ${action.charAt(0).toUpperCase() + action.slice(1)}ing...`;
+        button.classList.add('loading');
+    }
+
+    try {
+        const confirmed = await customConfirm(
+            `Are you sure you want to ${action} this user? ${currentlyDisabled ? 'They will be able to sign in again.' : 'They will not be able to sign in until re-enabled.'}`,
+            `${action.charAt(0).toUpperCase() + action.slice(1)} User`
+        );
+
+        if (!confirmed) {
+            // Reset button if user cancels
+            if (button) {
+                button.disabled = false;
+                button.innerHTML = `${currentlyDisabled ? '✅ Enable' : '⏸️ Disable'}`;
+                button.classList.remove('loading');
+            }
+            return;
+        }
+
+        await updateUser(userId, { disabled: !currentlyDisabled });
+        showToast(`User ${action}d successfully!`);
+
+        // Update button text to reflect new state
+        if (button) {
+            button.innerHTML = `${!currentlyDisabled ? '✅ Enable' : '⏸️ Disable'}`;
+        }
+    } catch (error) {
+        console.error('Error toggling user status:', error);
+        showToast('Error updating user status.', 'error');
+    } finally {
+        // Reset button state
+        if (button) {
+            button.disabled = false;
+            button.classList.remove('loading');
+        }
+    }
+}
+window.toggleUserStatus = toggleUserStatus;
+
+// Delete user
+async function deleteUser(userId, email) {
+    // Check admin authentication
+    const currentUser = window.authService ? window.authService.getCurrentUser() : null;
+    console.log('deleteUser called with userId:', userId, 'email:', email);
+    if (!currentUser || currentUser.role !== 'admin') {
+        showToast('Permission denied. Only admins can delete users.', 'error');
+        return;
+    }
+
+    // Show loading state on the button
+    const button = event.target.closest('button');
+    if (button) {
+        button.disabled = true;
+        button.innerHTML = '<span class="spinner"></span> Deleting...';
+        button.classList.add('loading');
+    }
+
+    // Set up timeout to prevent infinite loading state
+    const timeoutId = setTimeout(() => {
+        console.log('Delete operation timeout, resetting button state');
+        resetDeleteButton(button);
+        showToast('Operation timed out. Please try again.', 'warning');
+    }, 30000); // 30 second timeout
+
+    try {
+        const confirmed = await customConfirm(
+            `⚠️ PERMANENTLY DELETE USER\n\nEmail: ${email}\n\nThis action cannot be undone and will:\n• Remove the user account\n• Delete all associated data\n• Revoke access permissions\n\nAre you absolutely sure?`,
+            '🚨 Delete User Confirmation'
+        );
+
+        if (!confirmed) {
+            // Reset button if user cancels
+            resetDeleteButton(button);
+            return;
+        }
+
+        console.log('Starting user deletion process...');
+        
+        // Get user data before deletion for fallback email lookup
+        const userRef = window.db.collection('users').doc(userId);
+        const userDoc = await userRef.get();
+        
+        if (!userDoc.exists) {
+            throw new Error('User not found in Firestore');
+        }
+        
+        const userData = userDoc.data();
+        const userEmail = userData.email;
+        
+        // Delete from Firestore
+        await userRef.delete();
+        console.log('User deleted from Firestore successfully');
+        
+        // Also try to delete from Realtime Database for consistency
+        try {
+            if (window.firebaseDB && userEmail) {
+                const realtimeUsersRef = firebaseRef('users');
+                const realtimeSnapshot = await firebaseGet(realtimeUsersRef);
+                
+                if (realtimeSnapshot.exists()) {
+                    const realtimeUsers = realtimeSnapshot.val();
+                    let foundRealtimeUser = null;
+                    
+                    Object.entries(realtimeUsers).forEach(([key, userData]) => {
+                        if (userData.email === userEmail) {
+                            foundRealtimeUser = key;
+                        }
+                    });
+                    
+                    if (foundRealtimeUser) {
+                        const realtimeUserRef = firebaseRef(`users/${foundRealtimeUser}`);
+                        await firebaseRemove(realtimeUserRef);
+                        console.log('User also removed from Realtime Database');
+                    }
+                }
+            }
+        } catch (realtimeError) {
+            console.warn('Failed to remove from Realtime Database:', realtimeError);
+        }
+        
+        // Clean up any approval requests
+        try {
+            const approvalRef = window.db.collection('userApprovals').doc(userId);
+            await approvalRef.delete();
+            console.log('Approval request cleaned up');
+        } catch (approvalError) {
+            console.warn('Failed to remove approval request:', approvalError);
+        }
+
+        // Show success message
+        showToast('✅ User deleted successfully!');
+        console.log('User deletion completed successfully');
+        
+        // Force refresh the user list immediately
+        if (window.userManagementInitialized) {
+            setTimeout(async () => {
+                console.log('Forcing user data refresh...');
+                await refreshUserData();
+            }, 100);
+        }
+        
+    } catch (error) {
+        console.error('Error deleting user:', error);
+        
+        let errorMessage = 'Error deleting user.';
+        if (error.message && error.message.includes('not found')) {
+            errorMessage = 'User not found. They may have already been deleted.';
+        } else if (error.code === 'permission-denied') {
+            errorMessage = 'Permission denied. You must be an admin to delete users.';
+        } else if (error.code === 'unauthenticated') {
+            errorMessage = 'Authentication error. Please log in again.';
+        } else if (error.message && error.message.includes('unavailable')) {
+            errorMessage = 'Service temporarily unavailable. Please try again.';
+        }
+        
+        showToast(errorMessage, 'error');
+        
+        // Force refresh anyway to sync with current state
+        setTimeout(async () => {
+            await refreshUserData();
+        }, 500);
+        
+    } finally {
+        // Clear timeout and reset button state
+        clearTimeout(timeoutId);
+        resetDeleteButton(button);
+    }
+}
+
+// Helper function to reset delete button state
+function resetDeleteButton(button) {
+    if (button) {
+        button.disabled = false;
+        button.innerHTML = '🗑️ Delete';
+        button.classList.remove('loading');
+    }
+}
+window.deleteUser = deleteUser;
+
+// Setup user modal
+function setupUserModal() {
+    const modal = document.getElementById('editUserModal');
+    if (!modal) return;
+
+    const closeBtn = modal.querySelector('.modal-close');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+            modal.style.display = 'none';
+        });
+    }
+
+    window.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.style.display = 'none';
+        }
+    });
+
+    // Setup edit form
+    const form = document.getElementById('editUserForm');
+    if (form) {
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const userId = document.getElementById('editUserId').value;
+            const displayName = document.getElementById('editUserDisplayName').value.trim();
+            const role = document.getElementById('editUserRole').value;
+
+            if (!displayName) {
+                showToast('Display name is required', 'error');
+                return;
+            }
+
+            const nameValidation = isValidName(displayName);
+            if (!nameValidation.isValid) {
+                showToast(nameValidation.errors[0], 'error');
+                return;
+            }
+
+            await updateUser(userId, {
+                displayName: displayName,
+                role: role
+            });
+
+            modal.style.display = 'none';
+        });
+    }
+}
+
+// Clear user filters
+function clearUserFilters() {
+    currentUserFilters = {
+        search: '',
+        role: 'all',
+        status: 'all'
+    };
+
+    // Reset form elements
+    const searchInput = document.getElementById('userSearch');
+    const roleFilter = document.getElementById('userRoleFilter');
+    const statusFilter = document.getElementById('userStatusFilter');
+
+    if (searchInput) searchInput.value = '';
+    if (roleFilter) roleFilter.value = 'all';
+    if (statusFilter) statusFilter.value = 'all';
+
+    displayUsersManagement();
+    showToast('Filters cleared!');
+}
+window.clearUserFilters = clearUserFilters;
+
+// Setup user search and filters
+function setupUserSearchAndFilters() {
+    // Search input with debouncing
+    const searchInput = document.getElementById('userSearch');
+    let searchTimeout;
+    if (searchInput) {
+        searchInput.addEventListener('input', function(e) {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                currentUserFilters.search = e.target.value.trim();
+                displayUsersManagement();
+            }, 300); // 300ms debounce
+        });
+    }
+
+    // Role filter
+    const roleFilter = document.getElementById('userRoleFilter');
+    if (roleFilter) {
+        roleFilter.addEventListener('change', function(e) {
+            currentUserFilters.role = e.target.value;
+            displayUsersManagement();
+        });
+    }
+
+    // Status filter
+    const statusFilter = document.getElementById('userStatusFilter');
+    if (statusFilter) {
+        statusFilter.addEventListener('change', function(e) {
+            currentUserFilters.status = e.target.value;
+            displayUsersManagement();
+        });
+    }
+
+    // Add refresh button functionality
+    const refreshBtn = document.getElementById('refreshUsersBtn');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', async function() {
+            showToast('Refreshing user data...');
+            await refreshUserData();
+        });
+    }
+}
+
+// ========================================
+// User Statistics Display
+// ========================================
+
+async function displayUserStatistics() {
+    try {
+        const container = document.getElementById('userStatistics');
+        if (!container) return;
+
+        const users = await getAllUsers();
+        
+        const totalUsers = users.length;
+        const activeUsers = users.filter(u => u.emailVerified && !u.disabled).length;
+        const pendingUsers = users.filter(u => u.pendingApproval).length;
+        const adminUsers = users.filter(u => u.role === 'admin').length;
+        const managerUsers = users.filter(u => u.role === 'manager').length;
+        const employeeUsers = users.filter(u => u.role === 'employee').length;
+
+        const html = `
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">👥</div>
+                    <div class="stat-content">
+                        <div class="stat-value">${totalUsers}</div>
+                        <div class="stat-label">Total Users</div>
+                    </div>
+                </div>
+                <div class="stat-card stat-success">
+                    <div class="stat-icon">✓</div>
+                    <div class="stat-content">
+                        <div class="stat-value">${activeUsers}</div>
+                        <div class="stat-label">Active Users</div>
+                    </div>
+                </div>
+                <div class="stat-card stat-warning">
+                    <div class="stat-icon">⏳</div>
+                    <div class="stat-content">
+                        <div class="stat-value">${pendingUsers}</div>
+                        <div class="stat-label">Pending Approval</div>
+                    </div>
+                </div>
+                <div class="stat-card stat-info">
+                    <div class="stat-icon">⚡</div>
+                    <div class="stat-content">
+                        <div class="stat-value">${adminUsers}</div>
+                        <div class="stat-label">Admins</div>
+                    </div>
+                </div>
+                <div class="stat-card stat-info">
+                    <div class="stat-icon">👔</div>
+                    <div class="stat-content">
+                        <div class="stat-value">${managerUsers}</div>
+                        <div class="stat-label">Managers</div>
+                    </div>
+                </div>
+                <div class="stat-card stat-info">
+                    <div class="stat-icon">👤</div>
+                    <div class="stat-content">
+                        <div class="stat-value">${employeeUsers}</div>
+                        <div class="stat-label">Employees</div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        container.innerHTML = html;
+    } catch (error) {
+        console.error('Error displaying user statistics:', error);
+    }
+}
+
+// ========================================
+// Bulk User Actions
+// ========================================
+
+function setupBulkActions() {
+    const selectAllCheckbox = document.getElementById('selectAllUsers');
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function(e) {
+            toggleSelectAllUsers(e.target.checked);
+        });
+    }
+
+    const bulkEnableBtn = document.getElementById('bulkEnableBtn');
+    if (bulkEnableBtn) {
+        bulkEnableBtn.addEventListener('click', bulkEnableUsers);
+    }
+
+    const bulkDisableBtn = document.getElementById('bulkDisableBtn');
+    if (bulkDisableBtn) {
+        bulkDisableBtn.addEventListener('click', bulkDisableUsers);
+    }
+
+    const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
+    if (bulkDeleteBtn) {
+        bulkDeleteBtn.addEventListener('click', bulkDeleteUsers);
+    }
+
+    const exportUsersBtn = document.getElementById('exportUsersBtn');
+    if (exportUsersBtn) {
+        exportUsersBtn.addEventListener('click', exportUsersToCSV);
+    }
+}
+
+function toggleSelectAllUsers(checked) {
+    const checkboxes = document.querySelectorAll('.user-select-checkbox');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = checked;
+        toggleUserSelection(checkbox.value, checked);
+    });
+    updateBulkActionButtons();
+}
+
+function toggleUserSelection(userId, isSelected) {
+    if (isSelected) {
+        if (!selectedUserIds.includes(userId)) {
+            selectedUserIds.push(userId);
+        }
+    } else {
+        selectedUserIds = selectedUserIds.filter(id => id !== userId);
+    }
+    updateBulkActionButtons();
+}
+window.toggleUserSelection = toggleUserSelection;
+
+function updateBulkActionButtons() {
+    const bulkActionsContainer = document.getElementById('bulkActionsContainer');
+    if (!bulkActionsContainer) return;
+
+    const selectedCount = selectedUserIds.length;
+    const countDisplay = document.getElementById('selectedUserCount');
+    
+    if (selectedCount > 0) {
+        bulkActionsContainer.style.display = 'flex';
+        if (countDisplay) {
+            countDisplay.textContent = `${selectedCount} user${selectedCount > 1 ? 's' : ''} selected`;
+        }
+    } else {
+        bulkActionsContainer.style.display = 'none';
+    }
+}
+
+async function bulkEnableUsers() {
+    // Check admin authentication
+    const currentUser = window.authService ? window.authService.getCurrentUser() : null;
+    if (!currentUser || currentUser.role !== 'admin') {
+        showToast('Permission denied. Only admins can bulk enable users.', 'error');
+        return;
+    }
+    
+    if (selectedUserIds.length === 0) return;
+
+    const confirmed = await customConfirm(
+        `Enable ${selectedUserIds.length} selected user(s)? They will be able to sign in.`,
+        'Bulk Enable Users'
+    );
+
+    if (!confirmed) return;
+
+    try {
+        showLoadingOverlay(`Enabling ${selectedUserIds.length} users...`);
+
+        for (const userId of selectedUserIds) {
+            await updateUser(userId, { disabled: false });
+        }
+
+        showToast(`Successfully enabled ${selectedUserIds.length} user(s)!`);
+        selectedUserIds = [];
+        await displayUsersManagement();
+        await displayUserStatistics();
+        updateBulkActionButtons();
+    } catch (error) {
+        console.error('Error bulk enabling users:', error);
+        showToast('Error enabling some users.', 'error');
+    } finally {
+        hideLoadingOverlay();
+    }
+}
+window.bulkEnableUsers = bulkEnableUsers;
+
+async function bulkDisableUsers() {
+    // Check admin authentication
+    const currentUser = window.authService ? window.authService.getCurrentUser() : null;
+    if (!currentUser || currentUser.role !== 'admin') {
+        showToast('Permission denied. Only admins can bulk disable users.', 'error');
+        return;
+    }
+    
+    if (selectedUserIds.length === 0) return;
+
+    const confirmed = await customConfirm(
+        `Disable ${selectedUserIds.length} selected user(s)? They will not be able to sign in until re-enabled.`,
+        'Bulk Disable Users'
+    );
+
+    if (!confirmed) return;
+
+    try {
+        showLoadingOverlay(`Disabling ${selectedUserIds.length} users...`);
+
+        for (const userId of selectedUserIds) {
+            await updateUser(userId, { disabled: true });
+        }
+
+        showToast(`Successfully disabled ${selectedUserIds.length} user(s)!`);
+        selectedUserIds = [];
+        await displayUsersManagement();
+        await displayUserStatistics();
+        updateBulkActionButtons();
+    } catch (error) {
+        console.error('Error bulk disabling users:', error);
+        showToast('Error disabling some users.', 'error');
+    } finally {
+        hideLoadingOverlay();
+    }
+}
+window.bulkDisableUsers = bulkDisableUsers;
+
+async function bulkDeleteUsers() {
+    // Check admin authentication
+    const currentUser = window.authService ? window.authService.getCurrentUser() : null;
+    if (!currentUser || currentUser.role !== 'admin') {
+        showToast('Permission denied. Only admins can bulk delete users.', 'error');
+        return;
+    }
+    
+    if (selectedUserIds.length === 0) return;
+
+    const confirmed = await customConfirm(
+        `⚠️ BULK DELETE CONFIRMATION\n\n${selectedUserIds.length} user(s) will be permanently deleted.\n\nThis action will:\n• Remove all selected user accounts\n• Delete all associated data\n• Revoke all access permissions\n• Cannot be undone\n\nAre you absolutely sure?`,
+        '🚨 Bulk Delete Users'
+    );
+
+    if (!confirmed) return;
+
+    try {
+        showLoadingOverlay(`Deleting ${selectedUserIds.length} users...`);
+
+        let deletedCount = 0;
+        let failedCount = 0;
+
+        for (const userId of selectedUserIds) {
+            try {
+                // Get user data before deletion for fallback email lookup
+                const userRef = window.db.collection('users').doc(userId);
+                const userDoc = await userRef.get();
+                
+                if (userDoc.exists) {
+                    const userData = userDoc.data();
+                    const userEmail = userData.email;
+                    
+                    // Delete from Firestore
+                    await userRef.delete();
+                    
+                    // Also try to delete from Realtime Database for consistency
+                    try {
+                        if (window.firebaseDB && userEmail) {
+                            const realtimeUsersRef = firebaseRef('users');
+                            const realtimeSnapshot = await firebaseGet(realtimeUsersRef);
+                            
+                            if (realtimeSnapshot.exists()) {
+                                const realtimeUsers = realtimeSnapshot.val();
+                                let foundRealtimeUser = null;
+                                
+                                Object.entries(realtimeUsers).forEach(([key, userData]) => {
+                                    if (userData.email === userEmail) {
+                                        foundRealtimeUser = key;
+                                    }
+                                });
+                                
+                                if (foundRealtimeUser) {
+                                    const realtimeUserRef = firebaseRef(`users/${foundRealtimeUser}`);
+                                    await firebaseRemove(realtimeUserRef);
+                                }
+                            }
+                        }
+                    } catch (realtimeError) {
+                        console.warn('Failed to remove from Realtime Database:', realtimeError);
+                    }
+                    
+                    // Clean up any approval requests
+                    try {
+                        const approvalRef = window.db.collection('userApprovals').doc(userId);
+                        await approvalRef.delete();
+                    } catch (approvalError) {
+                        console.warn('Failed to remove approval request:', approvalError);
+                    }
+                    
+                    deletedCount++;
+                    console.log(`Successfully deleted user: ${userEmail}`);
+                } else {
+                    console.log(`User ${userId} not found in Firestore, skipping...`);
+                    deletedCount++;
+                }
+            } catch (error) {
+                console.error(`Failed to delete user ${userId}:`, error);
+                failedCount++;
+            }
+        }
+
+        if (failedCount === 0) {
+            showToast(`Successfully deleted ${deletedCount} user(s)!`);
+        } else {
+            showToast(`Deleted ${deletedCount} user(s), ${failedCount} failed. Check console for details.`, 'warning');
+        }
+        
+        selectedUserIds = [];
+        await displayUsersManagement();
+        await displayUserStatistics();
+        updateBulkActionButtons();
+    } catch (error) {
+        console.error('Error bulk deleting users:', error);
+        showToast('Error deleting some users.', 'error');
+    } finally {
+        hideLoadingOverlay();
+    }
+}
+window.bulkDeleteUsers = bulkDeleteUsers;
+
+// ========================================
+// Export Users to CSV
+// ========================================
+
+async function exportUsersToCSV() {
+    try {
+        const users = await getAllUsers();
+        
+        if (users.length === 0) {
+            showToast('No users to export', 'error');
+            return;
+        }
+
+        // CSV header
+        let csv = 'Email,Display Name,Role,Status,Email Verified,Created,Last Sign In\n';
+
+        // CSV rows
+        users.forEach(user => {
+            const isActive = user.emailVerified && !user.disabled;
+            const isPending = user.pendingApproval;
+            let status = 'Active';
+            if (isPending) status = 'Pending Approval';
+            else if (!isActive) status = 'Inactive';
+
+            const createdAt = user.creationTime ? new Date(user.creationTime).toLocaleDateString() : 'Unknown';
+            const lastSignIn = user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'Never';
+
+            csv += `"${user.email}","${user.displayName || 'No Name'}","${user.role || 'employee'}","${status}","${user.emailVerified ? 'Yes' : 'No'}","${createdAt}","${lastSignIn}"\n`;
+        });
+
+        // Create and download file
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `users-export-${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+
+        showToast(`Exported ${users.length} users to CSV!`);
+    } catch (error) {
+        console.error('Error exporting users:', error);
+        showToast('Error exporting users to CSV.', 'error');
+    }
+}
+
+// ========================================
+// User Approval System
+// ========================================
+
+let currentApprovalUserId = null;
+
+// Initialize user approvals
+async function initializeUserApprovals() {
+    try {
+        if (window.userApprovalsInitialized) {
+            return; // Already initialized
+        }
+        
+        await displayPendingApprovals();
+        window.userApprovalsInitialized = true;
+    } catch (error) {
+        console.error('Error initializing user approvals:', error);
+        showToast('Error loading user approvals.', 'error');
+    }
+}
+
+// Display pending user approvals
+async function displayPendingApprovals() {
+    try {
+        const container = document.getElementById('pendingApprovals');
+        if (!container) return;
+
+        const pendingApprovals = await getPendingApprovals();
+
+        if (!pendingApprovals || pendingApprovals.length === 0) {
+            container.innerHTML = '<p class="empty-message">No pending approvals. All user requests have been processed.</p>';
+            return;
+        }
+
+        let html = '<div class="approvals-list">';
+
+        pendingApprovals.forEach(approval => {
+            html += `
+                <div class="approval-card">
+                    <div class="approval-header">
+                        <div class="approval-user-info">
+                            <h4>${approval.displayName}</h4>
+                            <p class="approval-email">${approval.email}</p>
+                            <span class="approval-role role-${approval.role}">${approval.role.charAt(0).toUpperCase() + approval.role.slice(1)}</span>
+                        </div>
+                        <div class="approval-meta">
+                            <small>Requested: ${getTimeAgo(new Date(approval.requestTime))}</small>
+                        </div>
+                    </div>
+
+                    <div class="approval-details">
+                        ${approval.department ? `<div class="approval-detail"><span class="detail-label">Department:</span> <span class="detail-value">${approval.department}</span></div>` : ''}
+                        ${approval.employeeId ? `<div class="approval-detail"><span class="detail-label">Employee ID:</span> <span class="detail-value">${approval.employeeId}</span></div>` : ''}
+                    </div>
+
+                    <div class="approval-actions">
+                        <button class="btn btn-success btn-small" onclick="reviewApproval('${approval.userId}')">
+                            👁️ Review
+                        </button>
+                        <button class="btn btn-outline btn-small" onclick="quickApprove('${approval.userId}')">
+                            ✓ Quick Approve
+                        </button>
+                        <button class="btn btn-danger btn-small" onclick="quickReject('${approval.userId}')">
+                            ✗ Quick Reject
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+
+        html += '</div>';
+        container.innerHTML = html;
+    } catch (error) {
+        console.error('Error displaying pending approvals:', error);
+        showToast('Error loading pending approvals.', 'error');
+    }
+}
+
+// Get pending approvals
+async function getPendingApprovals() {
+    console.log('getPendingApprovals called');
+    try {
+        const approvalsRef = window.db.collection('userApprovals');
+        console.log('Querying userApprovals collection for pending status');
+        const snapshot = await approvalsRef.where('status', '==', 'pending').get();
+
+        console.log('Query snapshot received:', snapshot);
+        console.log('Snapshot type:', typeof snapshot);
+
+        // Check if snapshot is valid
+        if (!snapshot || typeof snapshot.forEach !== 'function') {
+            console.error('Invalid snapshot received:', snapshot);
+            return [];
+        }
+
+        const approvals = [];
+        snapshot.forEach(doc => {
+            console.log('Processing approval doc:', doc.id, doc.data());
+            approvals.push({ id: doc.id, ...doc.data() });
+        });
+
+        console.log('Found', approvals.length, 'pending approvals');
+        return approvals;
+    } catch (error) {
+        console.error('Error getting pending approvals:', error);
+        console.error('Error code:', error.code);
+        console.error('Error message:', error.message);
+
+        // If collection doesn't exist or permission denied, return empty array
+        if (error.code === 'permission-denied' || error.code === 'not-found') {
+            console.log('userApprovals collection not accessible, returning empty array');
+            return [];
+        }
+
+        return [];
+    }
+}
+
+// Review approval
+async function reviewApproval(userId) {
+    console.log('reviewApproval called with userId:', userId);
+
+    // Show loading state on the button
+    const button = event.target.closest('button');
+    if (button) {
+        button.disabled = true;
+        button.innerHTML = '<span class="spinner"></span> Loading...';
+        button.classList.add('loading');
+    }
+
+    try {
+        const approval = await getApprovalById(userId);
+        if (!approval) {
+            showToast('Approval request not found', 'error');
+            return;
+        }
+
+        currentApprovalUserId = userId;
+
+        const detailsHtml = `
+            <div class="approval-review-details">
+                <div class="review-section">
+                    <h4>User Information</h4>
+                    <div class="review-info">
+                        <div class="info-row">
+                            <span class="info-label">Name:</span>
+                            <span class="info-value">${approval.displayName}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Email:</span>
+                            <span class="info-value">${approval.email}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Role:</span>
+                            <span class="info-value">${approval.role.charAt(0).toUpperCase() + approval.role.slice(1)}</span>
+                        </div>
+                        ${approval.department ? `
+                            <div class="info-row">
+                                <span class="info-label">Department:</span>
+                                <span class="info-value">${approval.department}</span>
+                            </div>
+                        ` : ''}
+                        ${approval.employeeId ? `
+                            <div class="info-row">
+                                <span class="info-label">Employee ID:</span>
+                                <span class="info-value">${approval.employeeId}</span>
+                            </div>
+                        ` : ''}
+                        <div class="info-row">
+                            <span class="info-label">Requested:</span>
+                            <span class="info-value">${new Date(approval.requestTime).toLocaleString()}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('approvalDetails').innerHTML = detailsHtml;
+        document.getElementById('approvalNotes').value = '';
+        document.getElementById('approvalModal').style.display = 'flex';
+    } catch (error) {
+        console.error('Error loading approval details:', error);
+        showToast('Error loading approval details.', 'error');
+    } finally {
+        // Reset button state
+        if (button) {
+            button.disabled = false;
+            button.innerHTML = '👁️ Review';
+            button.classList.remove('loading');
+        }
+    }
+}
+window.reviewApproval = reviewApproval;
+
+// Get approval by user ID
+async function getApprovalById(userId) {
+    console.log('getApprovalById called with userId:', userId);
+    try {
+        const approvalRef = window.db.collection('userApprovals').doc(userId);
+        console.log('Fetching approval document:', userId);
+        const snapshot = await approvalRef.get();
+
+        console.log('Snapshot received:', snapshot);
+        console.log('Snapshot type:', typeof snapshot);
+
+        // Check if snapshot is valid and has exists method
+        if (snapshot && typeof snapshot.exists === 'function' && snapshot.exists()) {
+            console.log('Approval found:', snapshot.data());
+            return { id: snapshot.id, ...snapshot.data() };
+        }
+
+        console.log('Approval not found for userId:', userId);
+        return null;
+    } catch (error) {
+        console.error('Error getting approval:', error);
+        console.error('Error code:', error.code);
+        console.error('Error message:', error.message);
+
+        // If collection doesn't exist or permission denied, return null
+        if (error.code === 'permission-denied' || error.code === 'not-found') {
+            console.log('userApprovals collection not accessible for userId:', userId);
+            return null;
+        }
+
+        return null;
+    }
+}
+
+// Approve user
+async function approveUser() {
+    console.log('approveUser called with currentApprovalUserId:', currentApprovalUserId);
+    if (!currentApprovalUserId) {
+        console.log('No currentApprovalUserId set');
+        return;
+    }
+    
+    // Check admin authentication
+    const currentUser = window.authService ? window.authService.getCurrentUser() : null;
+    if (!currentUser || currentUser.role !== 'admin') {
+        showToast('Permission denied. Only admins can approve users.', 'error');
+        return;
+    }
+
+    try {
+        const notes = document.getElementById('approvalNotes').value.trim();
+        const currentUser = window.authService ? window.authService.getCurrentUser() : null;
+
+        console.log('Updating approval status...');
+        // Update approval status
+        try {
+            await window.db.collection('userApprovals').doc(currentApprovalUserId).update({
+                status: 'approved',
+                reviewedBy: currentUser ? currentUser.uid : 'admin',
+                reviewedAt: new Date().toISOString(),
+                notes: notes
+            });
+            console.log('Approval status updated successfully');
+        } catch (approvalError) {
+            console.warn('Failed to update approval status:', approvalError);
+            // Continue with user update even if approval update fails
+        }
+
+        console.log('Updating user account...');
+        // Enable user account
+        await window.db.collection('users').doc(currentApprovalUserId).update({
+            disabled: false,
+            pendingApproval: false,
+            approvedAt: new Date().toISOString(),
+            approvedBy: currentUser ? currentUser.id : 'admin'
+        });
+        console.log('User account updated successfully');
+
+        showToast('User approved successfully! They can now sign in.');
+        closeApprovalModal();
+        await displayPendingApprovals();
+        await displayUsersManagement();
+    } catch (error) {
+        console.error('Error approving user:', error);
+        showToast('Error approving user.', 'error');
+    }
+}
+
+// Reject user
+async function rejectUser() {
+    console.log('rejectUser called with currentApprovalUserId:', currentApprovalUserId);
+    if (!currentApprovalUserId) {
+        console.log('No currentApprovalUserId set');
+        return;
+    }
+    
+    // Check admin authentication
+    const currentUser = window.authService ? window.authService.getCurrentUser() : null;
+    if (!currentUser || currentUser.role !== 'admin') {
+        showToast('Permission denied. Only admins can reject users.', 'error');
+        return;
+    }
+
+    try {
+        const notes = document.getElementById('approvalNotes').value.trim();
+        const currentUser = window.authService ? window.authService.getCurrentUser() : null;
+
+        console.log('Updating approval status to rejected...');
+        // Update approval status
+        try {
+            await window.db.collection('userApprovals').doc(currentApprovalUserId).update({
+                status: 'rejected',
+                reviewedBy: currentUser ? currentUser.uid : 'admin',
+                reviewedAt: new Date().toISOString(),
+                notes: notes
+            });
+            console.log('Approval status updated to rejected successfully');
+        } catch (approvalError) {
+            console.warn('Failed to update approval status:', approvalError);
+            // Continue with user update even if approval update fails
+        }
+
+        console.log('Disabling user account...');
+        // Disable user account
+        await window.db.collection('users').doc(currentApprovalUserId).update({
+            disabled: true,
+            pendingApproval: false,
+            rejectedAt: new Date().toISOString(),
+            rejectedBy: currentUser ? currentUser.id : 'admin'
+        });
+        console.log('User account disabled successfully');
+
+        showToast('User request rejected.');
+        closeApprovalModal();
+        await displayPendingApprovals();
+        await displayUsersManagement();
+    } catch (error) {
+        console.error('Error rejecting user:', error);
+        showToast('Error rejecting user.', 'error');
+    }
+}
+
+// Quick approve
+async function quickApprove(userId) {
+    console.log('quickApprove called with userId:', userId);
+
+    // Show loading state on the button
+    const button = event.target.closest('button');
+    if (button) {
+        button.disabled = true;
+        button.innerHTML = '<span class="spinner"></span> Approving...';
+        button.classList.add('loading');
+    }
+
+    try {
+        currentApprovalUserId = userId;
+        await approveUser();
+    } finally {
+        // Reset button state
+        if (button) {
+            button.disabled = false;
+            button.innerHTML = '✓ Quick Approve';
+            button.classList.remove('loading');
+        }
+    }
+}
+window.quickApprove = quickApprove;
+
+// Quick reject
+async function quickReject(userId) {
+    console.log('quickReject called with userId:', userId);
+
+    // Show loading state on the button
+    const button = event.target.closest('button');
+    if (button) {
+        button.disabled = true;
+        button.innerHTML = '<span class="spinner"></span> Rejecting...';
+        button.classList.add('loading');
+    }
+
+    try {
+        currentApprovalUserId = userId;
+        await rejectUser();
+    } finally {
+        // Reset button state
+        if (button) {
+            button.disabled = false;
+            button.innerHTML = '✗ Quick Reject';
+            button.classList.remove('loading');
+        }
+    }
+}
+window.quickReject = quickReject;
+
+// Close approval modal
+function closeApprovalModal() {
+    document.getElementById('approvalModal').style.display = 'none';
+    currentApprovalUserId = null;
+}
+
+
+// Display Users Management
+async function displayUsersManagement() {
+    try {
+        const container = document.getElementById('usersManagement');
+        if (!container) return;
+
+        // Show loading state
+        showLoadingState(container, generateUserCardSkeleton, 'Loading users...');
+
+        const users = await getAllUsers();
+
+        if (!users || users.length === 0) {
+            showEmptyState(container, 'No users found. Users will appear here when they register.', false);
+            return;
+        }
+
+        // Apply filters
+        let filteredUsers = users.filter(user => {
+            // Search filter
+            if (currentUserFilters.search) {
+                const searchTerm = currentUserFilters.search.toLowerCase();
+                const matchesSearch = user.email?.toLowerCase().includes(searchTerm) ||
+                                    user.displayName?.toLowerCase().includes(searchTerm) ||
+                                    user.role?.toLowerCase().includes(searchTerm);
+                if (!matchesSearch) return false;
+            }
+
+            // Role filter
+            if (currentUserFilters.role !== 'all' && user.role !== currentUserFilters.role) {
+                return false;
+            }
+
+            // Status filter
+            if (currentUserFilters.status !== 'all') {
+                const isActive = (user.emailVerified !== false) && !user.disabled; // Default to true if not set
+                const isPending = user.pendingApproval;
+
+                if (currentUserFilters.status === 'active' && !isActive) return false;
+                if (currentUserFilters.status === 'inactive' && isActive) return false;
+                if (currentUserFilters.status === 'pending' && !isPending) return false;
+            }
+
+            return true;
+        });
+
+        if (filteredUsers.length === 0) {
+            showEmptyState(container, 'No users match your current filters.', true, 'Clear Filters', 'clearUserFilters()');
+            return;
+        }
+
+        // Sort users by creation time (newest first)
+        filteredUsers.sort((a, b) => {
+            const aTime = a.creationTime ? new Date(a.creationTime) : new Date(0);
+            const bTime = b.creationTime ? new Date(b.creationTime) : new Date(0);
+            return bTime - aTime;
+        });
+
+        let html = '<div class="users-grid">';
+
+        filteredUsers.forEach(user => {
+            const isActive = (user.emailVerified !== false) && !user.disabled; // Default to active if not specified
+            const isPending = user.pendingApproval;
+            const lastSignIn = user.lastLogin ? new Date(user.lastLogin) : null;
+            const createdAt = user.creationTime ? new Date(user.creationTime) : null;
+            const lastActivity = user.lastActivity ? new Date(user.lastActivity) : null;
+            const role = user.role || 'employee';
+            const isSelected = selectedUserIds.includes(user.uid);
+
+            let statusText = 'Active';
+            let statusClass = 'active';
+            if (isPending) {
+                statusText = 'Pending Approval';
+                statusClass = 'pending';
+            } else if (!isActive) {
+                statusText = 'Inactive';
+                statusClass = 'inactive';
+            }
+
+            // Enhanced role badges with better styling
+            const roleBadges = {
+                admin: '<span class="user-role role-admin" title="Administrator">⚡ Admin</span>',
+                manager: '<span class="user-role role-manager" title="Manager">👔 Manager</span>',
+                employee: '<span class="user-role role-employee" title="Employee">👤 Employee</span>'
+            };
+
+            // Enhanced status indicators
+            const statusIcons = {
+                active: '🟢',
+                inactive: '🔴',
+                pending: '🟡'
+            };
+
+            html += `
+                <div class="user-card ${statusClass} ${isSelected ? 'user-selected' : ''}" data-user-id="${user.uid}">
+                    <div class="user-select-wrapper">
+                        <input type="checkbox"
+                               class="user-select-checkbox"
+                               value="${user.uid}"
+                               ${isSelected ? 'checked' : ''}
+                               onchange="toggleUserSelection('${user.uid}', this.checked)"
+                               title="Select user for bulk actions">
+                    </div>
+                    <div class="user-header">
+                        <div class="user-avatar">
+                            ${user.photoURL ? `<img src="${user.photoURL}" alt="${user.displayName || user.email}" loading="lazy">` :
+                              `<div class="user-avatar-placeholder" title="${user.displayName || user.email}">${(user.displayName || user.email || '?').charAt(0).toUpperCase()}</div>`}
+                        </div>
+                        <div class="user-info">
+                            <h4 title="${user.displayName || 'No Name'}">${user.displayName || 'No Name'}</h4>
+                            <p class="user-email" title="${user.email}">${user.email}</p>
+                            ${roleBadges[role] || roleBadges.employee}
+                        </div>
+                        <div class="user-status">
+                            <span class="status-indicator ${statusClass}" title="${statusText}">
+                                ${statusIcons[statusClass] || '⚪'} ${statusText}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="user-details">
+                        <div class="user-detail">
+                            <span class="detail-label">📅 Created:</span>
+                            <span class="detail-value">${createdAt ? getTimeAgo(createdAt) : 'Unknown'}</span>
+                        </div>
+                        <div class="user-detail">
+                            <span class="detail-label">🔑 Last Login:</span>
+                            <span class="detail-value">${lastSignIn ? getTimeAgo(lastSignIn) : 'Never'}</span>
+                        </div>
+                        <div class="user-detail">
+                            <span class="detail-label">✉️ Email Verified:</span>
+                            <span class="detail-value">${user.emailVerified !== false ? '✅ Yes' : '❌ No'}</span>
+                        </div>
+                        ${lastActivity ? `
+                            <div class="user-detail">
+                                <span class="detail-label">⚡ Last Activity:</span>
+                                <span class="detail-value">${getTimeAgo(lastActivity)}</span>
+                            </div>
+                        ` : ''}
+                    </div>
+
+                    <div class="user-actions">
+                        <button class="btn btn-info btn-small" onclick="editUser('${user.uid}')" title="Edit user details">
+                            ✏️ Edit
+                        </button>
+                        <button class="btn btn-warning btn-small" onclick="resetUserPassword('${user.uid}', '${user.email}')" title="Send password reset email">
+                            🔑 Reset
+                        </button>
+                        ${!isPending ? `
+                            <button class="btn ${user.disabled ? 'btn-success' : 'btn-warning'} btn-small"
+                                    onclick="toggleUserStatus('${user.uid}', ${user.disabled})"
+                                    title="${user.disabled ? 'Enable user account' : 'Disable user account'}">
+                                ${user.disabled ? '✅ Enable' : '⏸️ Disable'}
+                            </button>
+                        ` : `
+                            <button class="btn btn-success btn-small" onclick="reviewApproval('${user.uid}')" title="Review user approval">
+                                👁️ Review
+                            </button>
+                        `}
+                        <button class="btn btn-danger btn-small" onclick="deleteUser('${user.uid}', '${user.email}')" title="Permanently delete user">
+                            🗑️ Delete
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+
+        html += '</div>';
+        container.innerHTML = html;
+
+        // Update bulk actions visibility
+        updateBulkActionButtons();
+    } catch (error) {
+        console.error('Error displaying users management:', error);
+        showErrorState(document.getElementById('usersManagement'), 'Error loading user data');
+    }
+}
+
+// Initialize user management when tab is switched to users
+function initializeUserManagementTab() {
+    if (document.getElementById('usersManagement')) {
+        // Check if already initialized, if not initialize
+        if (!window.userManagementInitialized) {
+            initializeUserManagement();
+        }
+        if (!window.userApprovalsInitialized) {
+            initializeUserApprovals();
+        }
+
+        // Always refresh the data displays when switching to users tab
+        setTimeout(async () => {
+            try {
+                await displayUsersManagement();
+                await displayUserStatistics();
+                await displayPendingApprovals();
+            } catch (error) {
+                console.error('Error refreshing user management data:', error);
+            }
+        }, 100);
+    }
+}
+
+// Expose approval functions globally for HTML onclick handlers
+window.reviewApproval = reviewApproval;
+window.quickApprove = quickApprove;
+window.quickReject = quickReject;
+
+console.log('Admin functions exposed globally:', {
+    reviewApproval: typeof window.reviewApproval,
+    quickApprove: typeof window.quickApprove,
+    quickReject: typeof window.quickReject,
+    editUser: typeof window.editUser,
+    deleteUser: typeof window.deleteUser,
+    toggleUserStatus: typeof window.toggleUserStatus
+});

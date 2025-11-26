@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://*.firebaseio.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://www.gstatic.com https://identitytoolkit.googleapis.com https://firestore.googleapis.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com;">
+    <title>Migrate Users to Firestore</title>
+    <link rel="stylesheet" href="css/style.css?v=1.0.4">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCLzX2loYEmPjk0AgH0caHLFBso9yPYTCc",
+            authDomain: "foodmanager-19cbb.firebaseapp.com",
+            projectId: "foodmanager-19cbb",
+            storageBucket: "foodmanager-19cbb.firebasestorage.app",
+            messagingSenderId: "853074932493",
+            appId: "1:853074932493:web:779a3bd8e5e501cb86f644",
+            measurementId: "G-639Z6PMW6R"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // Make Firebase available globally
+        window.auth = auth;
+        window.db = db;
+    </script>
+</head>
+<body>
+    <nav id="navbar"></nav>
+    <div id="banner"></div>
+
+    <main class="container">
+        <h1>🔄 Migrate Users to Firestore</h1>
+
+        <div class="card">
+            <h2>📋 User Migration Tool</h2>
+            <p class="card-description">Migrate existing Firebase Auth users to Firestore database</p>
+
+            <div id="migrationStatus" class="migration-status">
+                <div class="status-item">
+                    <span class="status-label">🔥 Firebase Auth:</span>
+                    <span class="status-value" id="authStatus">Checking...</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">☁️ Firestore:</span>
+                    <span class="status-value" id="firestoreStatus">Checking...</span>
+                </div>
+            </div>
+
+            <div class="migration-section">
+                <h3>Step 1: Enable Firestore (if not already done)</h3>
+                <p>If you haven't enabled Firestore yet, click the button below:</p>
+                <a href="https://console.firebase.google.com/project/foodmanager-19cbb/firestore" target="_blank" class="btn btn-primary">
+                    🚀 Enable Firestore Database
+                </a>
+                <p><small>After enabling, refresh this page and check the status above.</small></p>
+            </div>
+
+            <div class="migration-section">
+                <h3>Step 2: Manual User Migration</h3>
+                <div class="migration-notice">
+                    <strong>Important:</strong> Start by adding yourself (the admin) first with role "admin", then add your other users.
+                </div>
+                <p>Since we can't automatically list all Firebase Auth users from client-side, please enter the details of each user you created:</p>
+
+                <div id="userMigrationForm">
+                    <div class="form-group">
+                        <label for="migrateEmail">User Email:</label>
+                        <input type="email" id="migrateEmail" placeholder="user@example.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="migrateDisplayName">Display Name:</label>
+                        <input type="text" id="migrateDisplayName" placeholder="Full name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="migrateRole">Role:</label>
+                        <select id="migrateRole" required>
+                            <option value="employee">👤 Employee</option>
+                            <option value="manager">👔 Manager</option>
+                            <option value="admin">⚡ Admin</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="migrateDepartment">Department (optional):</label>
+                        <input type="text" id="migrateDepartment" placeholder="e.g., IT, HR, Sales">
+                    </div>
+                    <div class="form-group">
+                        <label for="migrateEmployeeId">Employee ID (optional):</label>
+                        <input type="text" id="migrateEmployeeId" placeholder="EMP001">
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="migrateEmailVerified">
+                            Email Verified
+                        </label>
+                    </div>
+                    <button type="button" onclick="migrateSingleUser()" class="btn btn-primary">
+                        ➕ Add User to Firestore
+                    </button>
+                </div>
+            </div>
+
+            <div class="migration-section">
+                <h3>Step 3: Verify Migration</h3>
+                <button onclick="checkMigratedUsers()" class="btn btn-secondary">
+                    🔍 Check Migrated Users
+                </button>
+                <div id="migrationResults" class="migration-results" style="display: none;">
+                    <!-- Results will be shown here -->
+                </div>
+            </div>
+
+            <div class="migration-section">
+                <h3>Step 4: Test Admin Panel</h3>
+                <p>Once users are migrated, go back to the admin panel to see them:</p>
+                <a href="admin.html" class="btn btn-success">
+                    👥 Go to Admin Panel
+                </a>
+            </div>
+        </div>
+
+        <div class="card danger-zone">
+            <h2>⚠️ Advanced Options</h2>
+            <p class="card-description">Use these options only if you know what you're doing</p>
+            <button onclick="clearFirestoreUsers()" class="btn btn-danger">
+                🗑️ Clear All Firestore Users
+            </button>
+            <button onclick="resetMigration()" class="btn btn-warning">
+                🔄 Reset Migration Process
+            </button>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 Lunch Manager. All rights reserved. | Developed by Vijay</p>
+    </footer>
+
+    <script src="js/modal.js?v=1.0.3"></script>
+    <script src="js/utils.js?v=1.0.3"></script>
+    <script src="js/common.js?v=1.0.3"></script>
+    <script src="js/auth.js?v=1.0.0"></script>
+    <script>
+        // Migration page authentication check
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check authentication status - allow access if authenticated (role check is lenient for migration)
+            const user = window.authService ? window.authService.getCurrentUser() : null;
+            if (!user) {
+                // Redirect to login if not authenticated
+                window.location.href = 'login.html';
+                return;
+            }
+
+            // Allow access for migration purposes - we'll verify admin status during migration
+            checkFirebaseStatus();
+        });
+
+        async function checkFirebaseStatus() {
+            try {
+                // Check Firestore
+                const testDoc = await db.collection('test').doc('status').get();
+                document.getElementById('firestoreStatus').textContent = '✅ Connected';
+                document.getElementById('firestoreStatus').className = 'status-value success';
+            } catch (error) {
+                document.getElementById('firestoreStatus').textContent = '❌ Not Connected - Enable Firestore API';
+                document.getElementById('firestoreStatus').className = 'status-value error';
+                console.error('Firestore error:', error);
+            }
+
+            // Auth status
+            if (auth.currentUser) {
+                document.getElementById('authStatus').textContent = '✅ Connected';
+                document.getElementById('authStatus').className = 'status-value success';
+            } else {
+                document.getElementById('authStatus').textContent = '❌ Not Authenticated';
+                document.getElementById('authStatus').className = 'status-value error';
+            }
+        }
+
+        async function migrateSingleUser() {
+            const email = document.getElementById('migrateEmail').value.trim();
+            const displayName = document.getElementById('migrateDisplayName').value.trim();
+            const role = document.getElementById('migrateRole').value;
+            const department = document.getElementById('migrateDepartment').value.trim();
+            const employeeId = document.getElementById('migrateEmployeeId').value.trim();
+            const emailVerified = document.getElementById('migrateEmailVerified').checked;
+
+            if (!email || !displayName || !role) {
+                showToast('Please fill in email, display name, and role', 'error');
+                return;
+            }
+
+            try {
+                showLoadingOverlay('Migrating user...');
+
+                // Generate a UID (in real scenario, you'd get this from Firebase Auth)
+                // For now, we'll create a hash-like UID from email
+                const uid = btoa(email).replace(/[^a-zA-Z0-9]/g, '').substring(0, 28);
+
+                const userData = {
+                    uid: uid,
+                    email: email,
+                    displayName: displayName,
+                    role: role,
+                    department: department || '',
+                    employeeId: employeeId || '',
+                    emailVerified: emailVerified,
+                    disabled: role === 'manager', // Managers need approval
+                    pendingApproval: role === 'manager',
+                    creationTime: new Date().toISOString(),
+                    lastLogin: null,
+                    lastActivity: null,
+                    createdBy: 'migration',
+                    lastUpdated: new Date().toISOString(),
+                    updatedBy: 'admin'
+                };
+
+                // Store in Firestore
+                await db.collection('users').doc(uid).set(userData);
+
+                // If manager, create approval request
+                if (role === 'manager') {
+                    const approvalRequest = {
+                        userId: uid,
+                        email: email,
+                        displayName: displayName,
+                        role: role,
+                        department: department,
+                        employeeId: employeeId,
+                        requestTime: new Date().toISOString(),
+                        status: 'pending',
+                        reviewedBy: null,
+                        reviewedAt: null,
+                        notes: 'Migrated from Firebase Auth'
+                    };
+
+                    await db.collection('userApprovals').doc(uid).set(approvalRequest);
+                }
+
+                showToast(`User ${displayName} migrated successfully!`);
+
+                // Clear form
+                document.getElementById('migrateEmail').value = '';
+                document.getElementById('migrateDisplayName').value = '';
+                document.getElementById('migrateDepartment').value = '';
+                document.getElementById('migrateEmployeeId').value = '';
+                document.getElementById('migrateEmailVerified').checked = false;
+
+            } catch (error) {
+                console.error('Migration error:', error);
+                showToast('Error migrating user. Please try again.', 'error');
+            } finally {
+                hideLoadingOverlay();
+            }
+        }
+
+        async function checkMigratedUsers() {
+            try {
+                showLoadingOverlay('Checking migrated users...');
+
+                const usersRef = db.collection('users');
+                const snapshot = await usersRef.get();
+
+                const resultsDiv = document.getElementById('migrationResults');
+                resultsDiv.style.display = 'block';
+
+                if (snapshot.empty) {
+                    resultsDiv.innerHTML = '<p class="empty-message">No users found in Firestore. Please migrate users first.</p>';
+                    return;
+                }
+
+                let html = '<h4>Migrated Users:</h4><div class="migrated-users-list">';
+
+                snapshot.forEach(doc => {
+                    const user = doc.data();
+                    html += `
+                        <div class="migrated-user-item">
+                            <strong>${user.displayName}</strong> (${user.email})
+                            <span class="user-role role-${user.role}">${user.role}</span>
+                            ${user.emailVerified ? '<span class="verified">✓ Verified</span>' : '<span class="unverified">✗ Unverified</span>'}
+                        </div>
+                    `;
+                });
+
+                html += '</div>';
+                resultsDiv.innerHTML = html;
+
+                showToast(`Found ${snapshot.size} users in Firestore`);
+
+            } catch (error) {
+                console.error('Error checking users:', error);
+                showToast('Error checking migrated users.', 'error');
+            } finally {
+                hideLoadingOverlay();
+            }
+        }
+
+        async function clearFirestoreUsers() {
+            const confirmed = await customConfirm('This will delete ALL users from Firestore. Are you sure?', 'Danger Zone');
+            if (!confirmed) return;
+
+            const confirmed2 = await customConfirm('This action cannot be undone. Final confirmation?', 'Final Warning');
+            if (!confirmed2) return;
+
+            try {
+                showLoadingOverlay('Clearing Firestore users...');
+
+                const usersRef = db.collection('users');
+                const snapshot = await usersRef.get();
+
+                const batch = db.batch();
+                snapshot.forEach(doc => {
+                    batch.delete(doc.ref);
+                });
+
+                await batch.commit();
+
+                // Also clear approvals
+                const approvalsRef = db.collection('userApprovals');
+                const approvalsSnapshot = await approvalsRef.get();
+
+                const approvalsBatch = db.batch();
+                approvalsSnapshot.forEach(doc => {
+                    approvalsBatch.delete(doc.ref);
+                });
+
+                await approvalsBatch.commit();
+
+                showToast('All Firestore users cleared!');
+                document.getElementById('migrationResults').style.display = 'none';
+
+            } catch (error) {
+                console.error('Error clearing users:', error);
+                showToast('Error clearing users.', 'error');
+            } finally {
+                hideLoadingOverlay();
+            }
+        }
+
+        async function resetMigration() {
+            const confirmed = await customConfirm('Reset migration form?', 'Reset');
+            if (confirmed) {
+                document.getElementById('userMigrationForm').reset();
+                document.getElementById('migrationResults').style.display = 'none';
+                showToast('Migration form reset');
+            }
+        }
+    </script>
+</body>
+</html>

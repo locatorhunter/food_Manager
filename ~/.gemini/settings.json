@@ -1,0 +1,40 @@
+{
+  "mcpServers": {
+    "menu_book_spark": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-menu-book-spark"],
+      "env": {}
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem"],
+      "env": {
+        "ALLOWED_PATHS": "/tmp:/var/tmp:~/sat_lunch"
+      }
+    },
+    "web_search": {
+      "command": "npx", 
+      "args": ["-y", "@modelcontextprotocol/server-web-search"],
+      "env": {}
+    },
+    "git": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-git"],
+      "env": {}
+    }
+  },
+  "features": {
+    "enableCodeActions": true,
+    "enableAutoComplete": true,
+    "enableContextMenu": true
+  },
+  "ui": {
+    "theme": "dark",
+    "fontSize": 14,
+    "showLineNumbers": true
+  },
+  "extensions": {
+    "enabled": true,
+    "autoUpdate": true
+  }
+}
