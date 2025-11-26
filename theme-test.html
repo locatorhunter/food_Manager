@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Theme Switch Test</title>
+    <link rel="stylesheet" href="css/style.css?v=1.1.0">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCLzX2loYEmPjk0AgH0caHLFBso9yPYTCc",
+            authDomain: "foodmanager-19cbb.firebaseapp.com",
+            projectId: "foodmanager-19cbb",
+            storageBucket: "foodmanager-19cbb.firebasestorage.app",
+            messagingSenderId: "853074932493",
+            appId: "1:853074932493:web:779a3bd8e5e501cb86f644",
+            measurementId: "G-639Z6PMW6R"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // Make Firebase available globally
+        window.firebaseDB = database;
+        window.auth = auth;
+        window.db = db;
+        window.firebaseRef = (path) => database.ref(path);
+        window.firebaseSet = (ref, data) => ref.set(data);
+        window.firebaseGet = (ref) => ref.once('value');
+        window.firebaseOnValue = (ref, callback) => ref.on('value', callback);
+        window.firebasePush = (ref) => ref.push();
+        window.firebaseUpdate = (ref, data) => ref.update(data);
+        window.firebaseRemove = (ref) => ref.remove();
+    </script>
+</head>
+<body>
+    <div id="navbar"></div>
+    
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="hero-content">
+            <h1>Theme Test - Hero Section</h1>
+            <p class="hero-subtitle">Testing theme switching functionality</p>
+            <div class="hero-buttons">
+                <button class="btn btn-primary btn-large" onclick="testThemeSwitch()">
+                    <span class="btn-icon">🎨</span>
+                    Test Theme Switch
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Featured Section -->
+    <section class="featured-section">
+        <div class="container">
+            <div class="section-header">
+                <h2>Featured Section</h2>
+                <p>This section should also change with theme</p>
+            </div>
+        </div>
+    </section>
+
+    <script src="js/storage.js?v=1.0.0"></script>
+    <script src="js/utils.js?v=1.0.0"></script>
+    <script src="js/common.js?v=1.0.0"></script>
+    
+    <script>
+        function testThemeSwitch() {
+            console.log('Testing theme switch...');
+            
+            // Check if functions are available
+            console.log('StorageManager available:', typeof StorageManager);
+            console.log('toggleTheme available:', typeof toggleTheme);
+            console.log('setTheme available:', typeof setTheme);
+            
+            // Try to switch theme
+            if (typeof toggleTheme === 'function') {
+                toggleTheme();
+            } else {
+                // Manual theme switch for testing
+                const themes = ['light', 'dark', 'retro-dark', 'retro-light'];
+                let currentTheme = 'light';
+                
+                if (document.body.classList.contains('dark-mode')) {
+                    currentTheme = 'dark';
+                } else if (document.body.classList.contains('retro-dark')) {
+                    currentTheme = 'retro-dark';
+                } else if (document.body.classList.contains('retro-light')) {
+                    currentTheme = 'retro-light';
+                }
+                
+                const currentIndex = themes.indexOf(currentTheme);
+                const newTheme = themes[(currentIndex + 1) % themes.length];
+                
+                console.log('Switching from', currentTheme, 'to', newTheme);
+                
+                // Remove all theme classes
+                document.body.classList.remove('dark-mode', 'retro-dark', 'retro-light');
+                
+                // Add new theme class
+                if (newTheme === 'dark') {
+                    document.body.classList.add('dark-mode');
+                } else if (newTheme === 'retro-dark') {
+                    document.body.classList.add('retro-dark');
+                } else if (newTheme === 'retro-light') {
+                    document.body.classList.add('retro-light');
+                }
+                
+                // Update theme toggle button
+                const themeToggle = document.getElementById('themeToggle');
+                if (themeToggle) {
+                    if (newTheme === 'dark') {
+                        themeToggle.textContent = '☀️';
+                    } else if (newTheme === 'retro-dark') {
+                        themeToggle.textContent = '🎨';
+                    } else if (newTheme === 'retro-light') {
+                        themeToggle.textContent = '🌞';
+                    } else {
+                        themeToggle.textContent = '🌙';
+                    }
+                }
+                
+                // Save to localStorage
+                localStorage.setItem('lunchManager_theme', newTheme);
+                
+                console.log('Theme switched to:', newTheme);
+            }
+        }
+        
+        // Debug info
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Page loaded');
+            console.log('Current body classes:', document.body.className);
+            console.log('Current theme from localStorage:', localStorage.getItem('lunchManager_theme'));
+        });
+    </script>
+</body>
+</html>

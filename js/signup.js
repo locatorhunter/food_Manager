@@ -284,9 +284,10 @@ async function submitSignup() {
         showLoadingOverlay('Creating your account...');
 
         // Check if email already exists
-        const existingUser = await checkExistingUser(formData.email);
-        if (existingUser) {
-            showToast('An account with this email already exists', 'error');
+        const existingUserCheck = await checkExistingUser(formData.email);
+        if (existingUserCheck.exists) {
+            // Handle existing user gracefully
+            showAccountExistsOptions(existingUserCheck);
             return;
         }
 
@@ -309,7 +310,10 @@ async function submitSignup() {
                 window.location.href = 'login.html';
             }, 5000);
         } else {
-            showToast(result.error, 'error');
+            // Only show error if we haven't already handled the situation
+            if (!result.handled) {
+                showToast(result.error, 'error');
+            }
         }
 
     } catch (error) {
@@ -326,13 +330,93 @@ async function checkExistingUser(email) {
         const userQuery = await window.db.collection('users').where('email', '==', email).get();
 
         if (!userQuery.empty) {
-            return true; // User exists
+            const userDoc = userQuery.docs[0];
+            const userData = userDoc.data();
+            
+            // Return detailed information about the existing user
+            return {
+                exists: true,
+                uid: userData.uid,
+                email: userData.email,
+                displayName: userData.displayName,
+                emailVerified: userData.emailVerified || false,
+                role: userData.role,
+                disabled: userData.disabled || false,
+                pendingApproval: userData.pendingApproval || false,
+                creationTime: userData.creationTime,
+                lastLogin: userData.lastLogin
+            };
         }
 
-        return false;
+        return { exists: false };
     } catch (error) {
         console.error('Error checking existing user:', error);
-        return false;
+        return { exists: false, error: error.message };
+    }
+}
+
+async function resendVerificationForExistingUser(existingUser) {
+    try {
+        console.log('Attempting to resend verification for existing user:', existingUser.email);
+        
+        // Try to get the current Firebase Auth user by forcing a password reset or sign-in attempt
+        // Since we can't directly get a user by email without admin SDK, we'll use a different approach
+        
+        // For now, we'll show a message that instructs the user to use the login page
+        showToast(`We found your existing account (${existingUser.email}). Please go to the login page and click "Resend verification email" to receive a new verification link.`, 'info', 8000);
+        
+        // Store the email for the resend function on login page
+        sessionStorage.setItem('pendingVerificationEmail', existingUser.email);
+        
+        // Redirect to login page after a delay
+        setTimeout(() => {
+            window.location.href = 'login.html';
+        }, 4000);
+        
+        return { success: true, message: 'Redirecting to login page for email resend' };
+        
+    } catch (error) {
+        console.error('Error resending verification for existing user:', error);
+        return { 
+            success: false, 
+            error: 'Failed to resend verification email. Please contact support or try using the login page.',
+            fallbackMessage: `Account exists (${existingUser.email}) but verification resend failed. Please use the login page.`
+        };
+    }
+}
+
+function showAccountExistsOptions(existingUser) {
+    // Create a custom modal or use enhanced toast to show options
+    const options = {
+        email: existingUser.email,
+        displayName: existingUser.displayName,
+        status: existingUser.emailVerified ? 'verified' : 'unverified',
+        role: existingUser.role
+    };
+    
+    let message = `We found your existing account:\n\n`;
+    message += `📧 Email: ${options.email}\n`;
+    message += `👤 Name: ${options.displayName}\n`;
+    message += `📋 Status: ${options.status === 'verified' ? '✅ Verified' : '❌ Not Verified'}\n`;
+    message += `👔 Role: ${options.role}\n\n`;
+    
+    if (!options.status || options.status === 'unverified') {
+        message += `Would you like us to send a new verification email?`;
+        
+        if (confirm(message)) {
+            resendVerificationForExistingUser(existingUser);
+        } else {
+            showToast('You can always resend the verification email from the login page.', 'info');
+            setTimeout(() => {
+                window.location.href = 'login.html';
+            }, 2000);
+        }
+    } else {
+        message += `Your account is already verified. You can sign in directly.`;
+        showToast(message, 'success');
+        setTimeout(() => {
+            window.location.href = 'login.html';
+        }, 3000);
     }
 }
 
@@ -431,6 +515,27 @@ async function createUserAccount(formData) {
         console.error('Error creating user account:', error);
         console.error('Error code:', error.code);
         console.error('Error message:', error.message);
+
+        // Handle email already in use error
+        if (error.code === 'auth/email-already-in-use') {
+            console.log('Email already in use in Firebase Auth, checking Firestore...');
+            
+            // Check if user exists in Firestore
+            const existingUserCheck = await checkExistingUser(formData.email);
+            if (existingUserCheck.exists) {
+                // User exists in both Firebase Auth and Firestore
+                showAccountExistsOptions(existingUserCheck);
+                return { success: false, handled: true };
+            } else {
+                // User exists in Firebase Auth but not in Firestore (incomplete registration)
+                showToast('We found an incomplete registration with this email. Redirecting to login page to complete verification.', 'info');
+                sessionStorage.setItem('pendingVerificationEmail', formData.email);
+                setTimeout(() => {
+                    window.location.href = 'login.html';
+                }, 3000);
+                return { success: false, handled: true };
+            }
+        }
 
         // Clean up on error
         try {

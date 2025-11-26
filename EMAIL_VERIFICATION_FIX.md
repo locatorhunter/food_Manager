@@ -97,7 +97,27 @@ window.actionCodeSettings = {
 - Quick troubleshooting instructions
 - Automated test execution on page load
 
-### 6. Added Admin Testing Tools
+### 6. Enhanced Existing User Handling
+
+**Files Modified:** `js/signup.js`, `signup.html`
+
+**Problem Solved:** Users who previously attempted to sign up but didn't receive verification emails were blocked from creating new accounts.
+
+**Solution Implemented:**
+- **Enhanced User Detection**: Modified `checkExistingUser()` to return detailed user information
+- **Graceful Handling**: Instead of showing "account exists" error, system now:
+  - Detects incomplete registrations
+  - Provides account information to user
+  - Offers to resend verification email
+  - Redirects to login page for verification
+- **Smart Detection**: Handles both Firestore and Firebase Auth users
+- **User-Friendly UI**: Clear messages about account status and next steps
+
+**New Functions Added:**
+- `resendVerificationForExistingUser()`: Handles verification resend for existing users
+- `showAccountExistsOptions()`: Interactive dialog with user account information
+
+### 7. Added Admin Testing Tools
 
 **File Modified:** `admin.html`
 
@@ -176,8 +196,8 @@ Ensure these settings are configured in Firebase Console:
 |------|-------------|-------------|
 | `index.html` | Modified | Added actionCodeSettings configuration |
 | `login.html` | Modified | Added actionCodeSettings + resend link |
-| `signup.html` | Modified | Enhanced actionCodeSettings + UI improvements |
-| `js/signup.js` | Modified | Better error handling + user guidance |
+| `signup.html` | Modified | Enhanced actionCodeSettings + UI improvements + better help |
+| `js/signup.js` | Modified | Enhanced existing user handling + graceful error management |
 | `js/auth.js` | Modified | Added resendVerificationEmail function |
 | `email-verification-test.html` | Created | Test page for verification setup |
 | `admin.html` | Modified | Added actionCodeSettings + Testing Tools section |

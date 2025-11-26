@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Theme System Test</title>
+    <link rel="stylesheet" href="css/style.css?v=1.1.0">
+    
+    <!-- Test specific styles -->
+    <style>
+        .test-section {
+            background: var(--bg-secondary);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: var(--shadow-md);
+        }
+        
+        .test-result {
+            padding: 10px;
+            border-radius: 6px;
+            margin: 10px 0;
+            font-weight: 600;
+        }
+        
+        .test-pass {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid var(--success-color);
+            color: var(--success-color);
+        }
+        
+        .test-fail {
+            background: rgba(220, 38, 38, 0.1);
+            border: 1px solid var(--danger-color);
+            color: var(--danger-color);
+        }
+        
+        .test-warning {
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid var(--warning-color);
+            color: var(--warning-color);
+        }
+        
+        .theme-preview {
+            display: inline-block;
+            padding: 8px 16px;
+            margin: 4px;
+            border-radius: 6px;
+            border: 2px solid var(--border-color);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+        
+        .theme-preview:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .theme-preview.active {
+            border-color: var(--primary-color);
+            background: var(--bg-accent);
+            color: #000000;
+        }
+    </style>
+</head>
+<body>
+    <div id="navbar"></div>
+    
+    <div class="container">
+        <h1>🎯 Theme System Comprehensive Test</h1>
+        <p class="hero-subtitle">Testing all aspects of the theme switching functionality</p>
+        
+        <!-- Test Results Section -->
+        <div class="test-section">
+            <h2>📊 Test Results</h2>
+            <div id="test-results"></div>
+        </div>
+        
+        <!-- Theme Preview Section -->
+        <div class="test-section">
+            <h2>🎨 Theme Preview</h2>
+            <p>Click any theme to test switching:</p>
+            <div>
+                <div class="theme-preview" data-theme="light">☀️ Light</div>
+                <div class="theme-preview" data-theme="dark">🌙 Dark</div>
+                <div class="theme-preview" data-theme="retro-dark">🎨 Retro Dark</div>
+                <div class="theme-preview" data-theme="retro-light">🌞 Retro Light</div>
+            </div>
+        </div>
+        
+        <!-- CSS Variables Test -->
+        <div class="test-section">
+            <h2>🎨 CSS Variables Test</h2>
+            <div id="css-variables-test"></div>
+        </div>
+        
+        <!-- JavaScript Functions Test -->
+        <div class="test-section">
+            <h2>⚡ JavaScript Functions Test</h2>
+            <div id="js-functions-test"></div>
+        </div>
+        
+        <!-- Theme Toggle Button Test -->
+        <div class="test-section">
+            <h2>🔘 Theme Toggle Button Test</h2>
+            <div id="toggle-button-test"></div>
+        </div>
+        
+        <!-- Storage Test -->
+        <div class="test-section">
+            <h2>💾 Storage Test</h2>
+            <div id="storage-test"></div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK (required for full functionality) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCLzX2loYEmPjk0AgH0caHLFBso9yPYTCc",
+            authDomain: "foodmanager-19cbb.firebaseapp.com",
+            projectId: "foodmanager-19cbb",
+            storageBucket: "foodmanager-19cbb.firebasestorage.app",
+            messagingSenderId: "853074932493",
+            appId: "1:853074932493:web:779a3bd8e5e501cb86f644",
+            measurementId: "G-639Z6PMW6R"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // Make Firebase available globally
+        window.firebaseDB = database;
+        window.auth = auth;
+        window.db = db;
+        window.firebaseRef = (path) => database.ref(path);
+        window.firebaseSet = (ref, data) => ref.set(data);
+        window.firebaseGet = (ref) => ref.once('value');
+        window.firebaseOnValue = (ref, callback) => ref.on('value', callback);
+        window.firebasePush = (ref) => ref.push();
+        window.firebaseUpdate = (ref, data) => ref.update(data);
+        window.firebaseRemove = (ref) => ref.remove();
+    </script>
+    
+    <script src="js/storage.js?v=1.0.0"></script>
+    <script src="js/utils.js?v=1.0.0"></script>
+    <script src="js/common.js?v=1.0.0"></script>
+    
+    <script>
+        // Test Results Tracking
+        const testResults = [];
+        let testsPassed = 0;
+        let testsFailed = 0;
+        let testsWarning = 0;
+
+        function addTestResult(name, passed, message, type = 'pass') {
+            const result = {
+                name,
+                passed,
+                message,
+                type,
+                timestamp: new Date().toLocaleTimeString()
+            };
+            testResults.push(result);
+            
+            if (type === 'pass') testsPassed++;
+            else if (type === 'fail') testsFailed++;
+            else testsWarning++;
+            
+            updateTestResults();
+        }
+
+        function updateTestResults() {
+            const container = document.getElementById('test-results');
+            let html = `
+                <div style="margin-bottom: 20px; padding: 15px; background: var(--bg-tertiary); border-radius: 8px;">
+                    <strong>Summary:</strong> 
+                    <span style="color: var(--success-color);">✅ ${testsPassed} Passed</span> | 
+                    <span style="color: var(--danger-color);">❌ ${testsFailed} Failed</span> | 
+                    <span style="color: var(--warning-color);">⚠️ ${testsWarning} Warnings</span>
+                </div>
+            `;
+            
+            testResults.forEach(result => {
+                const icon = result.type === 'pass' ? '✅' : result.type === 'fail' ? '❌' : '⚠️';
+                html += `
+                    <div class="test-result test-${result.type}">
+                        <strong>${icon} ${result.name}</strong><br>
+                        ${result.message}<br>
+                        <small>Tested at: ${result.timestamp}</small>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+
+        // Run comprehensive tests
+        function runAllTests() {
+            testCSSVariables();
+            testJavaScriptFunctions();
+            testThemeToggleButton();
+            testStorageFunctionality();
+            testThemeSwitching();
+        }
+
+        function testCSSVariables() {
+            const testContainer = document.getElementById('css-variables-test');
+            
+            try {
+                const rootStyles = getComputedStyle(document.documentElement);
+                const bodyStyles = getComputedStyle(document.body);
+                
+                // Check root CSS variables
+                const primaryColor = rootStyles.getPropertyValue('--primary-color');
+                const bgPrimary = bodyStyles.getPropertyValue('background');
+                
+                if (primaryColor && primaryColor.trim()) {
+                    addTestResult('CSS Variables - Primary Color', true, `--primary-color: ${primaryColor.trim()}`);
+                    testContainer.innerHTML = `
+                        <div class="test-pass">
+                            <strong>✅ CSS Variables are working!</strong><br>
+                            Primary Color: <code>${primaryColor.trim()}</code><br>
+                            Background: <code>${bgPrimary.substring(0, 50)}...</code>
+                        </div>
+                    `;
+                } else {
+                    addTestResult('CSS Variables - Primary Color', false, 'CSS variables not found or empty');
+                    testContainer.innerHTML = `
+                        <div class="test-fail">
+                            <strong>❌ CSS Variables Issue</strong><br>
+                            Primary color variable is missing or empty
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                addTestResult('CSS Variables', false, `Error accessing CSS variables: ${error.message}`);
+                testContainer.innerHTML = `
+                    <div class="test-fail">
+                        <strong>❌ CSS Variables Error</strong><br>
+                        ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        function testJavaScriptFunctions() {
+            const testContainer = document.getElementById('js-functions-test');
+            
+            try {
+                // Test if required functions are available
+                const functions = ['initializeTheme', 'setTheme', 'toggleTheme'];
+                let missingFunctions = [];
+                
+                functions.forEach(funcName => {
+                    if (typeof window[funcName] !== 'function' && typeof eval(funcName) !== 'function') {
+                        missingFunctions.push(funcName);
+                    }
+                });
+                
+                if (missingFunctions.length === 0) {
+                    addTestResult('JavaScript Functions', true, 'All required functions are available');
+                    testContainer.innerHTML = `
+                        <div class="test-pass">
+                            <strong>✅ JavaScript Functions Available</strong><br>
+                            Functions tested: ${functions.join(', ')}
+                        </div>
+                    `;
+                } else {
+                    addTestResult('JavaScript Functions', false, `Missing functions: ${missingFunctions.join(', ')}`);
+                    testContainer.innerHTML = `
+                        <div class="test-fail">
+                            <strong>❌ Missing JavaScript Functions</strong><br>
+                            Missing: ${missingFunctions.join(', ')}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                addTestResult('JavaScript Functions', false, `Error testing functions: ${error.message}`);
+                testContainer.innerHTML = `
+                    <div class="test-fail">
+                        <strong>❌ JavaScript Functions Error</strong><br>
+                        ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        function testThemeToggleButton() {
+            const testContainer = document.getElementById('toggle-button-test');
+            
+            try {
+                const themeToggle = document.getElementById('themeToggle');
+                
+                if (themeToggle) {
+                    const isButton = themeToggle.tagName === 'BUTTON';
+                    const hasClickListener = themeToggle.onclick !== null || themeToggle.addEventListener !== undefined;
+                    
+                    addTestResult('Theme Toggle Button', true, 'Theme toggle button found and properly configured');
+                    testContainer.innerHTML = `
+                        <div class="test-pass">
+                            <strong>✅ Theme Toggle Button Found</strong><br>
+                            Tag: ${themeToggle.tagName}<br>
+                            Current Text: ${themeToggle.textContent}<br>
+                            ID: ${themeToggle.id}
+                        </div>
+                    `;
+                } else {
+                    addTestResult('Theme Toggle Button', false, 'Theme toggle button not found');
+                    testContainer.innerHTML = `
+                        <div class="test-fail">
+                            <strong>❌ Theme Toggle Button Missing</strong><br>
+                            Button with ID 'themeToggle' not found
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                addTestResult('Theme Toggle Button', false, `Error testing button: ${error.message}`);
+                testContainer.innerHTML = `
+                    <div class="test-fail">
+                        <strong>❌ Theme Toggle Button Error</strong><br>
+                        ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        function testStorageFunctionality() {
+            const testContainer = document.getElementById('storage-test');
+            
+            try {
+                // Test localStorage
+                const testKey = 'themeTest';
+                const testValue = 'test-theme';
+                
+                localStorage.setItem(testKey, testValue);
+                const retrievedValue = localStorage.getItem(testKey);
+                localStorage.removeItem(testKey);
+                
+                if (retrievedValue === testValue) {
+                    addTestResult('LocalStorage', true, 'localStorage is working correctly');
+                } else {
+                    addTestResult('LocalStorage', false, 'localStorage not working properly');
+                }
+                
+                // Test StorageManager
+                if (typeof StorageManager !== 'undefined') {
+                    addTestResult('StorageManager', true, 'StorageManager is available');
+                    
+                    testContainer.innerHTML = `
+                        <div class="test-pass">
+                            <strong>✅ Storage Available</strong><br>
+                            ✅ localStorage working<br>
+                            ✅ StorageManager available<br>
+                            <small>Note: Firebase methods may not work without internet connection</small>
+                        </div>
+                    `;
+                } else {
+                    addTestResult('StorageManager', false, 'StorageManager not found');
+                    testContainer.innerHTML = `
+                        <div class="test-warning">
+                            <strong>⚠️ StorageManager Missing</strong><br>
+                            ✅ localStorage working<br>
+                            ❌ StorageManager not available<br>
+                            <small>Falling back to localStorage</small>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                addTestResult('Storage Functionality', false, `Storage error: ${error.message}`);
+                testContainer.innerHTML = `
+                    <div class="test-fail">
+                        <strong>❌ Storage Error</strong><br>
+                        ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        function testThemeSwitching() {
+            try {
+                const themes = ['light', 'dark', 'retro-dark', 'retro-light'];
+                let currentTheme = 'light';
+                
+                // Determine current theme
+                if (document.body.classList.contains('dark-mode')) {
+                    currentTheme = 'dark';
+                } else if (document.body.classList.contains('retro-dark')) {
+                    currentTheme = 'retro-dark';
+                } else if (document.body.classList.contains('retro-light')) {
+                    currentTheme = 'retro-light';
+                }
+                
+                addTestResult('Theme Detection', true, `Current theme detected as: ${currentTheme}`);
+                
+                // Test theme switching
+                if (typeof toggleTheme === 'function') {
+                    addTestResult('Theme Switching Function', true, 'toggleTheme function is available');
+                } else {
+                    addTestResult('Theme Switching Function', false, 'toggleTheme function not found');
+                }
+            } catch (error) {
+                addTestResult('Theme Switching', false, `Error testing theme switching: ${error.message}`);
+            }
+        }
+
+        // Theme preview functionality
+        function setupThemePreview() {
+            const previewButtons = document.querySelectorAll('.theme-preview');
+            
+            previewButtons.forEach(button => {
+                button.addEventListener('click', async function() {
+                    const theme = this.getAttribute('data-theme');
+                    
+                    // Remove active class from all buttons
+                    previewButtons.forEach(btn => btn.classList.remove('active'));
+                    
+                    // Add active class to clicked button
+                    this.classList.add('active');
+                    
+                    // Set the theme
+                    if (typeof setTheme === 'function') {
+                        setTheme(theme);
+                        
+                        // Save to storage
+                        try {
+                            if (typeof StorageManager !== 'undefined' && typeof StorageManager.setTheme === 'function') {
+                                await StorageManager.setTheme(theme);
+                            } else {
+                                localStorage.setItem('lunchManager_theme', theme);
+                            }
+                        } catch (error) {
+                            console.warn('Error saving theme:', error);
+                        }
+                        
+                        addTestResult('Manual Theme Switch', true, `Successfully switched to ${theme} theme`);
+                    }
+                });
+            });
+            
+            // Mark current theme as active
+            let currentTheme = 'light';
+            if (document.body.classList.contains('dark-mode')) {
+                currentTheme = 'dark';
+            } else if (document.body.classList.contains('retro-dark')) {
+                currentTheme = 'retro-dark';
+            } else if (document.body.classList.contains('retro-light')) {
+                currentTheme = 'retro-light';
+            }
+            
+            const currentButton = document.querySelector(`[data-theme="${currentTheme}"]`);
+            if (currentButton) {
+                currentButton.classList.add('active');
+            }
+        }
+
+        // Initialize everything when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Theme System Test page loaded');
+            
+            // Wait for common.js to initialize
+            setTimeout(() => {
+                runAllTests();
+                setupThemePreview();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

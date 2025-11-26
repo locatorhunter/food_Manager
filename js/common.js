@@ -307,6 +307,10 @@ async function initializeBanner() {
     */
 }
 
+function getHotelTypeEmoji(type) {
+    return type === 'veg' ? '🥬' : '🍖';
+}
+
 async function updateBanner() {
     const bannerContainer = document.getElementById('banner');
     if (!bannerContainer) return;
@@ -332,7 +336,7 @@ async function updateBanner() {
         }
 
         const hotelDetails = selectedHotels.map(hotel => {
-            let details = `${hotel.name}`;
+            let details = `${getHotelTypeEmoji(hotel.type)} ${hotel.name}`;
             if (hotel.reviews) {
                 details += ` ⭐${hotel.reviews}`;
             }

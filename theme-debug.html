@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Theme Debug Test</title>
+    <link rel="stylesheet" href="css/style.css?v=1.1.0">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCLzX2loYEmPjk0AgH0caHLFBso9yPYTCc",
+            authDomain: "foodmanager-19cbb.firebaseapp.com",
+            projectId: "foodmanager-19cbb",
+            storageBucket: "foodmanager-19cbb.firebasestorage.app",
+            messagingSenderId: "853074932493",
+            appId: "1:853074932493:web:779a3bd8e5e501cb86f644",
+            measurementId: "G-639Z6PMW6R"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // Make Firebase available globally
+        window.firebaseDB = database;
+        window.auth = auth;
+        window.db = db;
+        window.firebaseRef = (path) => database.ref(path);
+        window.firebaseSet = (ref, data) => ref.set(data);
+        window.firebaseGet = (ref) => ref.once('value');
+        window.firebaseOnValue = (ref, callback) => ref.on('value', callback);
+        window.firebasePush = (ref) => ref.push();
+        window.firebaseUpdate = (ref, data) => ref.update(data);
+        window.firebaseRemove = (ref) => ref.remove();
+    </script>
+</head>
+<body>
+    <div id="navbar"></div>
+    
+    <!-- Debug Panel -->
+    <section class="hero-section">
+        <div class="hero-content">
+            <h1>🎯 Theme Debug Test</h1>
+            <p class="hero-subtitle">Debugging theme switching functionality</p>
+            
+            <!-- Debug Information Display -->
+            <div style="background: rgba(0,0,0,0.7); padding: 20px; border-radius: 8px; margin: 20px 0; color: white;">
+                <h3>🔍 Debug Information:</h3>
+                <div id="debug-info">
+                    <p><strong>Body Classes:</strong> <span id="body-classes">Loading...</span></p>
+                    <p><strong>Current Theme:</strong> <span id="current-theme">Loading...</span></p>
+                    <p><strong>StorageManager:</strong> <span id="storage-manager">Loading...</span></p>
+                    <p><strong>toggleTheme:</strong> <span id="toggle-theme">Loading...</span></p>
+                    <p><strong>setTheme:</strong> <span id="set-theme">Loading...</span></p>
+                    <p><strong>LocalStorage Theme:</strong> <span id="local-storage-theme">Loading...</span></p>
+                    <p><strong>Console Errors:</strong> <span id="console-errors">None</span></p>
+                </div>
+            </div>
+            
+            <!-- Theme Test Controls -->
+            <div class="hero-buttons" style="margin-top: 20px;">
+                <button class="btn btn-primary btn-large" onclick="runThemeTests()">
+                    <span class="btn-icon">🧪</span>
+                    Run Theme Tests
+                </button>
+                <button class="btn btn-secondary btn-large" onclick="testThemeSwitch()">
+                    <span class="btn-icon">🔄</span>
+                    Test Theme Switch
+                </button>
+                <button class="btn btn-info btn-large" onclick="checkDependencies()">
+                    <span class="btn-icon">🔍</span>
+                    Check Dependencies
+                </button>
+                <button class="btn btn-warning btn-large" onclick="clearStorage()">
+                    <span class="btn-icon">🗑️</span>
+                    Clear Theme Storage
+                </button>
+            </div>
+            
+            <!-- Test Results -->
+            <div id="test-results" style="margin-top: 20px;">
+                <h3>📋 Test Results:</h3>
+                <div id="results-content"></div>
+            </div>
+        </div>
+    </section>
+
+    <script src="js/storage.js?v=1.0.0"></script>
+    <script src="js/utils.js?v=1.0.0"></script>
+    <script src="js/common.js?v=1.0.0"></script>
+    
+    <script>
+        // Capture console errors
+        let capturedErrors = [];
+        const originalConsoleError = console.error;
+        console.error = function(...args) {
+            capturedErrors.push(args.join(' '));
+            originalConsoleError.apply(console, args);
+            updateDebugInfo();
+        };
+
+        // Update debug information
+        function updateDebugInfo() {
+            const bodyClasses = document.body.className || 'none';
+            const currentTheme = getCurrentTheme();
+            const hasStorageManager = typeof StorageManager !== 'undefined';
+            const hasToggleTheme = typeof toggleTheme === 'function';
+            const hasSetTheme = typeof setTheme === 'function';
+            const localStorageTheme = localStorage.getItem('lunchManager_theme') || 'none';
+
+            document.getElementById('body-classes').textContent = bodyClasses;
+            document.getElementById('current-theme').textContent = currentTheme;
+            document.getElementById('storage-manager').textContent = hasStorageManager ? 'Available' : 'Missing';
+            document.getElementById('toggle-theme').textContent = hasToggleTheme ? 'Available' : 'Missing';
+            document.getElementById('set-theme').textContent = hasSetTheme ? 'Available' : 'Missing';
+            document.getElementById('local-storage-theme').textContent = localStorageTheme;
+            document.getElementById('console-errors').textContent = capturedErrors.length > 0 ? capturedErrors.join(', ') : 'None';
+        }
+
+        // Get current theme
+        function getCurrentTheme() {
+            if (document.body.classList.contains('dark-mode')) return 'dark';
+            if (document.body.classList.contains('retro-dark')) return 'retro-dark';
+            if (document.body.classList.contains('retro-light')) return 'retro-light';
+            return 'light';
+        }
+
+        // Run comprehensive theme tests
+        function runThemeTests() {
+            const results = document.getElementById('results-content');
+            results.innerHTML = '<p>Running tests...</p>';
+
+            setTimeout(() => {
+                let testResults = '<h4>🧪 Test Results:</h4>';
+                
+                // Test 1: Check dependencies
+                const dependenciesOk = typeof StorageManager !== 'undefined' && 
+                                     typeof toggleTheme === 'function' && 
+                                     typeof setTheme === 'function';
+                testResults += `<p><strong>Dependencies:</strong> ${dependenciesOk ? '✅ PASS' : '❌ FAIL'}</p>`;
+
+                // Test 2: Check CSS variables
+                const styles = getComputedStyle(document.documentElement);
+                const primaryColor = styles.getPropertyValue('--primary-color');
+                testResults += `<p><strong>CSS Variables:</strong> ${primaryColor ? '✅ PASS' : '❌ FAIL'} (primary-color: ${primaryColor || 'missing'})</p>`;
+
+                // Test 3: Check theme classes
+                const hasThemeClasses = document.body.classList.contains('dark-mode') ||
+                                       document.body.classList.contains('retro-dark') ||
+                                       document.body.classList.contains('retro-light') ||
+                                       (!document.body.classList.contains('dark-mode') && 
+                                        !document.body.classList.contains('retro-dark') && 
+                                        !document.body.classList.contains('retro-light'));
+                testResults += `<p><strong>Theme Classes:</strong> ${hasThemeClasses ? '✅ PASS' : '❌ FAIL'}</p>`;
+
+                // Test 4: Check localStorage
+                const hasLocalStorage = localStorage.getItem('lunchManager_theme') !== null;
+                testResults += `<p><strong>LocalStorage:</strong> ${hasLocalStorage ? '✅ PASS' : '❌ FAIL'}</p>`;
+
+                // Test 5: Test theme switch
+                try {
+                    const originalTheme = getCurrentTheme();
+                    if (typeof toggleTheme === 'function') {
+                        toggleTheme();
+                        const newTheme = getCurrentTheme();
+                        const switched = originalTheme !== newTheme;
+                        testResults += `<p><strong>Theme Switch:</strong> ${switched ? '✅ PASS' : '❌ FAIL'} (${originalTheme} → ${newTheme})</p>`;
+                        
+                        // Switch back
+                        toggleTheme();
+                    } else {
+                        testResults += `<p><strong>Theme Switch:</strong> ❌ FAIL (toggleTheme not available)</p>`;
+                    }
+                } catch (error) {
+                    testResults += `<p><strong>Theme Switch:</strong> ❌ FAIL (${error.message})</p>`;
+                }
+
+                results.innerHTML = testResults;
+                updateDebugInfo();
+            }, 1000);
+        }
+
+        // Test theme switch function
+        function testThemeSwitch() {
+            console.log('Testing theme switch...');
+            
+            try {
+                if (typeof toggleTheme === 'function') {
+                    toggleTheme();
+                    showToast('Theme switched successfully!', 'success');
+                } else {
+                    // Manual theme switch for testing
+                    const themes = ['light', 'dark', 'retro-dark', 'retro-light'];
+                    let currentTheme = 'light';
+                    
+                    if (document.body.classList.contains('dark-mode')) {
+                        currentTheme = 'dark';
+                    } else if (document.body.classList.contains('retro-dark')) {
+                        currentTheme = 'retro-dark';
+                    } else if (document.body.classList.contains('retro-light')) {
+                        currentTheme = 'retro-light';
+                    }
+                    
+                    const currentIndex = themes.indexOf(currentTheme);
+                    const newTheme = themes[(currentIndex + 1) % themes.length];
+                    
+                    console.log('Switching from', currentTheme, 'to', newTheme);
+                    
+                    // Remove all theme classes
+                    document.body.classList.remove('dark-mode', 'retro-dark', 'retro-light');
+                    
+                    // Add new theme class
+                    if (newTheme === 'dark') {
+                        document.body.classList.add('dark-mode');
+                    } else if (newTheme === 'retro-dark') {
+                        document.body.classList.add('retro-dark');
+                    } else if (newTheme === 'retro-light') {
+                        document.body.classList.add('retro-light');
+                    }
+                    
+                    // Update theme toggle button if it exists
+                    const themeToggle = document.getElementById('themeToggle');
+                    if (themeToggle) {
+                        if (newTheme === 'dark') {
+                            themeToggle.textContent = '☀️';
+                        } else if (newTheme === 'retro-dark') {
+                            themeToggle.textContent = '🎨';
+                        } else if (newTheme === 'retro-light') {
+                            themeToggle.textContent = '🌞';
+                        } else {
+                            themeToggle.textContent = '🌙';
+                        }
+                    }
+                    
+                    // Save to localStorage
+                    localStorage.setItem('lunchManager_theme', newTheme);
+                    
+                    console.log('Theme switched to:', newTheme);
+                    showToast(`Theme changed to ${newTheme}`, 'success');
+                }
+            } catch (error) {
+                console.error('Error switching theme:', error);
+                showToast(`Error switching theme: ${error.message}`, 'error');
+            }
+            
+            updateDebugInfo();
+        }
+
+        // Check dependencies
+        function checkDependencies() {
+            const results = document.getElementById('results-content');
+            let deps = '<h4>🔍 Dependencies Check:</h4>';
+            
+            // Check JavaScript files
+            const scripts = [
+                'StorageManager',
+                'toggleTheme', 
+                'setTheme',
+                'initializeTheme',
+                'showToast'
+            ];
+            
+            scripts.forEach(item => {
+                const available = typeof window[item] !== 'undefined' || typeof eval(item) !== 'undefined';
+                deps += `<p><strong>${item}:</strong> ${available ? '✅ Available' : '❌ Missing'}</p>`;
+            });
+
+            // Check Firebase
+            deps += `<p><strong>Firebase:</strong> ${typeof firebase !== 'undefined' ? '✅ Available' : '❌ Missing'}</p>`;
+
+            // Check CSS
+            const styles = getComputedStyle(document.documentElement);
+            deps += `<p><strong>CSS Variables:</strong> ${styles.getPropertyValue('--primary-color') ? '✅ Available' : '❌ Missing'}</p>`;
+
+            results.innerHTML = deps;
+        }
+
+        // Clear theme storage
+        function clearStorage() {
+            localStorage.removeItem('lunchManager_theme');
+            document.body.classList.remove('dark-mode', 'retro-dark', 'retro-light');
+            showToast('Theme storage cleared', 'info');
+            updateDebugInfo();
+        }
+
+        // Initialize debug info on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Theme debug page loaded');
+            updateDebugInfo();
+            
+            // Update debug info periodically
+            setInterval(updateDebugInfo, 2000);
+        });
+
+        // Global toast function for notifications
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.textContent = message;
+            toast.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 10px 20px;
+                border-radius: 5px;
+                color: white;
+                z-index: 10000;
+                background: ${type === 'success' ? '#10b981' : type === 'error' ? '#dc2626' : '#3b82f6'};
+            `;
+            
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

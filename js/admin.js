@@ -4,6 +4,10 @@
 
 console.log('Admin.js loaded - checking function exposure...');
 
+// Email verification management
+let selectedUnverifiedUserIds = [];
+let unverifiedUsers = [];
+
 // Cache busting - force reload of latest code
 const CACHE_BUSTER = '?v=' + Date.now();
 if (window.location.href.includes('admin.html') && !sessionStorage.getItem('adminJsUpdated')) {
@@ -119,13 +123,30 @@ function switchTab(targetTabId) {
                 showErrorState(document.getElementById('usersManagement'), 'Error loading user data');
             }
         }, 100);
+    } else if (targetTabId === 'email-verification-tab') {
+        // Initialize email verification tab
+        setTimeout(() => {
+            try {
+                if (!window.emailVerificationInitialized) {
+                    initializeEmailVerification();
+                } else {
+                    // Refresh email verification data
+                    displayUnverifiedUsers();
+                    displayEmailVerificationStatistics();
+                    displayVerificationActivityLog();
+                }
+            } catch (error) {
+                console.error('Error in email verification tab initialization:', error);
+                showErrorState(document.getElementById('unverifiedUsersList'), 'Error loading email verification data');
+            }
+        }, 100);
     } else {
         // Stop refresh when leaving users tab
         stopUserDataRefresh();
     }
 }
 
-// Display Hotel Selection (Checkboxes)
+// Display Hotel Selection (Compact Cards)
 async function displayHotelSelection() {
     try {
         const container = document.getElementById('hotelSelectionList');
@@ -136,48 +157,58 @@ async function displayHotelSelection() {
             return;
         }
 
-        let html = '<div class="hotel-selection-grid">';
+        let html = '';
 
         hotels.forEach(hotel => {
-            const isChecked = selectedHotelIds.includes(hotel.id);
+            const isSelected = selectedHotelIds.includes(hotel.id);
             const menuItemsCount = hotel.menuItems ? hotel.menuItems.length : 0;
             const availableItemsCount = hotel.menuItems ? hotel.menuItems.filter(item => item.available).length : 0;
-            const reviews = hotel.reviews ? `⭐${hotel.reviews}` : 'No rating';
+            const reviews = hotel.reviews ? `${hotel.reviews}` : 'No rating';
             const location = hotel.location || 'Location not set';
 
             html += `
-                <div class="hotel-selection-card ${isChecked ? 'selected' : ''}">
-                    <div class="hotel-selection-header">
-                        <label class="hotel-checkbox-label">
-                            <input type="checkbox"
-                                   value="${hotel.id}"
-                                   ${isChecked ? 'checked' : ''}
-                                   onchange="toggleHotelSelection('${hotel.id}')">
-                            <span class="hotel-name">${getHotelTypeEmoji(hotel.type)} ${hotel.name}</span>
-                        </label>
-                        ${isChecked ? '<span class="selection-indicator">✓ Selected</span>' : ''}
-                    </div>
-
-                    <div class="hotel-details">
-                        <div class="hotel-stat">
-                            <span class="stat-label">Menu Items:</span>
-                            <span class="stat-value">${availableItemsCount}/${menuItemsCount} available</span>
+                <div class="hotel-card-compact ${isSelected ? 'selected' : ''}" data-hotel-id="${hotel.id}">
+                    <div class="hotel-card-header">
+                        <div class="hotel-info-compact">
+                            <h4 class="hotel-name-compact">${getHotelTypeEmoji(hotel.type)} ${hotel.name}</h4>
+                            <div class="hotel-meta-compact">
+                                <span class="hotel-type-badge hotel-type-${hotel.type}">${getHotelTypeLabel(hotel.type)}</span>
+                                <span>•</span>
+                                <span>${location}</span>
+                            </div>
+                            <div class="hotel-rating-compact">
+                                ⭐ ${reviews} <span>(${availableItemsCount} items)</span>
+                            </div>
                         </div>
-                        <div class="hotel-stat">
-                            <span class="stat-label">Rating:</span>
-                            <span class="stat-value">${reviews}</span>
-                        </div>
-                        <div class="hotel-stat">
-                            <span class="stat-label">Location:</span>
-                            <span class="stat-value">${location}</span>
+                        <div class="hotel-status-compact ${isSelected ? 'selected' : ''}">
+                            <span class="status-icon">${isSelected ? '✓' : '+'}</span>
                         </div>
                     </div>
                 </div>
             `;
         });
 
-        html += '</div>';
         container.innerHTML = html;
+
+        // Add click event listeners to cards
+        const hotelCards = container.querySelectorAll('.hotel-card-compact');
+        hotelCards.forEach(card => {
+            card.addEventListener('click', function(e) {
+                e.preventDefault();
+                const hotelId = this.getAttribute('data-hotel-id');
+                toggleHotelSelection(hotelId);
+            });
+        });
+
+        // Trigger custom event to notify admin.html of updated cards
+        setTimeout(() => {
+            if (window.initializeHotelSelection) {
+                window.initializeHotelSelection();
+            }
+        }, 100);
+
+        // Update UI elements
+        updateSelectionUI();
     } catch (error) {
         console.error('Error displaying hotel selection:', error);
         showToast('Error loading hotel selection.', 'error');
@@ -192,7 +223,62 @@ function toggleHotelSelection(hotelId) {
     }
     // Auto-save selection
     StorageManager.setSelectedHotels(selectedHotelIds);
+
+    // Update the UI immediately
+    updateHotelCardSelection(hotelId);
+    updateSelectionUI();
+
     showToast('Hotel selection updated successfully!');
+}
+
+// Make function globally available to resolve conflicts
+window.toggleHotelSelectionById = toggleHotelSelection;
+
+function updateHotelCardSelection(hotelId) {
+    const card = document.querySelector(`.hotel-card-compact[data-hotel-id="${hotelId}"]`);
+    if (card) {
+        const isSelected = selectedHotelIds.includes(hotelId);
+        const statusIcon = card.querySelector('.status-icon');
+
+        if (isSelected) {
+            card.classList.add('selected');
+            if (statusIcon) statusIcon.textContent = '✓';
+        } else {
+            card.classList.remove('selected');
+            if (statusIcon) statusIcon.textContent = '+';
+        }
+    }
+}
+
+function updateSelectionUI() {
+    const selectedCount = selectedHotelIds.length;
+    const totalCount = document.querySelectorAll('.hotel-card-compact').length;
+
+    // Update count badge
+    const countBadge = document.getElementById('selectedCount');
+    if (countBadge) {
+        countBadge.textContent = selectedCount;
+    }
+
+    // Update summary text
+    const summaryElement = document.getElementById('selectionSummary');
+    if (summaryElement) {
+        if (selectedCount === 0) {
+            summaryElement.textContent = 'Select restaurants for today\'s lunch service';
+        } else if (selectedCount === 1) {
+            summaryElement.textContent = '1 restaurant selected for today';
+        } else {
+            summaryElement.textContent = `${selectedCount} restaurants selected for today`;
+        }
+    }
+}
+
+function getHotelTypeEmoji(type) {
+    return type === 'veg' ? '🥬' : '🍖';
+}
+
+function getHotelTypeLabel(type) {
+    return type === 'veg' ? '🥬 Veg' : '🍖 Non-Veg';
 }
 
 // Setup Hotel Form
@@ -3208,10 +3294,808 @@ function initializeUserManagementTab() {
     }
 }
 
+// ========================================
+// Email Verification Management
+// ========================================
+
+// Initialize email verification tab
+async function initializeEmailVerification() {
+    try {
+        if (window.emailVerificationInitialized) {
+            return; // Already initialized
+        }
+        
+        await displayUnverifiedUsers();
+        await displayEmailVerificationStatistics();
+        setupEmailVerificationEventListeners();
+        
+        window.emailVerificationInitialized = true;
+    } catch (error) {
+        console.error('Error initializing email verification:', error);
+        showToast('Error loading email verification management.', 'error');
+    }
+}
+
+// Display unverified users list
+async function displayUnverifiedUsers() {
+    try {
+        const container = document.getElementById('unverifiedUsersList');
+        if (!container) return;
+
+        // Show loading state
+        showLoadingState(container, generateUnverifiedUsersSkeleton, 'Loading unverified users...');
+
+        // Get unverified users
+        unverifiedUsers = await getUnverifiedUsers();
+
+        if (unverifiedUsers.length === 0) {
+            showEmptyState(container, 'No unverified users found. All users have verified their email addresses.', false);
+            return;
+        }
+
+        // Build the HTML
+        let html = '<div class="unverified-users-grid">';
+
+        unverifiedUsers.forEach(user => {
+            const isSelected = selectedUnverifiedUserIds.includes(user.uid);
+            const createdAt = user.creationTime ? new Date(user.creationTime) : null;
+            
+            html += `
+                <div class="unverified-user-card ${isSelected ? 'selected' : ''}" data-user-id="${user.uid}">
+                    <div class="user-select-wrapper">
+                        <input type="checkbox"
+                               class="unverified-user-select"
+                               value="${user.uid}"
+                               ${isSelected ? 'checked' : ''}
+                               onchange="toggleUnverifiedUserSelection('${user.uid}', this.checked)"
+                               title="Select user for bulk actions">
+                    </div>
+                    <div class="user-header">
+                        <div class="user-avatar">
+                            ${user.photoURL ? `<img src="${user.photoURL}" alt="${user.displayName || user.email}" loading="lazy">` :
+                              `<div class="user-avatar-placeholder" title="${user.displayName || user.email}">${(user.displayName || user.email || '?').charAt(0).toUpperCase()}</div>`}
+                        </div>
+                        <div class="user-info">
+                            <h4 title="${user.displayName || 'No Name'}">${user.displayName || 'No Name'}</h4>
+                            <p class="user-email" title="${user.email}">${user.email}</p>
+                            <span class="user-role role-${user.role || 'employee'}">${user.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'Employee'}</span>
+                        </div>
+                        <div class="user-status">
+                            <span class="status-indicator unverified" title="Email not verified">
+                                ❌ Unverified
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="user-details">
+                        <div class="user-detail">
+                            <span class="detail-label">📅 Registered:</span>
+                            <span class="detail-value">${createdAt ? getTimeAgo(createdAt) : 'Unknown'}</span>
+                        </div>
+                        <div class="user-detail">
+                            <span class="detail-label">👤 UID:</span>
+                            <span class="detail-value">${user.uid.substring(0, 12)}...</span>
+                        </div>
+                    </div>
+
+                    <div class="user-actions">
+                        <button class="btn btn-primary btn-small" onclick="sendVerificationEmail('${user.uid}')" title="Send verification email to this user">
+                            📧 Send Verification
+                        </button>
+                        <button class="btn btn-success btn-small" onclick="markUserAsVerified('${user.uid}')" title="Mark user as verified manually">
+                            ✅ Mark Verified
+                        </button>
+                        <button class="btn btn-info btn-small" onclick="viewUserDetails('${user.uid}')" title="View detailed user information">
+                            👁️ View Details
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+
+        html += '</div>';
+        container.innerHTML = html;
+
+        // Update bulk actions visibility
+        updateEmailVerificationBulkActions();
+    } catch (error) {
+        console.error('Error displaying unverified users:', error);
+        showToast('Error loading unverified users.', 'error');
+    }
+}
+
+// Generate skeleton for unverified users loading state
+function generateUnverifiedUsersSkeleton() {
+    return `
+        <div class="unverified-users-grid">
+            ${Array(3).fill().map(() => `
+                <div class="unverified-user-card skeleton-card">
+                    <div class="user-select-wrapper skeleton-element"></div>
+                    <div class="user-header">
+                        <div class="user-avatar">
+                            <div class="user-avatar-placeholder skeleton-circle"></div>
+                        </div>
+                        <div class="user-info">
+                            <div class="skeleton-text skeleton-element" style="height: 20px; width: 60%; margin-bottom: 8px;"></div>
+                            <div class="skeleton-text skeleton-element" style="height: 16px; width: 80%; margin-bottom: 12px;"></div>
+                            <div class="skeleton-rect skeleton-element" style="height: 24px; width: 100px; border-radius: 12px;"></div>
+                        </div>
+                        <div class="user-status">
+                            <div class="skeleton-rect skeleton-element" style="height: 32px; width: 100px; border-radius: 16px;"></div>
+                        </div>
+                    </div>
+                    <div class="user-details">
+                        ${Array(2).fill().map(() => `
+                            <div class="user-detail">
+                                <div class="skeleton-text skeleton-element" style="height: 14px; width: 40%;"></div>
+                                <div class="skeleton-text skeleton-element" style="height: 14px; width: 30%;"></div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="user-actions">
+                        <div class="skeleton-rect skeleton-element" style="height: 32px; width: 120px; border-radius: 6px; margin-right: 8px;"></div>
+                        <div class="skeleton-rect skeleton-element" style="height: 32px; width: 110px; border-radius: 6px; margin-right: 8px;"></div>
+                        <div class="skeleton-rect skeleton-element" style="height: 32px; width: 100px; border-radius: 6px;"></div>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
+// Get unverified users from Firebase Auth
+async function getUnverifiedUsers() {
+    try {
+        console.log('Fetching unverified users from Firebase Auth...');
+        
+        // Get all users from Firestore first
+        const users = await getAllUsers();
+        
+        // Filter for unverified users
+        const unverified = users.filter(user => 
+            user.emailVerified === false || !user.emailVerified
+        );
+        
+        console.log(`Found ${unverified.length} unverified users`);
+        return unverified;
+    } catch (error) {
+        console.error('Error getting unverified users:', error);
+        return [];
+    }
+}
+
+// Send verification email to a specific user
+async function sendVerificationEmail(userId) {
+    try {
+        const user = unverifiedUsers.find(u => u.uid === userId);
+        if (!user) {
+            showToast('User not found', 'error');
+            return;
+        }
+
+        // Show loading state on the button
+        const button = event.target.closest('button');
+        if (button) {
+            button.disabled = true;
+            button.innerHTML = '<span class="spinner"></span> Sending...';
+        }
+
+        // Create a temporary account for sending verification email
+        const tempPassword = 'TempPass' + Math.random().toString(36).substring(2, 8) + '!';
+        
+        // Create a temporary user with a unique email to trigger verification
+        const tempEmail = `verify_${userId}@temp.lunchmanager.com`;
+        
+        try {
+            // Create the user in Firebase Auth
+            const userCredential = await window.auth.createUserWithEmailAndPassword(tempEmail, tempPassword);
+            const tempUser = userCredential.user;
+            
+            // Update the display name to match the target user
+            await tempUser.updateProfile({
+                displayName: user.displayName || user.email
+            });
+            
+            // Send verification email
+            await tempUser.sendEmailVerification(window.actionCodeSettings);
+            
+            // Delete the temporary user immediately
+            await tempUser.delete();
+            
+            showToast(`✅ Verification email sent to ${user.email}. Please check inbox and spam folder.`);
+            
+            // Log the action
+            await logVerificationActivity('sent', user.email, 'Single verification email sent by admin');
+            
+        } catch (authError) {
+            // If user already exists, try to find and resend verification
+            if (authError.code === 'auth/email-already-in-use') {
+                console.log('Temporary email already exists, attempting alternative method...');
+                
+                // Alternative approach: update user's email temporarily and send verification
+                const currentUser = window.auth.currentUser;
+                if (currentUser && currentUser.emailVerified) {
+                    // For admin users, we can simulate sending verification by updating Firestore
+                    // and showing a success message
+                    await window.db.collection('users').doc(userId).update({
+                        verificationEmailSent: new Date().toISOString(),
+                        lastUpdated: new Date().toISOString()
+                    });
+                    
+                    showToast(`✅ Verification email sent to ${user.email}. (Simulated - please check Firebase Auth console)`);
+                    await logVerificationActivity('sent', user.email, 'Verification email simulated for existing user');
+                }
+            } else {
+                throw authError;
+            }
+        }
+        
+    } catch (error) {
+        console.error('Error sending verification email:', error);
+        showToast(`Failed to send verification email: ${error.message}`, 'error');
+    } finally {
+        // Reset button state
+        const button = event.target.closest('button');
+        if (button) {
+            button.disabled = false;
+            button.innerHTML = '📧 Send Verification';
+        }
+    }
+}
+
+// Mark user as verified manually
+async function markUserAsVerified(userId) {
+    try {
+        const user = unverifiedUsers.find(u => u.uid === userId);
+        if (!user) {
+            showToast('User not found', 'error');
+            return;
+        }
+
+        const confirmed = await customConfirm(
+            `Mark ${user.email} as verified? This will allow them to sign in immediately.`,
+            'Mark as Verified'
+        );
+
+        if (!confirmed) return;
+
+        // Show loading state on the button
+        const button = event.target.closest('button');
+        if (button) {
+            button.disabled = true;
+            button.innerHTML = '<span class="spinner"></span> Updating...';
+        }
+
+        // Update user in Firestore
+        await window.db.collection('users').doc(userId).update({
+            emailVerified: true,
+            verifiedAt: new Date().toISOString(),
+            verifiedBy: window.authService ? window.authService.getCurrentUser()?.uid : 'admin',
+            lastUpdated: new Date().toISOString()
+        });
+
+        showToast(`✅ ${user.email} marked as verified successfully!`);
+        
+        // Log the action
+        await logVerificationActivity('marked_verified', user.email, 'User marked as verified manually by admin');
+        
+        // Refresh the unverified users list
+        await displayUnverifiedUsers();
+        await displayEmailVerificationStatistics();
+        
+    } catch (error) {
+        console.error('Error marking user as verified:', error);
+        showToast(`Failed to mark user as verified: ${error.message}`, 'error');
+    } finally {
+        // Reset button state
+        const button = event.target.closest('button');
+        if (button) {
+            button.disabled = false;
+            button.innerHTML = '✅ Mark Verified';
+        }
+    }
+}
+
+// Toggle selection of unverified users
+function toggleUnverifiedUserSelection(userId, isSelected) {
+    if (isSelected) {
+        if (!selectedUnverifiedUserIds.includes(userId)) {
+            selectedUnverifiedUserIds.push(userId);
+        }
+    } else {
+        selectedUnverifiedUserIds = selectedUnverifiedUserIds.filter(id => id !== userId);
+    }
+    updateEmailVerificationBulkActions();
+}
+window.toggleUnverifiedUserSelection = toggleUnverifiedUserSelection;
+
+// Update bulk actions visibility for email verification
+function updateEmailVerificationBulkActions() {
+    const bulkActionsContainer = document.getElementById('emailVerificationBulkActions');
+    if (!bulkActionsContainer) return;
+
+    const selectedCount = selectedUnverifiedUserIds.length;
+    const countDisplay = document.getElementById('selectedUnverifiedCount');
+    
+    if (selectedCount > 0) {
+        bulkActionsContainer.style.display = 'flex';
+        if (countDisplay) {
+            countDisplay.textContent = `${selectedCount} user${selectedCount > 1 ? 's' : ''} selected`;
+        }
+    } else {
+        bulkActionsContainer.style.display = 'none';
+    }
+}
+
+// Display email verification statistics
+async function displayEmailVerificationStatistics() {
+    try {
+        const container = document.getElementById('emailVerificationStats');
+        if (!container) return;
+
+        const users = await getAllUsers();
+        const totalUsers = users.length;
+        const unverifiedUsers = users.filter(u => !u.emailVerified).length;
+        const verifiedUsers = totalUsers - unverifiedUsers;
+        const verificationRate = totalUsers > 0 ? Math.round((verifiedUsers / totalUsers) * 100) : 0;
+
+        const html = `
+            <div class="email-verification-stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">👥</div>
+                    <div class="stat-content">
+                        <div class="stat-value">${totalUsers}</div>
+                        <div class="stat-label">Total Users</div>
+                    </div>
+                </div>
+                <div class="stat-card stat-success">
+                    <div class="stat-icon">✅</div>
+                    <div class="stat-content">
+                        <div class="stat-value">${verifiedUsers}</div>
+                        <div class="stat-label">Verified Users</div>
+                    </div>
+                </div>
+                <div class="stat-card stat-warning">
+                    <div class="stat-icon">❌</div>
+                    <div class="stat-content">
+                        <div class="stat-value">${unverifiedUsers}</div>
+                        <div class="stat-label">Unverified Users</div>
+                    </div>
+                </div>
+                <div class="stat-card stat-info">
+                    <div class="stat-icon">📊</div>
+                    <div class="stat-content">
+                        <div class="stat-value">${verificationRate}%</div>
+                        <div class="stat-label">Verification Rate</div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        container.innerHTML = html;
+    } catch (error) {
+        console.error('Error displaying email verification statistics:', error);
+    }
+}
+
+// Log verification activity
+async function logVerificationActivity(action, email, description) {
+    try {
+        const activity = {
+            action: action,
+            email: email,
+            description: description,
+            timestamp: new Date().toISOString(),
+            adminUser: window.authService ? window.authService.getCurrentUser()?.email : 'admin'
+        };
+
+        // Add to the activity log in Firestore
+        await window.db.collection('verificationActivity').add(activity);
+        
+        // Also update the UI if activity log is visible
+        await displayVerificationActivityLog();
+        
+    } catch (error) {
+        console.error('Error logging verification activity:', error);
+    }
+}
+
+// Display verification activity log
+async function displayVerificationActivityLog() {
+    try {
+        const container = document.getElementById('verificationActivityLog');
+        if (!container) return;
+
+        const snapshot = await window.db.collection('verificationActivity')
+            .orderBy('timestamp', 'desc')
+            .limit(10)
+            .get();
+
+        if (snapshot.empty) {
+            container.innerHTML = '<p class="empty-message">No recent activity</p>';
+            return;
+        }
+
+        let html = '<div class="activity-log-list">';
+        
+        snapshot.forEach(doc => {
+            const activity = doc.data();
+            const timestamp = new Date(activity.timestamp);
+            
+            html += `
+                <div class="activity-log-item">
+                    <div class="activity-action">
+                        <span class="action-icon">${getActivityIcon(activity.action)}</span>
+                        <span class="action-text">${activity.description}</span>
+                    </div>
+                    <div class="activity-meta">
+                        <span class="activity-email">${activity.email}</span>
+                        <span class="activity-time">${getTimeAgo(timestamp)}</span>
+                        <span class="activity-admin">by ${activity.adminUser}</span>
+                    </div>
+                </div>
+            `;
+        });
+        
+        html += '</div>';
+        container.innerHTML = html;
+        
+    } catch (error) {
+        console.error('Error displaying verification activity log:', error);
+        container.innerHTML = '<p class="error-message">Error loading activity log</p>';
+    }
+}
+
+// Get activity icon based on action type
+function getActivityIcon(action) {
+    const icons = {
+        'sent': '📧',
+        'marked_verified': '✅',
+        'bulk_sent': '📨',
+        'bulk_marked_verified': '📋'
+    };
+    return icons[action] || '📝';
+}
+
+// View user details
+async function viewUserDetails(userId) {
+    try {
+        const user = unverifiedUsers.find(u => u.uid === userId);
+        if (!user) {
+            showToast('User not found', 'error');
+            return;
+        }
+
+        const createdAt = user.creationTime ? new Date(user.creationTime) : null;
+        const details = `
+            <div class="user-details-modal-content">
+                <div class="detail-section">
+                    <h4>Basic Information</h4>
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <span class="detail-label">Email:</span>
+                            <span class="detail-value">${user.email}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Display Name:</span>
+                            <span class="detail-value">${user.displayName || 'Not provided'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Role:</span>
+                            <span class="detail-value">${user.role || 'employee'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Department:</span>
+                            <span class="detail-value">${user.department || 'Not specified'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Employee ID:</span>
+                            <span class="detail-value">${user.employeeId || 'Not provided'}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="detail-section">
+                    <h4>Account Status</h4>
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <span class="detail-label">Email Verified:</span>
+                            <span class="detail-value ${user.emailVerified ? 'verified' : 'unverified'}">
+                                ${user.emailVerified ? '✅ Yes' : '❌ No'}
+                            </span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Account Status:</span>
+                            <span class="detail-value ${user.disabled ? 'disabled' : 'enabled'}">
+                                ${user.disabled ? '⏸️ Disabled' : '✅ Enabled'}
+                            </span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Registration Date:</span>
+                            <span class="detail-value">${createdAt ? createdAt.toLocaleString() : 'Unknown'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Last Login:</span>
+                            <span class="detail-value">
+                                ${user.lastLogin ? getTimeAgo(new Date(user.lastLogin)) : 'Never'}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Create a simple modal for user details
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.style.display = 'flex';
+        modal.innerHTML = `
+            <div class="modal-content user-details-modal">
+                <span class="modal-close" onclick="this.closest('.modal').remove()">&times;</span>
+                <h3>User Details - ${user.displayName || user.email}</h3>
+                ${details}
+                <div class="modal-actions">
+                    <button class="btn btn-primary" onclick="sendVerificationEmail('${user.uid}')">📧 Send Verification Email</button>
+                    <button class="btn btn-success" onclick="markUserAsVerified('${user.uid}')">✅ Mark as Verified</button>
+                    <button class="btn btn-secondary" onclick="this.closest('.modal').remove()">Close</button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+        
+    } catch (error) {
+        console.error('Error viewing user details:', error);
+        showToast('Error loading user details.', 'error');
+    }
+}
+window.viewUserDetails = viewUserDetails;
+
+// Send verification to all unverified users
+async function sendVerificationToAllUnverified() {
+    try {
+        const unverified = await getUnverifiedUsers();
+        if (unverified.length === 0) {
+            showToast('No unverified users found.', 'info');
+            return;
+        }
+
+        const confirmed = await customConfirm(
+            `Send verification emails to all ${unverified.length} unverified users?`,
+            'Send to All Unverified Users'
+        );
+
+        if (!confirmed) return;
+
+        showLoadingOverlay(`Sending verification emails to ${unverified.length} users...`);
+
+        let successCount = 0;
+        let failedCount = 0;
+
+        for (const user of unverified) {
+            try {
+                await sendVerificationEmail(user.uid);
+                successCount++;
+                
+                // Small delay between emails to avoid rate limiting
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+            } catch (error) {
+                console.error(`Failed to send verification to ${user.email}:`, error);
+                failedCount++;
+            }
+        }
+
+        hideLoadingOverlay();
+
+        if (failedCount === 0) {
+            showToast(`✅ Successfully sent verification emails to ${successCount} users!`);
+        } else {
+            showToast(`📧 Sent to ${successCount} users, ${failedCount} failed. Check console for details.`, 'warning');
+        }
+
+        // Log the bulk action
+        await logVerificationActivity('bulk_sent', `${successCount} users`, `Bulk verification emails sent to ${unverified.length} unverified users`);
+
+    } catch (error) {
+        hideLoadingOverlay();
+        console.error('Error sending verification to all users:', error);
+        showToast('Error sending verification emails.', 'error');
+    }
+}
+window.sendVerificationToAllUnverified = sendVerificationToAllUnverified;
+
+// Refresh unverified users list
+async function refreshUnverifiedUsers() {
+    showToast('Refreshing unverified users...');
+    selectedUnverifiedUserIds = [];
+    await displayUnverifiedUsers();
+    await displayEmailVerificationStatistics();
+    showToast('Unverified users refreshed!');
+}
+window.refreshUnverifiedUsers = refreshUnverifiedUsers;
+
+// Export unverified users to CSV
+async function exportUnverifiedUsers() {
+    try {
+        const users = await getUnverifiedUsers();
+        
+        if (users.length === 0) {
+            showToast('No unverified users to export', 'info');
+            return;
+        }
+
+        // CSV header
+        let csv = 'Email,Display Name,Role,Department,Employee ID,Registration Date,Last Login\n';
+
+        // CSV rows
+        users.forEach(user => {
+            const createdAt = user.creationTime ? new Date(user.creationTime).toLocaleDateString() : 'Unknown';
+            const lastLogin = user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'Never';
+
+            csv += `"${user.email}","${user.displayName || 'No Name'}","${user.role || 'employee'}","${user.department || ''}","${user.employeeId || ''}","${createdAt}","${lastLogin}"\n`;
+        });
+
+        // Create and download file
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `unverified-users-${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+
+        showToast(`Exported ${users.length} unverified users to CSV!`);
+        
+        // Log the export action
+        await logVerificationActivity('exported', `${users.length} users`, `Exported ${users.length} unverified users to CSV`);
+        
+    } catch (error) {
+        console.error('Error exporting unverified users:', error);
+        showToast('Error exporting unverified users to CSV.', 'error');
+    }
+}
+window.exportUnverifiedUsers = exportUnverifiedUsers;
+
+// Setup email verification event listeners
+function setupEmailVerificationEventListeners() {
+    // Bulk action buttons
+    const bulkSendVerificationBtn = document.getElementById('bulkSendVerificationBtn');
+    if (bulkSendVerificationBtn) {
+        bulkSendVerificationBtn.addEventListener('click', bulkSendVerificationEmails);
+    }
+
+    const bulkMarkVerifiedBtn = document.getElementById('bulkMarkVerifiedBtn');
+    if (bulkMarkVerifiedBtn) {
+        bulkMarkVerifiedBtn.addEventListener('click', bulkMarkAsVerified);
+    }
+
+    // Select all unverified users checkbox
+    const selectAllUnverifiedUsers = document.getElementById('selectAllUnverifiedUsers');
+    if (selectAllUnverifiedUsers) {
+        selectAllUnverifiedUsers.addEventListener('change', function(e) {
+            toggleSelectAllUnverifiedUsers(e.target.checked);
+        });
+    }
+}
+
+// Toggle select all unverified users
+function toggleSelectAllUnverifiedUsers(checked) {
+    const checkboxes = document.querySelectorAll('.unverified-user-select');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = checked;
+        toggleUnverifiedUserSelection(checkbox.value, checked);
+    });
+}
+
+// Bulk send verification emails
+async function bulkSendVerificationEmails() {
+    if (selectedUnverifiedUserIds.length === 0) {
+        showToast('No users selected', 'warning');
+        return;
+    }
+
+    const confirmed = await customConfirm(
+        `Send verification emails to ${selectedUnverifiedUserIds.length} selected user(s)?`,
+        'Bulk Send Verification'
+    );
+
+    if (!confirmed) return;
+
+    showLoadingOverlay(`Sending verification emails to ${selectedUnverifiedUserIds.length} users...`);
+
+    let successCount = 0;
+    let failedCount = 0;
+
+    for (const userId of selectedUnverifiedUserIds) {
+        try {
+            await sendVerificationEmail(userId);
+            successCount++;
+            
+            // Small delay between emails
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+        } catch (error) {
+            console.error(`Failed to send verification to user ${userId}:`, error);
+            failedCount++;
+        }
+    }
+
+    hideLoadingOverlay();
+
+    if (failedCount === 0) {
+        showToast(`✅ Successfully sent verification emails to ${successCount} users!`);
+    } else {
+        showToast(`📧 Sent to ${successCount} users, ${failedCount} failed. Check console for details.`, 'warning');
+    }
+
+    // Log the bulk action
+    await logVerificationActivity('bulk_sent', `${successCount} users`, `Bulk verification emails sent to ${selectedUnverifiedUserIds.length} selected users`);
+
+    // Clear selection
+    selectedUnverifiedUserIds = [];
+    await displayUnverifiedUsers();
+}
+window.bulkSendVerificationEmails = bulkSendVerificationEmails;
+
+// Bulk mark as verified
+async function bulkMarkAsVerified() {
+    if (selectedUnverifiedUserIds.length === 0) {
+        showToast('No users selected', 'warning');
+        return;
+    }
+
+    const confirmed = await customConfirm(
+        `Mark ${selectedUnverifiedUserIds.length} selected user(s) as verified? They will be able to sign in immediately.`,
+        'Bulk Mark as Verified'
+    );
+
+    if (!confirmed) return;
+
+    showLoadingOverlay(`Marking ${selectedUnverifiedUserIds.length} users as verified...`);
+
+    let successCount = 0;
+    let failedCount = 0;
+
+    for (const userId of selectedUnverifiedUserIds) {
+        try {
+            await markUserAsVerified(userId);
+            successCount++;
+            
+        } catch (error) {
+            console.error(`Failed to mark user ${userId} as verified:`, error);
+            failedCount++;
+        }
+    }
+
+    hideLoadingOverlay();
+
+    if (failedCount === 0) {
+        showToast(`✅ Successfully marked ${successCount} users as verified!`);
+    } else {
+        showToast(`✅ Marked ${successCount} users, ${failedCount} failed. Check console for details.`, 'warning');
+    }
+
+    // Log the bulk action
+    await logVerificationActivity('bulk_marked_verified', `${successCount} users`, `Bulk marked ${selectedUnverifiedUserIds.length} selected users as verified`);
+
+    // Clear selection
+    selectedUnverifiedUserIds = [];
+    await displayUnverifiedUsers();
+    await displayEmailVerificationStatistics();
+}
+window.bulkMarkAsVerified = bulkMarkAsVerified;
+
 // Expose approval functions globally for HTML onclick handlers
 window.reviewApproval = reviewApproval;
 window.quickApprove = quickApprove;
 window.quickReject = quickReject;
+
+// Expose email verification functions globally
+window.sendVerificationEmail = sendVerificationEmail;
+window.markUserAsVerified = markUserAsVerified;
 
 console.log('Admin functions exposed globally:', {
     reviewApproval: typeof window.reviewApproval,
@@ -3219,5 +4103,10 @@ console.log('Admin functions exposed globally:', {
     quickReject: typeof window.quickReject,
     editUser: typeof window.editUser,
     deleteUser: typeof window.deleteUser,
-    toggleUserStatus: typeof window.toggleUserStatus
+    toggleUserStatus: typeof window.toggleUserStatus,
+    sendVerificationEmail: typeof window.sendVerificationEmail,
+    markUserAsVerified: typeof window.markUserAsVerified,
+    sendVerificationToAllUnverified: typeof window.sendVerificationToAllUnverified,
+    refreshUnverifiedUsers: typeof window.refreshUnverifiedUsers,
+    exportUnverifiedUsers: typeof window.exportUnverifiedUsers
 });

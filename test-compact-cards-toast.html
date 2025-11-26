@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Compact Cards & Toast Notifications</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: white;
+        }
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .test-section {
+            margin-bottom: 40px;
+        }
+        .test-title {
+            font-size: 2rem;
+            margin-bottom: 20px;
+            text-align: center;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .test-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        .test-btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .btn-success {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+        }
+        .btn-error {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+        }
+        .btn-warning {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+        }
+        .btn-info {
+            background: linear-gradient(135deg, #3b82f6, #1e40af);
+            color: white;
+        }
+        .test-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+        .info-box {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1 class="test-title">🧪 Test Compact Cards & Toast Notifications</h1>
+        
+        <div class="info-box">
+            <h3>📝 Test Instructions:</h3>
+            <ul>
+                <li><strong>Toast Notifications:</strong> Click the colored buttons below to test different toast types</li>
+                <li><strong>Compact Cards:</strong> Scroll down to see the hotel selection cards with compact design</li>
+                <li><strong>Interactive:</strong> Click on hotel cards to select/deselect them</li>
+                <li><strong>Mobile Responsive:</strong> Resize your browser to test mobile layout</li>
+            </ul>
+        </div>
+
+        <div class="test-section">
+            <h2 class="test-title">🔔 Toast Notification Tests</h2>
+            <div class="test-buttons">
+                <button class="test-btn btn-success" onclick="showToast('✅ Success! Compact cards and toast notifications are working perfectly!', 'success')">
+                    Test Success Toast
+                </button>
+                <button class="test-btn btn-error" onclick="showToast('❌ Error! This is a test error message.', 'error')">
+                    Test Error Toast
+                </button>
+                <button class="test-btn btn-warning" onclick="showToast('⚠️ Warning! This is a test warning message.', 'warning')">
+                    Test Warning Toast
+                </button>
+                <button class="test-btn btn-info" onclick="showToast('ℹ️ Info! This is a test information message.', 'info')">
+                    Test Info Toast
+                </button>
+                <button class="test-btn" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white;" onclick="testMultipleToasts()">
+                    Test Multiple Toasts
+                </button>
+            </div>
+        </div>
+
+        <!-- Compact Hotel Selection Cards -->
+        <div class="test-section">
+            <div class="hotel-selection-compact">
+                <div class="hotel-selection-header">
+                    <h2 class="hotel-selection-title">
+                        🏨 Hotel Selection - Compact Design
+                        <span class="hotel-count-badge">3 Hotels</span>
+                    </h2>
+                </div>
+
+                <div class="hotel-grid-compact">
+                    <div class="hotel-card-compact" data-hotel-id="1">
+                        <div class="hotel-card-header">
+                            <div class="hotel-info-compact">
+                                <h4 class="hotel-name-compact">The Garden Palace</h4>
+                                <div class="hotel-meta-compact">
+                                    <span class="hotel-type-badge hotel-type-veg">🥬 Veg</span>
+                                    <span class="hotel-rating-compact">⭐ 4.5 <span>(127 reviews)</span></span>
+                                </div>
+                            </div>
+                            <div class="hotel-status-compact">
+                                <span class="status-icon">+</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="hotel-card-compact" data-hotel-id="2">
+                        <div class="hotel-card-header">
+                            <div class="hotel-info-compact">
+                                <h4 class="hotel-name-compact">Spice Route Restaurant</h4>
+                                <div class="hotel-meta-compact">
+                                    <span class="hotel-type-badge hotel-type-non-veg">🍖 Non-Veg</span>
+                                    <span class="hotel-rating-compact">⭐ 4.2 <span>(89 reviews)</span></span>
+                                </div>
+                            </div>
+                            <div class="hotel-status-compact">
+                                <span class="status-icon">+</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="hotel-card-compact" data-hotel-id="3">
+                        <div class="hotel-card-header">
+                            <div class="hotel-info-compact">
+                                <h4 class="hotel-name-compact">Green Leaf Cafe</h4>
+                                <div class="hotel-meta-compact">
+                                    <span class="hotel-type-badge hotel-type-veg">🥬 Veg</span>
+                                    <span class="hotel-rating-compact">⭐ 4.7 <span>(203 reviews)</span></span>
+                                </div>
+                            </div>
+                            <div class="hotel-status-compact">
+                                <span class="status-icon">+</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="hotel-selection-footer">
+                    <div class="selection-summary">
+                        <span id="selectionCount">0 hotels selected</span>
+                    </div>
+                    <div class="selection-actions">
+                        <button class="selection-btn selection-btn-primary" onclick="selectAllHotels()">Select All</button>
+                        <button class="selection-btn selection-btn-success" onclick="confirmSelection()">Confirm Selection</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="info-box">
+            <h3>✅ Expected Results:</h3>
+            <ul>
+                <li>Toast notifications should appear in the top-right corner with proper styling</li>
+                <li>Hotel cards should have a beautiful gradient background with glassmorphism effect</li>
+                <li>Cards should highlight when selected (green background)</li>
+                <li>Selection count should update when cards are clicked</li>
+                <li>Layout should be responsive on mobile devices</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Initialize hotel selection functionality
+        function initializeHotelSelection() {
+            const hotelCards = document.querySelectorAll('.hotel-card-compact');
+            
+            hotelCards.forEach(card => {
+                card.addEventListener('click', function() {
+                    const statusIcon = this.querySelector('.hotel-status-compact');
+                    
+                    if (this.classList.contains('selected')) {
+                        this.classList.remove('selected');
+                        statusIcon.classList.remove('selected');
+                        statusIcon.innerHTML = '<span class="status-icon">+</span>';
+                    } else {
+                        this.classList.add('selected');
+                        statusIcon.classList.add('selected');
+                        statusIcon.innerHTML = '<span class="status-icon">✓</span>';
+                    }
+                    
+                    updateSelectionUI();
+                });
+            });
+        }
+
+        function updateSelectionUI() {
+            const selectedCards = document.querySelectorAll('.hotel-card-compact.selected');
+            const selectedCount = selectedCards.length;
+            const totalCount = document.querySelectorAll('.hotel-card-compact').length;
+            
+            const selectionCountElement = document.getElementById('selectionCount');
+            if (selectionCountElement) {
+                selectionCountElement.textContent = `${selectedCount} of ${totalCount} hotels selected`;
+            }
+        }
+
+        function selectAllHotels() {
+            const allCards = document.querySelectorAll('.hotel-card-compact');
+            const selectedCards = document.querySelectorAll('.hotel-card-compact.selected');
+            const shouldSelectAll = selectedCards.length !== allCards.length;
+            
+            allCards.forEach(card => {
+                const statusIcon = card.querySelector('.hotel-status-compact');
+                
+                if (shouldSelectAll) {
+                    card.classList.add('selected');
+                    statusIcon.classList.add('selected');
+                    statusIcon.innerHTML = '<span class="status-icon">✓</span>';
+                } else {
+                    card.classList.remove('selected');
+                    statusIcon.classList.remove('selected');
+                    statusIcon.innerHTML = '<span class="status-icon">+</span>';
+                }
+            });
+            
+            updateSelectionUI();
+            
+            if (shouldSelectAll) {
+                showToast('✅ All hotels selected!', 'success');
+            } else {
+                showToast('🔄 All hotels deselected!', 'info');
+            }
+        }
+
+        function confirmSelection() {
+            const selectedCards = document.querySelectorAll('.hotel-card-compact.selected');
+            
+            if (selectedCards.length === 0) {
+                showToast('❌ Please select at least one hotel', 'warning');
+                return;
+            }
+            
+            const selectedHotels = Array.from(selectedCards).map(card => {
+                const hotelName = card.querySelector('.hotel-name-compact').textContent;
+                const hotelType = card.querySelector('.hotel-type-badge').textContent;
+                return `${hotelName} (${hotelType})`;
+            });
+            
+            showToast(`✅ Selection confirmed for: ${selectedHotels.join(', ')}`, 'success', 5000);
+        }
+
+        function testMultipleToasts() {
+            const messages = [
+                { text: '🎉 First toast message!', type: 'success' },
+                { text: '📊 Second message with different content', type: 'info' },
+                { text: '⚠️ Third warning message', type: 'warning' },
+                { text: '❌ Fourth error message', type: 'error' }
+            ];
+            
+            messages.forEach((msg, index) => {
+                setTimeout(() => {
+                    showToast(msg.text, msg.type);
+                }, index * 800);
+            });
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeHotelSelection();
+            updateSelectionUI();
+            showToast('🧪 Test page loaded! Try clicking the buttons above.', 'info');
+        });
+    </script>
+</body>
+</html>

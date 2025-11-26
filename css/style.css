@@ -6,7 +6,7 @@
 /* Import handwritten font */
 @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&display=swap');
 
-/* CSS Variables for Light Theme (Modern Blue) */
+/* CSS Variables for Light Theme (Modern Blue) with improved contrast */
 :root {
     --primary-color: #2563eb; /* Modern blue */
     --primary-dark: #1d4ed8; /* Darker blue */
@@ -21,11 +21,11 @@
     --bg-tertiary: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%); /* Medium light gradient */
     --bg-accent: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%); /* Blue gradient */
 
-    --text-primary: #192eeb; /* Dark slate */
-    --text-secondary: #64748b; /* Medium slate */
-    --text-tertiary: #94a3b8; /* Light slate */
+    --text-primary: #1a202c; /* Very dark gray for excellent contrast */
+    --text-secondary: #4a5568; /* Medium-dark gray */
+    --text-tertiary: #718096; /* Medium-gray */
 
-    --border-color: #e2e8f0; /* Light borders */
+    --border-color: #a2a7ec; /* Light borders */
     --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
     --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.07);
@@ -33,6 +33,12 @@
     --navbar-height: 70px;
     --banner-height: 120px;
     --transition-speed: 0.3s;
+    
+    /* Theme-specific section backgrounds */
+    --hero-bg: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #cbd5e1 100%);
+    --featured-bg: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+    --hero-text: #1e40af;
+    --featured-text: #1e40af;
 }
 
 /* Dark Mode Variables - Warm Dark */
@@ -49,6 +55,12 @@ body.dark-mode {
     --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
     --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.4);
     --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.6), 0 4px 6px -2px rgba(0, 0, 0, 0.5);
+    
+    /* Dark mode section backgrounds */
+    --hero-bg: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+    --featured-bg: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    --hero-text: #60a5fa;
+    --featured-text: #60a5fa;
 }
 
 /* Retro Dark Theme Variables - Cyberpunk Neon */
@@ -71,28 +83,40 @@ body.retro-dark {
     --shadow-sm: 0 1px 2px 0 rgba(255, 0, 128, 0.3);
     --shadow-md: 0 4px 6px -1px rgba(255, 0, 128, 0.4), 0 2px 4px -1px rgba(255, 0, 128, 0.3);
     --shadow-lg: 0 10px 15px -3px rgba(255, 0, 128, 0.5), 0 4px 6px -2px rgba(255, 0, 128, 0.4);
+    
+    /* Retro dark mode section backgrounds */
+    --hero-bg: linear-gradient(135deg, #0a0a1a 0%, rgba(26, 10, 46, 0.8) 50%, #1a0a2e 100%);
+    --featured-bg: linear-gradient(135deg, rgba(26, 10, 46, 0.6) 0%, #0a0a1a 100%);
+    --hero-text: #00ffff;
+    --featured-text: #ff00ff;
 }
 
-/* Retro Light Theme Variables - Arcade Pastel */
+/* Retro Light Theme Variables - Arcade Pastel with improved contrast */
 body.retro-light {
     --bg-primary: #fff8e1; /* Cream background */
-    --bg-secondary: rgba(255, 245, 200, 0.8); /* Semi-transparent cream glass */
-    --bg-tertiary: rgba(255, 245, 200, 0.6); /* Lighter cream glass */
+    --bg-secondary: rgba(255, 245, 200, 0.9); /* More opaque cream glass for better contrast */
+    --bg-tertiary: rgba(255, 245, 200, 0.7); /* More opaque lighter cream */
 
-    --text-primary: #5173e4; /* Deep Purple */
-    --text-secondary: #d81b60; /* Pink */
-    --text-tertiary: #d81b60; /* Pink */
+    --text-primary: #2d3748; /* Dark gray for better contrast */
+    --text-secondary: #4a5568; /* Medium gray for secondary text */
+    --text-tertiary: #718096; /* Light gray for tertiary text */
 
     --border-color: #ff6b35; /* Coral Orange */
     --primary-color: #ff6b35; /* Coral Orange */
     --secondary-color: #4ecdc4; /* Teal */
-    --danger-color: #e91e63; /* Pink */
-    --warning-color: #ff9800; /* Orange */
-    --success-color: #4caf50; /* Green */
+    --danger-color: #e53e3e; /* Darker red for better contrast */
+    --warning-color: #ed8936; /* Darker orange */
+    --success-color: #38a169; /* Darker green */
 
     --shadow-sm: 0 1px 2px 0 rgba(255, 107, 53, 0.2);
     --shadow-md: 0 4px 6px -1px rgba(255, 107, 53, 0.3), 0 2px 4px -1px rgba(255, 107, 53, 0.2);
     --shadow-lg: 0 10px 15px -3px rgba(255, 107, 53, 0.4), 0 4px 6px -2px rgba(255, 107, 53, 0.3);
+    
+    /* Retro light mode section backgrounds */
+    --hero-bg: linear-gradient(135deg, #fff8e1 0%, rgba(255, 245, 200, 0.9) 50%, rgba(255, 235, 180, 0.8) 100%);
+    --featured-bg: linear-gradient(135deg, rgba(255, 245, 200, 0.8) 0%, #fff8e1 100%);
+    --hero-text: #ff6b35;
+    --featured-text: #4ecdc4;
 }
 
 /* Reset & Base Styles */
@@ -320,7 +344,7 @@ body.dark-mode .navbar-brand {
 .banner {
     background: linear-gradient(135deg, rgba(11, 8, 34, 0.98), rgba(20, 30, 43, 0.95)),
                 url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="rgba(255,255,255,0.3)"/><circle cx="75" cy="75" r="1" fill="rgba(255,255,255,0.3)"/><circle cx="50" cy="10" r="0.5" fill="rgba(255,255,255,0.25)"/><circle cx="10" cy="50" r="0.5" fill="rgba(255,255,255,0.25)"/><circle cx="90" cy="50" r="0.5" fill="rgba(255,255,255,0.25)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
-    color: white;
+    color: var(--text-primary, white);
     text-align: center;
     padding: 25px 30px;
     box-shadow: 0 8px 32px rgba(46, 46, 46, 0.15);
@@ -330,6 +354,31 @@ body.dark-mode .navbar-brand {
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.5);
     border-top: none;
+}
+
+/* Banner styles for light theme - ensure good contrast */
+body:not(.dark-mode):not(.retro-dark) .banner {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.95), rgba(29, 78, 216, 0.95)),
+                url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain-light" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="rgba(255,255,255,0.4)"/><circle cx="75" cy="75" r="1" fill="rgba(255,255,255,0.4)"/><circle cx="50" cy="10" r="0.5" fill="rgba(255,255,255,0.35)"/><circle cx="10" cy="50" r="0.5" fill="rgba(255,255,255,0.35)"/><circle cx="90" cy="50" r="0.5" fill="rgba(255,255,255,0.35)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain-light)"/></svg>');
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.6);
+}
+
+/* Banner styles for dark theme - enhance dark styling */
+body.dark-mode .banner {
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(30, 41, 59, 0.95)),
+                url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain-dark" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="rgba(255,255,255,0.15)"/><circle cx="75" cy="75" r="1" fill="rgba(255,255,255,0.15)"/><circle cx="50" cy="10" r="0.5" fill="rgba(255,255,255,0.12)"/><circle cx="10" cy="50" r="0.5" fill="rgba(255,255,255,0.12)"/><circle cx="90" cy="50" r="0.5" fill="rgba(255,255,255,0.12)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain-dark)"/></svg>');
+    color: var(--text-primary, #f8fafc);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* Banner styles for retro dark theme - cyberpunk styling */
+body.retro-dark .banner {
+    background: linear-gradient(135deg, rgba(10, 10, 26, 0.98), rgba(26, 10, 46, 0.95)),
+                url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain-retro" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="rgba(0,255,255,0.2)"/><circle cx="75" cy="75" r="1" fill="rgba(255,0,255,0.2)"/><circle cx="50" cy="10" r="0.5" fill="rgba(0,255,255,0.15)"/><circle cx="10" cy="50" r="0.5" fill="rgba(255,0,255,0.15)"/><circle cx="90" cy="50" r="0.5" fill="rgba(255,0,255,0.15)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain-retro)"/></svg>');
+    color: var(--text-primary, #00ffff);
+    border: 1px solid rgba(128, 0, 255, 0.5);
+    box-shadow: 0 8px 32px rgba(128, 0, 255, 0.3);
 }
 
 .banner::before {
@@ -351,7 +400,7 @@ body.dark-mode .navbar-brand {
     font-size: 1.8rem;
     margin-bottom: 8px;
     font-weight: 700;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
     position: relative;
     z-index: 1;
 }
@@ -361,11 +410,38 @@ body.dark-mode .navbar-brand {
     opacity: 0.95;
     font-weight: 500;
     line-height: 1.4;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
     position: relative;
     z-index: 1;
     max-width: 800px;
     margin: 0 auto;
+}
+
+/* Enhanced text shadows for light theme */
+body:not(.dark-mode):not(.retro-dark) .banner h2 {
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+body:not(.dark-mode):not(.retro-dark) .banner p {
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.35), 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+
+/* Enhanced text shadows for dark theme */
+body.dark-mode .banner h2 {
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+body.dark-mode .banner p {
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* Cyberpunk glow effect for retro dark theme */
+body.retro-dark .banner h2 {
+    text-shadow: 0 0 10px rgba(0, 255, 255, 0.6), 0 2px 8px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+body.retro-dark .banner p {
+    text-shadow: 0 0 8px rgba(0, 255, 255, 0.4), 0 2px 6px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 /* Add some animated elements */
@@ -515,6 +591,20 @@ main {
     overflow: hidden;
 }
 
+/* Enhanced card contrast for light and retro light themes */
+body:not(.dark-mode):not(.retro-dark) .card {
+    background: linear-gradient(135deg, var(--bg-secondary) 0%, rgba(255, 255, 255, 0.95) 100%);
+    border: 2px solid var(--border-color);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* Retro light theme card improvements */
+body.retro-light .card {
+    background: linear-gradient(135deg, rgba(255, 245, 200, 0.95) 0%, rgba(255, 248, 225, 0.98) 100%);
+    border: 2px solid rgba(255, 107, 53, 0.3);
+    box-shadow: 0 4px 6px -1px rgba(255, 107, 53, 0.2), 0 2px 4px -1px rgba(255, 107, 53, 0.15);
+}
+
 /* Glass effect for retro themes */
 body.retro-dark .card,
 body.retro-light .card {
@@ -541,6 +631,18 @@ body.retro-light .card {
     margin-bottom: 10px;
     color: var(--text-primary);
     font-size: 1.5rem;
+    font-weight: 700;
+}
+
+/* Enhanced card text contrast for light themes */
+body:not(.dark-mode):not(.retro-dark) .card h2 {
+    color: #1a202c;
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+}
+
+body.retro-light .card h2 {
+    color: #2d3748;
+    text-shadow: 0 1px 2px rgba(255, 248, 225, 0.9);
 }
 
 .card-description {
@@ -548,11 +650,31 @@ body.retro-light .card {
     color: var(--text-secondary);
     font-size: 0.95rem;
     line-height: 1.4;
+    font-weight: 500;
+}
+
+/* Enhanced card description contrast for light themes */
+body:not(.dark-mode):not(.retro-dark) .card-description {
+    color: #4a5568;
+}
+
+body.retro-light .card-description {
+    color: #4a5568;
 }
 
 .card h3 {
     margin-bottom: 15px;
     color: var(--text-primary);
+    font-weight: 600;
+}
+
+/* Enhanced card h3 contrast for light themes */
+body:not(.dark-mode):not(.retro-dark) .card h3 {
+    color: #2d3748;
+}
+
+body.retro-light .card h3 {
+    color: #2d3748;
 }
 
 .card-header {
@@ -574,11 +696,11 @@ body.retro-light .card {
     display: flex;
     align-items: center;
     min-height: 100vh;
-    background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #2d2d2d 100%);
+    background: var(--hero-bg);
     padding: 80px 0;
     position: relative;
     overflow: hidden;
-
+    transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .hero-section::before {
@@ -609,17 +731,14 @@ body.retro-light .card {
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
-/* Bright contrast colors for hero title across all themes */
-:root .hero-content h1 {
-    color: #1e40af; /* Bright blue for light theme */
+/* Theme-aware colors for hero title */
+.hero-content h1 {
+    color: var(--hero-text);
+    transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-body.dark-mode .hero-content h1 {
-    color: #60a5fa; /* Bright blue for dark theme */
-}
-
+/* Retro themes get enhanced neon glow effects */
 body.retro-dark .hero-content h1 {
-    color: #00ffff; /* Electric cyan for retro dark */
     text-shadow:
         0 0 10px rgba(0, 255, 255, 0.8),
         0 0 20px rgba(0, 255, 255, 0.6),
@@ -629,13 +748,12 @@ body.retro-dark .hero-content h1 {
 }
 
 body.retro-light .hero-content h1 {
-    color: #ff6b35; /* Coral orange for retro light */
     text-shadow:
         0 0 10px rgba(255, 107, 53, 0.8),
         0 0 20px rgba(255, 107, 53, 0.6),
         0 0 30px rgba(255, 107, 53, 0.4),
         0 2px 4px rgba(0, 0, 0, 0.3);
-    animation: neonGlow 2s ease-in-out infinite alternate;
+    animation: neonGlowOrange 2s ease-in-out infinite alternate;
 }
 
 @keyframes neonGlow {
@@ -1136,6 +1254,19 @@ body.retro-light .hero-content h1 {
     position: relative;
 }
 
+/* Enhanced menu item card contrast for light themes */
+body:not(.dark-mode):not(.retro-dark) .menu-item-card {
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    border: 2px solid #e2e8f0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+body.retro-light .menu-item-card {
+    background: linear-gradient(135deg, rgba(255, 248, 225, 0.95) 0%, rgba(255, 245, 200, 0.98) 100%);
+    border: 2px solid rgba(255, 107, 53, 0.3);
+    box-shadow: 0 2px 4px rgba(255, 107, 53, 0.2);
+}
+
 .menu-item-card::before {
     content: '';
     position: absolute;
@@ -1223,11 +1354,31 @@ body.retro-light .hero-content h1 {
     font-size: 1.1rem;
 }
 
+/* Enhanced menu item name contrast for light themes */
+body:not(.dark-mode):not(.retro-dark) .menu-item-name {
+    color: #2d3748;
+}
+
+body.retro-light .menu-item-name {
+    color: #2d3748;
+}
+
 .menu-item-price {
     color: var(--primary-color);
     font-weight: 700;
     font-size: 1.1rem;
     text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+}
+
+/* Enhanced menu item price to match menu item name color */
+body:not(.dark-mode):not(.retro-dark) .menu-item-price {
+    color: #2d3748;
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+}
+
+body.retro-light .menu-item-price {
+    color: #2d3748;
+    text-shadow: 0 1px 2px rgba(255, 248, 225, 0.8);
 }
 
 .menu-item-category {
@@ -1238,6 +1389,20 @@ body.retro-light .hero-content h1 {
     font-size: 0.85rem;
     color: var(--text-secondary);
     margin-bottom: 10px;
+    font-weight: 500;
+}
+
+/* Enhanced menu item category to match menu item name color */
+body:not(.dark-mode):not(.retro-dark) .menu-item-category {
+    background-color: #f1f5f9;
+    color: #2d3748;
+    border: 1px solid #e2e8f0;
+}
+
+body.retro-light .menu-item-category {
+    background-color: rgba(255, 245, 200, 0.8);
+    color: #2d3748;
+    border: 1px solid rgba(255, 107, 53, 0.3);
 }
 
 .menu-item-images {
@@ -1712,6 +1877,19 @@ tr:hover td {
     box-shadow: var(--shadow-sm);
 }
 
+/* Enhanced hotel selection card contrast for light themes */
+body:not(.dark-mode):not(.retro-dark) .hotel-selection-card {
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    border: 2px solid #e2e8f0;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+body.retro-light .hotel-selection-card {
+    background: linear-gradient(135deg, rgba(255, 248, 225, 0.95) 0%, rgba(255, 245, 200, 0.98) 100%);
+    border: 2px solid rgba(255, 107, 53, 0.3);
+    box-shadow: 0 4px 6px rgba(255, 107, 53, 0.2);
+}
+
 .hotel-selection-card:hover {
     border-color: var(--primary-color);
     box-shadow: var(--shadow-md);
@@ -1745,6 +1923,15 @@ tr:hover td {
     color: var(--text-primary);
 }
 
+/* Enhanced hotel name contrast for light themes */
+body:not(.dark-mode):not(.retro-dark) .hotel-name {
+    color: #2d3748;
+}
+
+body.retro-light .hotel-name {
+    color: #2d3748;
+}
+
 .selection-indicator {
     background-color: var(--primary-color);
     color: white;
@@ -1753,6 +1940,17 @@ tr:hover td {
     font-size: 0.8rem;
     font-weight: 600;
     text-transform: uppercase;
+}
+
+/* Enhanced selection indicator contrast for light themes */
+body:not(.dark-mode):not(.retro-dark) .selection-indicator {
+    background: #2563eb;
+    color: white;
+}
+
+body.retro-light .selection-indicator {
+    background: #ff6b35;
+    color: white;
 }
 
 .hotel-details {
@@ -1779,10 +1977,28 @@ tr:hover td {
     font-size: 0.9rem;
 }
 
+/* Enhanced stat label contrast for light themes */
+body:not(.dark-mode):not(.retro-dark) .stat-label {
+    color: #4a5568;
+}
+
+body.retro-light .stat-label {
+    color: #4a5568;
+}
+
 .stat-value {
     font-weight: 600;
     color: var(--text-primary);
     font-size: 0.9rem;
+}
+
+/* Enhanced stat value contrast for light themes */
+body:not(.dark-mode):not(.retro-dark) .stat-value {
+    color: #2d3748;
+}
+
+body.retro-light .stat-value {
+    color: #2d3748;
 }
 
 .hotel-selection-card input[type="checkbox"] {
@@ -1793,16 +2009,32 @@ tr:hover td {
 }
 
 .hotel-management-card {
-    background-color: var(--bg-primary);
+    background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
     border-radius: 12px;
-    padding: 25px;
+    padding: 16px;
     box-shadow: var(--shadow-md);
-    border: 1px solid var(--border-color);
-    transition: all 0.2s;
+    border: 1px solid rgba(255,255,255,0.2);
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+    margin-bottom: 15px;
+}
+
+/* Enhanced hotel management card contrast for light themes */
+body:not(.dark-mode):not(.retro-dark) .hotel-management-card {
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    border: 2px solid #e2e8f0;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+body.retro-light .hotel-management-card {
+    background: linear-gradient(135deg, rgba(255, 248, 225, 0.95) 0%, rgba(255, 245, 200, 0.98) 100%);
+    border: 2px solid rgba(255, 107, 53, 0.3);
+    box-shadow: 0 4px 6px rgba(255, 107, 53, 0.2);
 }
 
 .hotel-management-card:hover {
-    box-shadow: var(--shadow-lg);
+    background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.1) 100%);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
     transform: translateY(-2px);
 }
 
@@ -1810,67 +2042,151 @@ tr:hover td {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
+    margin-bottom: 15px;
     flex-wrap: wrap;
-    gap: 15px;
+    gap: 12px;
 }
 
 .hotel-header h3 {
-    margin: 0 0 5px 0;
-    color: var(--text-primary);
-    font-size: 1.4rem;
+    margin: 0 0 4px 0;
+    color: white;
+    font-size: 1.1rem;
+    font-weight: 600;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+
+/* Enhanced hotel header text contrast for light themes */
+body:not(.dark-mode):not(.retro-dark) .hotel-header h3 {
+    color: #2d3748;
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+}
+
+body.retro-light .hotel-header h3 {
+    color: #2d3748;
+    text-shadow: 0 1px 2px rgba(255, 248, 225, 0.9);
+}
+
+.hotel-info {
+    flex: 1;
 }
 
 .hotel-item-count {
-    font-size: 0.9rem;
+    font-size: 0.75rem;
     font-weight: 500;
-    color: var(--text-secondary);
-    background-color: var(--bg-tertiary);
+    color: rgba(255,255,255,0.9);
+    background: rgba(255,255,255,0.2);
     padding: 2px 8px;
     border-radius: 12px;
     margin-left: 8px;
+}
+
+/* Enhanced hotel item count to match hotel name color */
+body:not(.dark-mode):not(.retro-dark) .hotel-item-count {
+    color: #2d3748;
+    background: #e2e8f0;
+    border: 1px solid #cbd5e1;
+}
+
+body.retro-light .hotel-item-count {
+    color: #2d3748;
+    background: rgba(255, 245, 200, 0.8);
+    border: 1px solid rgba(255, 107, 53, 0.3);
 }
 
 .hotel-status {
     display: inline-block;
     padding: 4px 12px;
     border-radius: 15px;
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     font-weight: 600;
     text-transform: uppercase;
 }
 
 .hotel-status.selected {
-    background-color: var(--secondary-color);
+    background: linear-gradient(135deg, #4caf50, #45a049);
     color: white;
+    border: 1px solid rgba(76, 175, 80, 0.3);
 }
 
 .hotel-status.not-selected {
-    background-color: var(--text-tertiary);
-    color: var(--bg-primary);
+    background: rgba(255,255,255,0.2);
+    color: rgba(255,255,255,0.9);
+    border: 1px solid rgba(255,255,255,0.3);
+}
+
+/* Enhanced hotel status contrast for light themes */
+body:not(.dark-mode):not(.retro-dark) .hotel-status.selected {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+body:not(.dark-mode):not(.retro-dark) .hotel-status.not-selected {
+    background: #f1f5f9;
+    color: #4a5568;
+    border: 1px solid #e2e8f0;
+}
+
+body.retro-light .hotel-status.selected {
+    background: linear-gradient(135deg, #ff6b35, #e55a2b);
+    color: white;
+    border: 1px solid rgba(255, 107, 53, 0.3);
+}
+
+body.retro-light .hotel-status.not-selected {
+    background: rgba(255, 245, 200, 0.8);
+    color: #4a5568;
+    border: 1px solid rgba(255, 107, 53, 0.3);
+}
+
+.hotel-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
 }
 
 .hotel-management-card .btn {
-    margin: 2px;
+    margin: 0;
+    padding: 6px 12px;
+    font-size: 0.75rem;
+    border-radius: 6px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.hotel-management-card .btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
 
 .menu-items-grid-admin {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 15px;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 12px;
+    margin-top: 15px;
 }
 
 .menu-item-admin-card {
-    background-color: var(--bg-secondary);
-    border: 1px solid var(--border-color);
+    background: rgba(255,255,255,0.1);
+    background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
+    border: 1px solid rgba(255,255,255,0.2);
+    border-left: 3px solid rgb(124, 190, 235);
     border-radius: 8px;
-    padding: 15px;
-    transition: all 0.2s;
+    padding: 12px;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(5px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    color: rgb(124, 190, 235);
+
 }
 
 .menu-item-admin-card:hover {
-    border-color: var(--primary-color);
-    box-shadow: var(--shadow-sm);
+    background: rgba(255,255,255,0.15);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    border-color: rgba(255,255,255,0.3);
+    border-left: 3px solid rgb(21, 5, 243);
 }
 
 .menu-item-admin-header {
@@ -1881,24 +2197,28 @@ tr:hover td {
 }
 
 .menu-item-admin-header strong {
-    color: var(--text-primary);
-    font-size: 1.1rem;
+    color: rgb(4, 6, 32);
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
 }
 
 .menu-item-price {
-    color: var(--primary-color);
+    color: #4facfe;
     font-weight: 700;
-    font-size: 1rem;
+    font-size: 0.9rem;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
 }
 
 .menu-item-admin-category {
     display: inline-block;
-    padding: 4px 10px;
-    background-color: var(--bg-tertiary);
-    border-radius: 15px;
-    font-size: 0.85rem;
-    color: var(--text-secondary);
-    margin-bottom: 10px;
+    padding: 3px 8px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 12px;
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.9);
+    margin-bottom: 8px;
+    border: 1px solid rgba(255,255,255,0.3);
 }
 
 .menu-item-admin-status {
@@ -1908,21 +2228,25 @@ tr:hover td {
 }
 
 .menu-item-admin-status.available {
-    color: var(--success-color);
-    background-color: rgba(16, 185, 129, 0.1);
-    padding: 4px 8px;
-    border-radius: 12px;
+    color: #10b981;
+    background: rgba(16, 185, 129, 0.2);
+    padding: 3px 8px;
+    border-radius: 10px;
     font-weight: 600;
-    border: 1px solid rgba(16, 185, 129, 0.3);
+    font-size: 0.75rem;
+    border: 1px solid rgba(16, 185, 129, 0.4);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
 }
 
 .menu-item-admin-status.unavailable {
-    color: var(--text-tertiary);
-    background-color: rgba(156, 163, 175, 0.1);
-    padding: 4px 8px;
-    border-radius: 12px;
+    color: rgba(255,255,255,0.7);
+    background: rgba(156, 163, 175, 0.2);
+    padding: 3px 8px;
+    border-radius: 10px;
     font-weight: 600;
-    border: 1px solid rgba(156, 163, 175, 0.3);
+    font-size: 0.75rem;
+    border: 1px solid rgba(156, 163, 175, 0.4);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
 }
 
 /* Theme-specific button colors */
@@ -2030,6 +2354,19 @@ body.retro-light .menu-item-admin-status.unavailable {
     position: relative;
 }
 
+/* Enhanced popular item card contrast for light themes */
+body:not(.dark-mode):not(.retro-dark) .popular-item-card {
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    border: 2px solid #e2e8f0;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+body.retro-light .popular-item-card {
+    background: linear-gradient(135deg, rgba(255, 248, 225, 0.95) 0%, rgba(255, 245, 200, 0.98) 100%);
+    border: 2px solid rgba(255, 107, 53, 0.3);
+    box-shadow: 0 4px 8px rgba(255, 107, 53, 0.2);
+}
+
 .popular-item-card:hover {
     transform: translateY(-8px) scale(1.02);
     box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
@@ -2092,6 +2429,15 @@ body.retro-light .menu-item-admin-status.unavailable {
     line-height: 1.3;
 }
 
+/* Enhanced popular item h4 contrast for light themes */
+body:not(.dark-mode):not(.retro-dark) .popular-item-info h4 {
+    color: #2d3748;
+}
+
+body.retro-light .popular-item-info h4 {
+    color: #2d3748;
+}
+
 .popular-item-details {
     display: flex;
     justify-content: space-between;
@@ -2105,9 +2451,27 @@ body.retro-light .menu-item-admin-status.unavailable {
     font-weight: 500;
 }
 
+/* Enhanced popular item hotel to match popular item name color */
+body:not(.dark-mode):not(.retro-dark) .popular-item-hotel {
+    color: #2d3748;
+}
+
+body.retro-light .popular-item-hotel {
+    color: #2d3748;
+}
+
 .popular-item-price {
     color: var(--primary-color);
     font-weight: 600;
+}
+
+/* Enhanced popular item price to match popular item name color */
+body:not(.dark-mode):not(.retro-dark) .popular-item-price {
+    color: #2d3748;
+}
+
+body.retro-light .popular-item-price {
+    color: #2d3748;
 }
 
 .popular-item-count {
@@ -2137,8 +2501,9 @@ body.retro-light .menu-item-admin-status.unavailable {
 /* FEATURED SECTION */
 .featured-section {
     padding: 80px 0;
-    background: linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%);
+    background: var(--featured-bg);
     position: relative;
+    transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .featured-section::before {
@@ -2161,8 +2526,9 @@ body.retro-light .menu-item-admin-status.unavailable {
 .section-header h2 {
     font-size: 2.5rem;
     margin-bottom: 15px;
-    color: var(--text-primary);
+    color: var(--featured-text);
     font-weight: 700;
+    transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .section-header p {
@@ -4910,6 +5276,365 @@ tr.completed .order-checkbox {
     transform: scale(1.2);
 }
 
+/* COMPACT HOTEL SELECTION STYLES */
+.hotel-selection-compact {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    border-radius: 15px;
+    padding: 20px;
+    margin: 15px 0;
+    color: rgb(59, 158, 197);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Enhanced compact hotel selection contrast for light themes */
+body:not(.dark-mode):not(.retro-dark) .hotel-selection-compact {
+    background: linear-gradient(135deg, #e2e8f0 0%, #f1f5f9 100%);
+    border: 2px solid #cbd5e1;
+    color: #2d3748;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+body.retro-light .hotel-selection-compact {
+    background: linear-gradient(135deg, rgba(255, 248, 225, 0.95) 0%, rgba(255, 245, 200, 0.98) 100%);
+    border: 2px solid rgba(255, 107, 53, 0.3);
+    color: #2d3748;
+    box-shadow: 0 4px 6px rgba(255, 107, 53, 0.2);
+}
+
+.hotel-selection-compact::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 100px;
+    height: 100px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 50%;
+    transform: translate(30px, -30px);
+}
+
+.hotel-selection-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    position: relative;
+    z-index: 1;
+}
+
+.hotel-selection-title {
+    font-size: 1.3em;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+    color: var(--text-primary);
+}
+
+/* Enhanced hotel selection title contrast for light themes */
+body:not(.dark-mode):not(.retro-dark) .hotel-selection-title {
+    color: #2d3748;
+}
+
+body.retro-light .hotel-selection-title {
+    color: #2d3748;
+}
+
+/* Compact hotel selection title improvements */
+body:not(.dark-mode):not(.retro-dark) .hotel-selection-compact .hotel-selection-title {
+    color: #2d3748;
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+}
+
+body.retro-light .hotel-selection-compact .hotel-selection-title {
+    color: #2d3748;
+    text-shadow: 0 1px 2px rgba(255, 248, 225, 0.9);
+}
+
+.hotel-count-badge {
+    background: rgba(255,255,255,0.2);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.8em;
+    font-weight: 500;
+    border: 1px solid rgba(255,255,255,0.3);
+}
+
+.hotel-grid-compact {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 15px;
+    position: relative;
+    z-index: 1;
+}
+
+.hotel-card-compact {
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 12px;
+    padding: 16px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.hotel-card-compact:hover {
+    background: rgba(255,255,255,0.25);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.hotel-card-compact.selected {
+    background: rgba(76, 175, 80, 0.3);
+    border-color: #4caf50;
+    box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+}
+
+.hotel-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.hotel-info-compact {
+    flex: 1;
+}
+
+.hotel-name-compact {
+    font-size: 1.1em;
+    font-weight: 600;
+    margin: 0 0 4px 0;
+    color: rgb(10, 6, 6);
+}
+
+/* Enhanced compact hotel name contrast for light themes */
+body:not(.dark-mode):not(.retro-dark) .hotel-name-compact {
+    color: #2d3748;
+}
+
+body.retro-light .hotel-name-compact {
+    color: #2d3748;
+}
+
+.hotel-meta-compact {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85em;
+    opacity: 0.9;
+}
+
+/* Enhanced compact hotel meta contrast for light themes */
+body:not(.dark-mode):not(.retro-dark) .hotel-meta-compact {
+    color: #4a5568;
+    opacity: 1;
+}
+
+body.retro-light .hotel-meta-compact {
+    color: #4a5568;
+    opacity: 1;
+}
+
+.hotel-type-badge {
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.75em;
+    font-weight: 500;
+}
+
+.hotel-type-veg {
+    background: rgba(76, 175, 80, 0.8);
+    color: white;
+}
+
+.hotel-type-non-veg {
+    background: rgba(255, 87, 34, 0.8);
+    color: white;
+}
+
+.hotel-status-compact {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.hotel-status-compact.selected {
+    background: #4caf50;
+    border-color: #4caf50;
+    color: white;
+}
+
+.hotel-rating-compact {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.8em;
+    margin-top: 8px;
+    opacity: 0.8;
+}
+
+/* Enhanced hotel rating to match hotel name color */
+body:not(.dark-mode):not(.retro-dark) .hotel-rating-compact {
+    color: #2d3748;
+    opacity: 1;
+}
+
+body.retro-light .hotel-rating-compact {
+    color: #2d3748;
+    opacity: 1;
+}
+
+.hotel-selection-footer {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid rgba(255,255,255,0.2);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    z-index: 1;
+}
+
+.selection-summary {
+    font-size: 0.9em;
+    opacity: 0.9;
+}
+
+body:not(.dark-mode):not(.retro-dark) .hotel-count-badge {
+    background: rgba(255,255,255,0.2);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.8em;
+    font-weight: 500;
+    border: 1px solid rgba(255,255,255,0.3);
+    color: #2d3748;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Enhanced selection summary contrast for light themes */
+body:not(.dark-mode):not(.retro-dark) .selection-summary {
+    color: #4a5568;
+    opacity: 1;
+}
+
+body.retro-light .selection-summary {
+    color: #4a5568;
+    opacity: 1;
+}
+
+.selection-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.selection-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.85em;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.selection-btn-primary {
+    background: rgba(255,255,255,0.2);
+    color: white;
+    border: 1px solid rgba(255,255,255,0.3);
+}
+
+.selection-btn-primary:hover {
+    background: rgba(255,255,255,0.3);
+}
+
+.selection-btn-success {
+    background: #4caf50;
+    color: white;
+    border: 1px solid #4caf50;
+}
+
+.selection-btn-success:hover {
+    background: #45a049;
+}
+
+/* Force compact design to override any conflicting styles */
+.hotel-selection-compact .hotel-grid-compact .hotel-card-compact {
+    background: rgba(255,255,255,0.15) !important;
+    border: 1px solid rgba(255,255,255,0.2) !important;
+    border-radius: 12px !important;
+    padding: 16px !important;
+    margin: 0 !important;
+    transition: all 0.3s ease !important;
+    cursor: pointer !important;
+    backdrop-filter: blur(10px) !important;
+    max-width: none !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+.hotel-selection-compact .hotel-grid-compact .hotel-card-compact:hover {
+    background: rgba(255,255,255,0.25) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+}
+
+.hotel-selection-compact .hotel-grid-compact .hotel-card-compact.selected {
+    background: rgba(76, 175, 80, 0.3) !important;
+    border-color: #4caf50 !important;
+    box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3) !important;
+}
+
+.hotel-selection-compact .hotel-grid-compact {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)) !important;
+    gap: 15px !important;
+}
+
+/* Ensure hotel selection list container doesn't override */
+#hotelSelectionList {
+    all: unset !important;
+    display: block !important;
+}
+
+#hotelSelectionList .hotel-grid-compact {
+    all: unset !important;
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)) !important;
+    gap: 15px !important;
+}
+
+/* Mobile Responsive Styles for Compact Cards */
+@media (max-width: 768px) {
+    .hotel-grid-compact {
+        grid-template-columns: 1fr;
+    }
+
+    .hotel-selection-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .hotel-selection-footer {
+        flex-direction: column;
+        gap: 15px;
+        align-items: stretch;
+    }
+
+    .selection-actions {
+        justify-content: center;
+    }
+}
+
 /* SCROLLBAR STYLING */
 ::-webkit-scrollbar {
     width: 10px;
@@ -4996,7 +5721,6 @@ tr.completed .order-checkbox {
 .toast {
     padding: 16px 24px;
     border-radius: 12px;
-    color: white;
     font-weight: 600;
     font-size: 0.95rem;
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1);
@@ -5012,10 +5736,26 @@ tr.completed .order-checkbox {
 
 .toast-success {
     background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+    color: #ffffff; /* White text on green background for good contrast */
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .toast-error {
     background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
+    color: #ffffff; /* White text on red background for good contrast */
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.toast-info {
+    background: linear-gradient(135deg, #3B82F6 0%, #1E40AF 100%);
+    color: #ffffff; /* White text on blue background for good contrast */
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.toast-warning {
+    background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+    color: #ffffff; /* White text on amber background for good contrast */
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .toast-hide {
@@ -6559,6 +7299,41 @@ tr.completed .order-checkbox {
     transform: translateY(-1px);
 }
 
+/* Special gradient styling for the Tools tab */
+.tab-button[data-tab="email-verification-tab"] {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    position: relative;
+    overflow: hidden;
+}
+
+.tab-button[data-tab="email-verification-tab"]::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: -1;
+}
+
+.tab-button[data-tab="email-verification-tab"]:hover::before {
+    opacity: 1;
+}
+
+.tab-button[data-tab="email-verification-tab"].active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    transform: translateY(-2px);
+}
+
+.tab-button[data-tab="email-verification-tab"].active::before {
+    opacity: 1;
+}
+
 .tab-button.active::before {
     opacity: 1;
 }
@@ -7630,6 +8405,255 @@ tr.completed .order-checkbox {
 
 .search-input::placeholder {
     color: var(--text-tertiary);
+}
+
+/* Compact Hotel Selection Styles */
+.hotel-selection-compact {
+    background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 16px;
+    padding: 24px;
+    margin: 20px 0;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+}
+
+.hotel-selection-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.hotel-selection-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: white;
+    margin: 0;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.hotel-count-badge {
+    background: rgba(255,255,255,0.2);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    border: 1px solid rgba(255,255,255,0.3);
+}
+
+.hotel-grid-compact {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.hotel-card-compact {
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 12px;
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+    position: relative;
+    overflow: hidden;
+}
+
+.hotel-card-compact:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+    background: rgba(255,255,255,0.2);
+}
+
+.hotel-card-compact.selected {
+    background: rgba(76, 175, 80, 0.2);
+    border-color: rgba(76, 175, 80, 0.4);
+    box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.3);
+}
+
+.hotel-card-compact.selected::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #4caf50, #45a049);
+}
+
+.hotel-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.hotel-info-compact {
+    flex: 1;
+    min-width: 0;
+}
+
+.hotel-name-compact {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: white;
+    margin: 0 0 8px 0;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    word-break: break-word;
+}
+
+.hotel-meta-compact {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    color: rgba(255,255,255,0.8);
+    margin-bottom: 4px;
+}
+
+.hotel-type-badge {
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    border: 1px solid rgba(255,255,255,0.3);
+}
+
+.hotel-type-veg {
+    background: rgba(76, 175, 80, 0.2);
+    color: #81c784;
+}
+
+.hotel-type-non-veg {
+    background: rgba(244, 67, 54, 0.2);
+    color: #ef5350;
+}
+
+.hotel-rating-compact {
+    font-size: 0.8rem;
+    color: rgba(255,255,255,0.9);
+    margin: 0;
+}
+
+.hotel-status-compact {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255,255,255,0.2);
+    border: 1px solid rgba(255,255,255,0.3);
+    transition: all 0.3s ease;
+}
+
+.hotel-status-compact.selected {
+    background: #4caf50;
+    border-color: #4caf50;
+    transform: scale(1.1);
+}
+
+.status-icon {
+    font-size: 14px;
+    color: white;
+    font-weight: bold;
+    line-height: 1;
+}
+
+.hotel-selection-footer {
+    border-top: 1px solid rgba(255,255,255,0.2);
+    padding-top: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+}
+
+.selection-summary {
+    flex: 1;
+    color: rgba(255,255,255,0.9);
+    font-size: 0.9rem;
+}
+
+.selection-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.selection-btn {
+    padding: 10px 20px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-radius: 8px;
+    background: rgba(255,255,255,0.1);
+    color: white;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.selection-btn:hover {
+    background: rgba(255,255,255,0.2);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.selection-btn-primary {
+    background: rgba(59, 130, 246, 0.8);
+    border-color: rgba(59, 130, 246, 1);
+}
+
+.selection-btn-primary:hover {
+    background: rgba(59, 130, 246, 1);
+}
+
+.selection-btn-success {
+    background: rgba(34, 197, 94, 0.8);
+    border-color: rgba(34, 197, 94, 1);
+}
+
+.selection-btn-success:hover {
+    background: rgba(34, 197, 94, 1);
+}
+
+/* Responsive adjustments for compact hotel selection */
+@media (max-width: 768px) {
+    .hotel-selection-compact {
+        padding: 16px;
+        margin: 16px 0;
+    }
+
+    .hotel-grid-compact {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .hotel-card-compact {
+        padding: 12px;
+    }
+
+    .hotel-selection-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .hotel-selection-footer {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+    }
+
+    .selection-actions {
+        justify-content: center;
+    }
 }
 
 /* Enhanced User Card Hover Effects */
