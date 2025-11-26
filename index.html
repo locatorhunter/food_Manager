@@ -101,15 +101,46 @@
     <script>
         // Initialize popular items on home page
         document.addEventListener('DOMContentLoaded', function() {
-            // Check authentication status
-            const user = window.authService ? window.authService.getCurrentUser() : null;
-            if (!user) {
-                // Redirect to login if not authenticated
-                window.location.href = 'login.html';
-                return;
-            }
+            // Wait for auth service to be ready and check authentication status
+            const checkAuth = () => {
+                const user = window.authService ? window.authService.getCurrentUser() : null;
+                if (!user) {
+                    // Redirect to login if not authenticated
+                    window.location.href = 'login.html';
+                    return;
+                }
 
-            displayPopularItems();
+                displayPopularItems();
+            };
+
+            // Listen for auth state changes
+            const unsubscribe = window.auth && window.auth.onAuthStateChanged((user) => {
+                if (user) {
+                    // User is signed in, check if we have user data
+                    const checkUserData = () => {
+                        const currentUser = window.authService ? window.authService.getCurrentUser() : null;
+                        if (currentUser) {
+                            displayPopularItems();
+                        } else {
+                            // Wait a bit for user data to be loaded
+                            setTimeout(checkUserData, 500);
+                        }
+                    };
+                    checkUserData();
+                } else {
+                    // User is signed out
+                    window.location.href = 'login.html';
+                }
+                // Unsubscribe after first check
+                if (unsubscribe) unsubscribe();
+            });
+
+            // Also check immediately in case auth state already loaded
+            setTimeout(() => {
+                if (window.authService && window.authService.getCurrentUser()) {
+                    displayPopularItems();
+                }
+            }, 100);
         });
     </script>
 </body>

@@ -11,6 +11,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-functions-compat.js"></script>
     <script>
         // Firebase configuration
         const firebaseConfig = {
@@ -33,6 +34,7 @@
         window.firebaseDB = database;
         window.auth = auth;
         window.db = db;
+        window.functions = firebase.functions();
         window.firebaseRef = (path) => database.ref(path);
         window.firebaseSet = (ref, data) => ref.set(data);
         window.firebaseGet = (ref) => ref.once('value');
@@ -513,12 +515,12 @@
     </div>
 
 
-    <script src="js/modal.js?v=1.0.3"></script>
-    <script src="js/storage.js?v=1.0.3"></script>
-    <script src="js/utils.js?v=1.0.3"></script>
-    <script src="js/common.js?v=1.0.3"></script>
-    <script src="js/auth.js?v=1.0.0"></script>
-    <script src="js/admin.js?v=1.0.3"></script>
+    <script src="js/modal.js?v=1.0.4"></script>
+    <script src="js/storage.js?v=1.0.4"></script>
+    <script src="js/utils.js?v=1.0.4"></script>
+    <script src="js/common.js?v=1.0.4"></script>
+    <script src="js/auth.js?v=1.0.1"></script>
+    <script src="js/admin.js?v=1.0.4"></script>
     <script>
         // Admin page authentication check
         document.addEventListener('DOMContentLoaded', function() {

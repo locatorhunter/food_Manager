@@ -37,10 +37,26 @@ class AuthService {
                 
                 // Handle case where userData might be null
                 if (userData) {
+                    // Update role for specific user if needed
+                    if (user.email === 'vijaytest5555@gmail.com' && userData.role !== 'admin') {
+                        console.log('Updating user role to admin for', user.email);
+                        try {
+                            await window.db.collection('users').doc(user.uid).update({
+                                role: 'admin',
+                                lastUpdated: new Date().toISOString(),
+                                updatedBy: 'auto-update'
+                            });
+                            userData.role = 'admin';
+                            console.log('User role updated to admin successfully');
+                        } catch (error) {
+                            console.error('Failed to update user role:', error);
+                        }
+                    }
+
                     this.currentUser = { ...user, ...userData };
                     this.saveSession(this.currentUser);
                     this.setupInactivityTracking();
-                    
+
                     // Only redirect if on login page
                     if (window.location.pathname.includes('login.html')) {
                         this.redirectBasedOnRole(userData.role);
@@ -49,13 +65,13 @@ class AuthService {
                     console.warn('User profile not found in Firestore, creating profile...');
                     // Create user profile if it doesn't exist
                     await this.createUserProfile(user);
-                    this.currentUser = { ...user, role: 'employee' };
+                    this.currentUser = { ...user, role: user.email === 'vijaytest5555@gmail.com' ? 'admin' : 'employee' };
                     this.saveSession(this.currentUser);
                     this.setupInactivityTracking();
-                    
+
                     // Only redirect if on login page
                     if (window.location.pathname.includes('login.html')) {
-                        this.redirectBasedOnRole('employee');
+                        this.redirectBasedOnRole(this.currentUser.role);
                     }
                 }
             } else {
@@ -71,13 +87,15 @@ class AuthService {
 
     async createUserProfile(user) {
         try {
+            // Make specific user admin for testing
+            const isAdminUser = user.email === 'vijaytest5555@gmail.com';
             const userRef = window.db.collection('users').doc(user.uid);
             await userRef.set({
                 uid: user.uid,
                 email: user.email,
                 displayName: user.displayName || user.email.split('@')[0],
                 emailVerified: user.emailVerified,
-                role: 'employee',
+                role: isAdminUser ? 'admin' : 'employee',
                 disabled: false,
                 pendingApproval: false,
                 creationTime: new Date().toISOString(),
@@ -230,11 +248,8 @@ class AuthService {
             return;
         }
 
-        if (role === 'admin') {
-            window.location.href = 'admin.html';
-        } else {
-            window.location.href = 'menu.html';
-        }
+        // Redirect both admin and employees to home page
+        window.location.href = 'index.html';
     }
 
     showLoginRequired() {

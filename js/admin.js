@@ -2,6 +2,15 @@
 // Admin Page Functionality
 // ========================================
 
+console.log('Admin.js loaded - checking function exposure...');
+
+// Cache busting - force reload of latest code
+const CACHE_BUSTER = '?v=' + Date.now();
+if (window.location.href.includes('admin.html') && !sessionStorage.getItem('adminJsUpdated')) {
+    sessionStorage.setItem('adminJsUpdated', 'true');
+    console.log('Cache busting admin.js - forcing latest version');
+}
+
 let selectedHotelIds = [];
 let currentHotelFilters = {
     search: '',
@@ -1080,12 +1089,16 @@ async function refreshUserData() {
             refreshIndicator.classList.add('syncing');
         }
         
-        // Refresh all user data
+        console.log('Starting user data refresh...');
+        
+        // Force clear any cached data and refresh all user data
         await Promise.all([
             displayUsersManagement(),
             displayUserStatistics(),
             displayPendingApprovals()
         ]);
+        
+        console.log('User data refresh completed successfully');
         
         // Update refresh indicator
         if (refreshIndicator) {
@@ -1099,6 +1112,12 @@ async function refreshUserData() {
     } catch (error) {
         console.error('Error refreshing user data:', error);
         showToast('Error refreshing data. Please try again.', 'error');
+        
+        // Show error state in the UI
+        const errorContainer = document.getElementById('usersManagement');
+        if (errorContainer && !errorContainer.querySelector('.error-container')) {
+            showErrorState(errorContainer, 'Failed to load user data');
+        }
     } finally {
         isLoadingUsers = false;
     }
@@ -1256,10 +1275,12 @@ async function getAllUsers() {
     try {
         // Check if Firebase is available
         if (!window.db) {
-            console.warn('Firebase not available, returning empty user list');
+            console.warn('Firestore not available, returning empty user list');
             return [];
         }
 
+        console.log('Fetching users from Firestore...');
+        
         // Get users from Firestore (client-side approach)
         const usersRef = window.db.collection('users');
         const snapshot = await usersRef.get();
@@ -1273,27 +1294,34 @@ async function getAllUsers() {
         return users;
     } catch (error) {
         console.error('Error getting users from Firestore:', error);
+        console.error('Error code:', error.code);
+        console.error('Error message:', error.message);
         
-        // Fallback to Firebase Realtime Database if Firestore fails
-        try {
-            if (!window.firebaseRef || !window.firebaseGet) {
-                throw new Error('Firebase Realtime Database not available');
-            }
+        // If Firestore fails due to permission or unavailability, try Realtime Database as fallback
+        if (error.code === 'permission-denied' || error.code === 'unavailable' || error.code === 'failed-precondition') {
+            console.log('Firestore failed, trying Realtime Database as fallback...');
             
-            const usersRef = firebaseRef('users');
-            const snapshot = await firebaseGet(usersRef);
-            
-            if (snapshot.exists()) {
-                const usersData = snapshot.val();
-                const users = Object.entries(usersData).map(([uid, data]) => ({ uid, ...data }));
-                console.log(`Successfully loaded ${users.length} users from Realtime Database`);
-                return users;
+            try {
+                if (!window.firebaseRef || !window.firebaseGet) {
+                    throw new Error('Firebase Realtime Database not available');
+                }
+                
+                const usersRef = firebaseRef('users');
+                const snapshot = await firebaseGet(usersRef);
+                
+                if (snapshot.exists()) {
+                    const usersData = snapshot.val();
+                    const users = Object.entries(usersData).map(([uid, data]) => ({ uid, ...data }));
+                    console.log(`Successfully loaded ${users.length} users from Realtime Database fallback`);
+                    return users;
+                }
+            } catch (fallbackError) {
+                console.error('Fallback user fetch also failed:', fallbackError);
             }
-        } catch (fallbackError) {
-            console.error('Fallback user fetch also failed:', fallbackError);
         }
         
         // Return empty array if all attempts fail
+        console.log('All database attempts failed, returning empty user list');
         return [];
     }
 }
@@ -1310,54 +1338,6 @@ function setupUserForm() {
         e.preventDefault();
         await handleUserCreation();
     });
-}
-
-// Check if Firestore is available and properly configured
-async function checkFirestoreAvailability() {
-    try {
-        if (!window.db) {
-            console.warn('Firestore not initialized');
-            return false;
-        }
-
-        // Check if user is authenticated
-        if (!window.auth.currentUser) {
-            console.warn('User not authenticated - cannot access Firestore');
-            return false;
-        }
-
-        // Since the user reached the admin page, they passed authentication
-        // Try a basic Firestore operation to check if it's working
-        const testCollection = window.db.collection('users');
-        const testQuery = testCollection.limit(1);
-
-        // This will fail if Firestore is not enabled or rules block access
-        await testQuery.get();
-
-        console.log('Firestore is available and accessible');
-        return true;
-    } catch (error) {
-        console.error('Firestore availability check failed:', error);
-        console.error('Error code:', error.code);
-        console.error('Error message:', error.message);
-
-        // Check specific error types
-        if (error.code === 'permission-denied') {
-            console.warn('Firestore permission denied - check if Firestore is enabled and security rules are published');
-            return false;
-        } else if (error.code === 'unavailable') {
-            console.warn('Firestore service unavailable - may not be enabled yet');
-            return false;
-        } else if (error.code === 'failed-precondition') {
-            console.warn('Firestore not properly configured - database may still be provisioning');
-            return false;
-        } else if (error.code === 'not-found') {
-            console.warn('Firestore database not found - may not be created yet');
-            return false;
-        }
-
-        return false;
-    }
 }
 
 // Setup password strength checking for user creation form
@@ -1410,22 +1390,18 @@ function setupPasswordStrengthForUserForm() {
 
 // Handle user creation
 async function handleUserCreation() {
+    // Check admin authentication
+    const currentUser = window.authService ? window.authService.getCurrentUser() : null;
+    if (!currentUser || currentUser.role !== 'admin') {
+        showToast('Permission denied. Only admins can create users.', 'error');
+        return;
+    }
     const formData = getUserFormData();
 
     // Show status indicator
     showCreationStatus(true);
 
     try {
-        // Step 0: Check Firestore availability
-        updateCreationStatus(0, 'active');
-        const firestoreAvailable = await checkFirestoreAvailability();
-        if (!firestoreAvailable) {
-            showToast('❌ Firestore is not available. Please enable Firestore in your Firebase project first.', 'error');
-            updateCreationStatus(0, 'error');
-            return;
-        }
-        updateCreationStatus(0, 'completed');
-
         // Step 1: Validation
         updateCreationStatus(1, 'active');
         const validation = validateUserFormData(formData);
@@ -1439,25 +1415,47 @@ async function handleUserCreation() {
 
         showUserCreationLoading(true);
 
-        // Step 2: Check existing user
+        // Step 2: Create user directly in Firestore
         updateCreationStatus(2, 'active');
-        const existingUser = await checkExistingUser(formData.email);
-        if (existingUser) {
-            showToast('A user with this email already exists', 'error');
-            document.getElementById('userEmail').focus();
-            updateCreationStatus(2, 'error');
-            return;
-        }
+        const userId = btoa(formData.email).replace(/[^a-zA-Z0-9]/g, '').substring(0, 28);
+        
+        const userData = {
+            uid: userId,
+            email: formData.email,
+            displayName: formData.displayName,
+            role: formData.role,
+            department: formData.department || '',
+            employeeId: formData.employeeId || '',
+            emailVerified: true, // Assume verified since created by admin
+            disabled: formData.role === 'manager', // Managers need approval
+            pendingApproval: formData.role === 'manager',
+            creationTime: new Date().toISOString(),
+            lastLogin: null,
+            lastActivity: null,
+            createdBy: 'admin',
+            lastUpdated: new Date().toISOString(),
+            updatedBy: 'admin'
+        };
 
-        // Create user data
-        const userData = createUserDataObject(formData);
+        await window.db.collection('users').doc(userId).set(userData);
 
-        // Store user data in database
-        await saveUserToDatabase(userData);
-
-        // Handle role-specific logic
+        // If manager, create approval request
         if (formData.role === 'manager') {
-            await createManagerApprovalRequest(userData);
+            const approvalRequest = {
+                userId: userId,
+                email: formData.email,
+                displayName: formData.displayName,
+                role: formData.role,
+                department: formData.department || '',
+                employeeId: formData.employeeId || '',
+                requestTime: new Date().toISOString(),
+                status: 'pending',
+                reviewedBy: null,
+                reviewedAt: null,
+                notes: 'Created by admin - pending approval'
+            };
+
+            await window.db.collection('userApprovals').doc(userId).set(approvalRequest);
         }
 
         // Step 3: Complete
@@ -1574,87 +1572,6 @@ function highlightFormErrors(fieldErrors) {
     });
 }
 
-// Create user data object
-function createUserDataObject(formData) {
-    const now = new Date().toISOString();
-    const currentUser = window.authService ? window.authService.getCurrentUser() : null;
-
-    return {
-        email: formData.email,
-        displayName: formData.displayName,
-        role: formData.role,
-        department: formData.department || '',
-        employeeId: formData.employeeId || '',
-        emailVerified: false,
-        disabled: formData.role === 'manager', // Managers need approval
-        pendingApproval: formData.role === 'manager',
-        creationTime: now,
-        lastLogin: null,
-        lastActivity: null,
-        createdBy: currentUser ? currentUser.id : 'admin',
-        lastUpdated: now,
-        updatedBy: currentUser ? currentUser.id : 'admin'
-    };
-}
-
-// Save user to database
-async function saveUserToDatabase(userData) {
-    // Generate a unique ID for the user
-    const uid = generateUserId(userData.email);
-
-    // Store in Firestore first (preferred)
-    try {
-        await window.db.collection('users').doc(uid).set({
-            ...userData,
-            uid: uid
-        });
-        console.log('User saved to Firestore:', uid);
-    } catch (firestoreError) {
-        console.warn('Firestore save failed, trying Realtime Database:', firestoreError);
-
-        // Fallback to Realtime Database
-        const usersRef = firebaseRef('users');
-        const newUserRef = firebasePush(usersRef);
-        await firebaseSet(newUserRef, {
-            ...userData,
-            uid: newUserRef.key
-        });
-        console.log('User saved to Realtime Database:', newUserRef.key);
-    }
-}
-
-// Generate unique user ID
-function generateUserId(email) {
-    // Create a hash-like ID from email for consistency
-    const hash = btoa(email).replace(/[^a-zA-Z0-9]/g, '').substring(0, 28);
-    return hash;
-}
-
-// Create approval request for managers
-async function createManagerApprovalRequest(userData) {
-    try {
-        const approvalRequest = {
-            userId: userData.uid || generateUserId(userData.email),
-            email: userData.email,
-            displayName: userData.displayName,
-            role: userData.role,
-            department: userData.department,
-            employeeId: userData.employeeId,
-            requestTime: new Date().toISOString(),
-            status: 'pending',
-            reviewedBy: null,
-            reviewedAt: null,
-            notes: 'Created by admin'
-        };
-
-        await window.db.collection('userApprovals').doc(approvalRequest.userId).set(approvalRequest);
-        console.log('Approval request created for manager');
-    } catch (error) {
-        console.warn('Failed to create approval request:', error);
-        // Don't fail the whole operation for this
-    }
-}
-
 // Show/hide loading state for user creation
 function showUserCreationLoading(isLoading) {
     const btn = document.getElementById('createUserBtn');
@@ -1680,44 +1597,22 @@ function getUserCreationErrorMessage(error) {
 
     if (error && error.code) {
         switch (error.code) {
-            case 'permission-denied':
-                return '❌ Firestore Access Denied: Firestore API may not be enabled or security rules are blocking access. Please enable Firestore first by going to Firebase Console > Firestore Database > Create database.';
-            case 'unavailable':
-                return '🔄 Service temporarily unavailable. Please check your internet connection and try again.';
-            case 'invalid-argument':
-                return '⚠️ Invalid data provided. Please check your inputs and try again.';
-            case 'not-found':
-                return '📁 Database not found. Please ensure Firestore is properly configured.';
-            case 'already-exists':
-                return '👤 User already exists with this email address.';
-            case 'resource-exhausted':
-                return '⏰ Too many requests. Please wait a moment and try again.';
-            case 'failed-precondition':
-                return '⚙️ Firestore is not properly configured. Please check your Firebase project settings.';
-            case 'cancelled':
-                return '🚫 Operation was cancelled. Please try again.';
-            case 'deadline-exceeded':
-                return '⏱️ Request timed out. Please check your connection and try again.';
+            case 'functions/unauthenticated':
+                return 'Authentication error. Please log in again.';
+            case 'functions/permission-denied':
+                return 'Permission denied. You must be an admin to create users.';
+            case 'functions/invalid-argument':
+                return `Invalid data: ${error.message}`;
+            case 'functions/already-exists':
+                return 'A user with this email already exists.';
+            case 'functions/internal':
+                return `An internal error occurred: ${error.message}`;
             default:
                 return `❌ Error: ${error.code}. Please try again or contact support if the problem persists.`;
         }
     }
 
-    // Check for common error patterns in the message
-    if (error && error.message) {
-        const message = error.message.toLowerCase();
-        if (message.includes('firestore') && message.includes('not enabled')) {
-            return '❌ Firestore Not Enabled: Please enable Firestore API in your Firebase project first.';
-        }
-        if (message.includes('permission') || message.includes('denied')) {
-            return '❌ Permission Denied: Firestore security rules may be blocking access. Please check your Firestore rules.';
-        }
-        if (message.includes('network') || message.includes('connection')) {
-            return '🔌 Network Error: Please check your internet connection and try again.';
-        }
-    }
-
-    return '❌ Failed to create user. Please check your connection and try again. If the problem persists, ensure Firestore is enabled in your Firebase project.';
+    return '❌ Failed to create user. Please check your connection and try again.';
 }
 
 // Preview user creation
@@ -1941,9 +1836,20 @@ async function refreshUserData() {
 
 // Edit user
 async function editUser(userId) {
+    console.log('editUser called with userId:', userId);
+
+    // Show loading state on the button
+    const button = event.target.closest('button');
+    if (button) {
+        button.disabled = true;
+        button.innerHTML = '<span class="spinner"></span> Loading...';
+        button.classList.add('loading');
+    }
+
     try {
         const user = await getUserById(userId);
         if (!user) {
+            console.log('User not found for userId:', userId);
             showToast('User not found', 'error');
             return;
         }
@@ -1957,26 +1863,25 @@ async function editUser(userId) {
     } catch (error) {
         console.error('Error loading user for edit:', error);
         showToast('Error loading user details.', 'error');
+    } finally {
+        // Reset button state
+        if (button) {
+            button.disabled = false;
+            button.innerHTML = '✏️ Edit';
+            button.classList.remove('loading');
+        }
     }
 }
+window.editUser = editUser;
 
 // Get user by ID
 async function getUserById(userId) {
     try {
-        // Try Firestore first
         const userRef = window.db.collection('users').doc(userId);
         const snapshot = await userRef.get();
 
         if (snapshot.exists) {
             return { uid: userId, ...snapshot.data() };
-        }
-
-        // Fallback to Firebase Realtime Database
-        const usersRef = firebaseRef(`users/${userId}`);
-        const dbSnapshot = await firebaseGet(usersRef);
-
-        if (dbSnapshot.exists()) {
-            return { uid: userId, ...dbSnapshot.val() };
         }
 
         return null;
@@ -1988,12 +1893,13 @@ async function getUserById(userId) {
 
 // Update user
 async function updateUser(userId, updates) {
+    console.log('updateUser called with userId:', userId, 'updates:', updates);
     try {
-        const userRef = firebaseRef(`users/${userId}`);
+        const userRef = window.db.collection('users').doc(userId);
         const updateData = {
             ...updates,
             lastUpdated: new Date().toISOString(),
-            updatedBy: window.authService ? window.authService.getCurrentUser()?.id : 'admin'
+            updatedBy: window.authService ? window.authService.getCurrentUser()?.uid : 'admin'
         };
 
         // If updating email verification or login time, handle specially
@@ -2001,7 +1907,7 @@ async function updateUser(userId, updates) {
             updateData.lastActivity = new Date().toISOString();
         }
 
-        await firebaseUpdate(userRef, updateData);
+        await userRef.update(updateData);
 
         showToast('User updated successfully!');
         await displayUsersManagement();
@@ -2018,65 +1924,212 @@ async function resetUserPassword(userId, email) {
         const confirmed = await customConfirm(`Send password reset email to ${email}?`, 'Reset Password');
         if (!confirmed) return;
 
-        // In a real implementation, this would call Firebase Admin SDK
-        // For now, we'll just show a message
-        showToast(`Password reset email would be sent to ${email}. (Feature requires server-side implementation)`);
+        await window.auth.sendPasswordResetEmail(email);
+        showToast(`Password reset email sent to ${email}.`);
 
         // Log the action
         console.log(`Password reset requested for user: ${userId} (${email})`);
     } catch (error) {
         console.error('Error resetting password:', error);
-        showToast('Error sending password reset email.', 'error');
+        showToast(`Error sending password reset email: ${error.message}`, 'error');
     }
 }
+window.resetUserPassword = resetUserPassword;
 
 // Toggle user status (enable/disable)
 async function toggleUserStatus(userId, currentlyDisabled) {
+    // Check admin authentication
+    const currentUser = window.authService ? window.authService.getCurrentUser() : null;
+    if (!currentUser || currentUser.role !== 'admin') {
+        showToast('Permission denied. Only admins can modify user status.', 'error');
+        return;
+    }
+    console.log('toggleUserStatus called with userId:', userId, 'currentlyDisabled:', currentlyDisabled);
+
+    // Show loading state on the button
+    const button = event.target.closest('button');
+    const action = currentlyDisabled ? 'enable' : 'disable';
+    if (button) {
+        button.disabled = true;
+        button.innerHTML = `<span class="spinner"></span> ${action.charAt(0).toUpperCase() + action.slice(1)}ing...`;
+        button.classList.add('loading');
+    }
+
     try {
-        const action = currentlyDisabled ? 'enable' : 'disable';
         const confirmed = await customConfirm(
             `Are you sure you want to ${action} this user? ${currentlyDisabled ? 'They will be able to sign in again.' : 'They will not be able to sign in until re-enabled.'}`,
             `${action.charAt(0).toUpperCase() + action.slice(1)} User`
         );
 
-        if (!confirmed) return;
+        if (!confirmed) {
+            // Reset button if user cancels
+            if (button) {
+                button.disabled = false;
+                button.innerHTML = `${currentlyDisabled ? '✅ Enable' : '⏸️ Disable'}`;
+                button.classList.remove('loading');
+            }
+            return;
+        }
 
         await updateUser(userId, { disabled: !currentlyDisabled });
         showToast(`User ${action}d successfully!`);
+
+        // Update button text to reflect new state
+        if (button) {
+            button.innerHTML = `${!currentlyDisabled ? '✅ Enable' : '⏸️ Disable'}`;
+        }
     } catch (error) {
         console.error('Error toggling user status:', error);
         showToast('Error updating user status.', 'error');
+    } finally {
+        // Reset button state
+        if (button) {
+            button.disabled = false;
+            button.classList.remove('loading');
+        }
     }
 }
+window.toggleUserStatus = toggleUserStatus;
 
 // Delete user
 async function deleteUser(userId, email) {
+    // Check admin authentication
+    const currentUser = window.authService ? window.authService.getCurrentUser() : null;
+    console.log('deleteUser called with userId:', userId, 'email:', email);
+    if (!currentUser || currentUser.role !== 'admin') {
+        showToast('Permission denied. Only admins can delete users.', 'error');
+        return;
+    }
+
+    // Show loading state on the button
+    const button = event.target.closest('button');
+    if (button) {
+        button.disabled = true;
+        button.innerHTML = '<span class="spinner"></span> Deleting...';
+        button.classList.add('loading');
+    }
+
+    // Set up timeout to prevent infinite loading state
+    const timeoutId = setTimeout(() => {
+        console.log('Delete operation timeout, resetting button state');
+        resetDeleteButton(button);
+        showToast('Operation timed out. Please try again.', 'warning');
+    }, 30000); // 30 second timeout
+
     try {
         const confirmed = await customConfirm(
-            `Permanently delete user ${email}? This action cannot be undone and will remove all associated data.`,
-            'Delete User'
+            `⚠️ PERMANENTLY DELETE USER\n\nEmail: ${email}\n\nThis action cannot be undone and will:\n• Remove the user account\n• Delete all associated data\n• Revoke access permissions\n\nAre you absolutely sure?`,
+            '🚨 Delete User Confirmation'
         );
 
-        if (!confirmed) return;
+        if (!confirmed) {
+            // Reset button if user cancels
+            resetDeleteButton(button);
+            return;
+        }
 
-        const confirmed2 = await customConfirm(
-            'This is irreversible. Are you absolutely sure?',
-            'Final Confirmation'
-        );
-
-        if (!confirmed2) return;
-
+        console.log('Starting user deletion process...');
+        
+        // Get user data before deletion for fallback email lookup
+        const userRef = window.db.collection('users').doc(userId);
+        const userDoc = await userRef.get();
+        
+        if (!userDoc.exists) {
+            throw new Error('User not found in Firestore');
+        }
+        
+        const userData = userDoc.data();
+        const userEmail = userData.email;
+        
         // Delete from Firestore
-        const userRef = firebaseRef(`users/${userId}`);
-        await firebaseRemove(userRef);
+        await userRef.delete();
+        console.log('User deleted from Firestore successfully');
+        
+        // Also try to delete from Realtime Database for consistency
+        try {
+            if (window.firebaseDB && userEmail) {
+                const realtimeUsersRef = firebaseRef('users');
+                const realtimeSnapshot = await firebaseGet(realtimeUsersRef);
+                
+                if (realtimeSnapshot.exists()) {
+                    const realtimeUsers = realtimeSnapshot.val();
+                    let foundRealtimeUser = null;
+                    
+                    Object.entries(realtimeUsers).forEach(([key, userData]) => {
+                        if (userData.email === userEmail) {
+                            foundRealtimeUser = key;
+                        }
+                    });
+                    
+                    if (foundRealtimeUser) {
+                        const realtimeUserRef = firebaseRef(`users/${foundRealtimeUser}`);
+                        await firebaseRemove(realtimeUserRef);
+                        console.log('User also removed from Realtime Database');
+                    }
+                }
+            }
+        } catch (realtimeError) {
+            console.warn('Failed to remove from Realtime Database:', realtimeError);
+        }
+        
+        // Clean up any approval requests
+        try {
+            const approvalRef = window.db.collection('userApprovals').doc(userId);
+            await approvalRef.delete();
+            console.log('Approval request cleaned up');
+        } catch (approvalError) {
+            console.warn('Failed to remove approval request:', approvalError);
+        }
 
-        showToast('User deleted successfully!');
-        await displayUsersManagement();
+        // Show success message
+        showToast('✅ User deleted successfully!');
+        console.log('User deletion completed successfully');
+        
+        // Force refresh the user list immediately
+        if (window.userManagementInitialized) {
+            setTimeout(async () => {
+                console.log('Forcing user data refresh...');
+                await refreshUserData();
+            }, 100);
+        }
+        
     } catch (error) {
         console.error('Error deleting user:', error);
-        showToast('Error deleting user.', 'error');
+        
+        let errorMessage = 'Error deleting user.';
+        if (error.message && error.message.includes('not found')) {
+            errorMessage = 'User not found. They may have already been deleted.';
+        } else if (error.code === 'permission-denied') {
+            errorMessage = 'Permission denied. You must be an admin to delete users.';
+        } else if (error.code === 'unauthenticated') {
+            errorMessage = 'Authentication error. Please log in again.';
+        } else if (error.message && error.message.includes('unavailable')) {
+            errorMessage = 'Service temporarily unavailable. Please try again.';
+        }
+        
+        showToast(errorMessage, 'error');
+        
+        // Force refresh anyway to sync with current state
+        setTimeout(async () => {
+            await refreshUserData();
+        }, 500);
+        
+    } finally {
+        // Clear timeout and reset button state
+        clearTimeout(timeoutId);
+        resetDeleteButton(button);
     }
 }
+
+// Helper function to reset delete button state
+function resetDeleteButton(button) {
+    if (button) {
+        button.disabled = false;
+        button.innerHTML = '🗑️ Delete';
+        button.classList.remove('loading');
+    }
+}
+window.deleteUser = deleteUser;
 
 // Setup user modal
 function setupUserModal() {
@@ -2147,6 +2200,7 @@ function clearUserFilters() {
     displayUsersManagement();
     showToast('Filters cleared!');
 }
+window.clearUserFilters = clearUserFilters;
 
 // Setup user search and filters
 function setupUserSearchAndFilters() {
@@ -2314,6 +2368,7 @@ function toggleUserSelection(userId, isSelected) {
     }
     updateBulkActionButtons();
 }
+window.toggleUserSelection = toggleUserSelection;
 
 function updateBulkActionButtons() {
     const bulkActionsContainer = document.getElementById('bulkActionsContainer');
@@ -2333,6 +2388,13 @@ function updateBulkActionButtons() {
 }
 
 async function bulkEnableUsers() {
+    // Check admin authentication
+    const currentUser = window.authService ? window.authService.getCurrentUser() : null;
+    if (!currentUser || currentUser.role !== 'admin') {
+        showToast('Permission denied. Only admins can bulk enable users.', 'error');
+        return;
+    }
+    
     if (selectedUserIds.length === 0) return;
 
     const confirmed = await customConfirm(
@@ -2344,7 +2406,7 @@ async function bulkEnableUsers() {
 
     try {
         showLoadingOverlay(`Enabling ${selectedUserIds.length} users...`);
-        
+
         for (const userId of selectedUserIds) {
             await updateUser(userId, { disabled: false });
         }
@@ -2361,8 +2423,16 @@ async function bulkEnableUsers() {
         hideLoadingOverlay();
     }
 }
+window.bulkEnableUsers = bulkEnableUsers;
 
 async function bulkDisableUsers() {
+    // Check admin authentication
+    const currentUser = window.authService ? window.authService.getCurrentUser() : null;
+    if (!currentUser || currentUser.role !== 'admin') {
+        showToast('Permission denied. Only admins can bulk disable users.', 'error');
+        return;
+    }
+    
     if (selectedUserIds.length === 0) return;
 
     const confirmed = await customConfirm(
@@ -2374,7 +2444,7 @@ async function bulkDisableUsers() {
 
     try {
         showLoadingOverlay(`Disabling ${selectedUserIds.length} users...`);
-        
+
         for (const userId of selectedUserIds) {
             await updateUser(userId, { disabled: true });
         }
@@ -2391,33 +2461,96 @@ async function bulkDisableUsers() {
         hideLoadingOverlay();
     }
 }
+window.bulkDisableUsers = bulkDisableUsers;
 
 async function bulkDeleteUsers() {
+    // Check admin authentication
+    const currentUser = window.authService ? window.authService.getCurrentUser() : null;
+    if (!currentUser || currentUser.role !== 'admin') {
+        showToast('Permission denied. Only admins can bulk delete users.', 'error');
+        return;
+    }
+    
     if (selectedUserIds.length === 0) return;
 
-    const confirmed1 = await customConfirm(
-        `Permanently delete ${selectedUserIds.length} selected user(s)? This action cannot be undone!`,
-        'Bulk Delete Users'
+    const confirmed = await customConfirm(
+        `⚠️ BULK DELETE CONFIRMATION\n\n${selectedUserIds.length} user(s) will be permanently deleted.\n\nThis action will:\n• Remove all selected user accounts\n• Delete all associated data\n• Revoke all access permissions\n• Cannot be undone\n\nAre you absolutely sure?`,
+        '🚨 Bulk Delete Users'
     );
 
-    if (!confirmed1) return;
-
-    const confirmed2 = await customConfirm(
-        'This is irreversible. Are you absolutely sure?',
-        'Final Confirmation'
-    );
-
-    if (!confirmed2) return;
+    if (!confirmed) return;
 
     try {
         showLoadingOverlay(`Deleting ${selectedUserIds.length} users...`);
-        
+
+        let deletedCount = 0;
+        let failedCount = 0;
+
         for (const userId of selectedUserIds) {
-            const userRef = firebaseRef(`users/${userId}`);
-            await firebaseRemove(userRef);
+            try {
+                // Get user data before deletion for fallback email lookup
+                const userRef = window.db.collection('users').doc(userId);
+                const userDoc = await userRef.get();
+                
+                if (userDoc.exists) {
+                    const userData = userDoc.data();
+                    const userEmail = userData.email;
+                    
+                    // Delete from Firestore
+                    await userRef.delete();
+                    
+                    // Also try to delete from Realtime Database for consistency
+                    try {
+                        if (window.firebaseDB && userEmail) {
+                            const realtimeUsersRef = firebaseRef('users');
+                            const realtimeSnapshot = await firebaseGet(realtimeUsersRef);
+                            
+                            if (realtimeSnapshot.exists()) {
+                                const realtimeUsers = realtimeSnapshot.val();
+                                let foundRealtimeUser = null;
+                                
+                                Object.entries(realtimeUsers).forEach(([key, userData]) => {
+                                    if (userData.email === userEmail) {
+                                        foundRealtimeUser = key;
+                                    }
+                                });
+                                
+                                if (foundRealtimeUser) {
+                                    const realtimeUserRef = firebaseRef(`users/${foundRealtimeUser}`);
+                                    await firebaseRemove(realtimeUserRef);
+                                }
+                            }
+                        }
+                    } catch (realtimeError) {
+                        console.warn('Failed to remove from Realtime Database:', realtimeError);
+                    }
+                    
+                    // Clean up any approval requests
+                    try {
+                        const approvalRef = window.db.collection('userApprovals').doc(userId);
+                        await approvalRef.delete();
+                    } catch (approvalError) {
+                        console.warn('Failed to remove approval request:', approvalError);
+                    }
+                    
+                    deletedCount++;
+                    console.log(`Successfully deleted user: ${userEmail}`);
+                } else {
+                    console.log(`User ${userId} not found in Firestore, skipping...`);
+                    deletedCount++;
+                }
+            } catch (error) {
+                console.error(`Failed to delete user ${userId}:`, error);
+                failedCount++;
+            }
         }
 
-        showToast(`Successfully deleted ${selectedUserIds.length} user(s)!`);
+        if (failedCount === 0) {
+            showToast(`Successfully deleted ${deletedCount} user(s)!`);
+        } else {
+            showToast(`Deleted ${deletedCount} user(s), ${failedCount} failed. Check console for details.`, 'warning');
+        }
+        
         selectedUserIds = [];
         await displayUsersManagement();
         await displayUserStatistics();
@@ -2429,6 +2562,7 @@ async function bulkDeleteUsers() {
         hideLoadingOverlay();
     }
 }
+window.bulkDeleteUsers = bulkDeleteUsers;
 
 // ========================================
 // Export Users to CSV
@@ -2558,24 +2692,56 @@ async function displayPendingApprovals() {
 
 // Get pending approvals
 async function getPendingApprovals() {
+    console.log('getPendingApprovals called');
     try {
         const approvalsRef = window.db.collection('userApprovals');
+        console.log('Querying userApprovals collection for pending status');
         const snapshot = await approvalsRef.where('status', '==', 'pending').get();
+
+        console.log('Query snapshot received:', snapshot);
+        console.log('Snapshot type:', typeof snapshot);
+
+        // Check if snapshot is valid
+        if (!snapshot || typeof snapshot.forEach !== 'function') {
+            console.error('Invalid snapshot received:', snapshot);
+            return [];
+        }
 
         const approvals = [];
         snapshot.forEach(doc => {
+            console.log('Processing approval doc:', doc.id, doc.data());
             approvals.push({ id: doc.id, ...doc.data() });
         });
 
+        console.log('Found', approvals.length, 'pending approvals');
         return approvals;
     } catch (error) {
         console.error('Error getting pending approvals:', error);
+        console.error('Error code:', error.code);
+        console.error('Error message:', error.message);
+
+        // If collection doesn't exist or permission denied, return empty array
+        if (error.code === 'permission-denied' || error.code === 'not-found') {
+            console.log('userApprovals collection not accessible, returning empty array');
+            return [];
+        }
+
         return [];
     }
 }
 
 // Review approval
 async function reviewApproval(userId) {
+    console.log('reviewApproval called with userId:', userId);
+
+    // Show loading state on the button
+    const button = event.target.closest('button');
+    if (button) {
+        button.disabled = true;
+        button.innerHTML = '<span class="spinner"></span> Loading...';
+        button.classList.add('loading');
+    }
+
     try {
         const approval = await getApprovalById(userId);
         if (!approval) {
@@ -2629,42 +2795,86 @@ async function reviewApproval(userId) {
     } catch (error) {
         console.error('Error loading approval details:', error);
         showToast('Error loading approval details.', 'error');
+    } finally {
+        // Reset button state
+        if (button) {
+            button.disabled = false;
+            button.innerHTML = '👁️ Review';
+            button.classList.remove('loading');
+        }
     }
 }
+window.reviewApproval = reviewApproval;
 
 // Get approval by user ID
 async function getApprovalById(userId) {
+    console.log('getApprovalById called with userId:', userId);
     try {
         const approvalRef = window.db.collection('userApprovals').doc(userId);
+        console.log('Fetching approval document:', userId);
         const snapshot = await approvalRef.get();
 
-        if (snapshot.exists()) {
+        console.log('Snapshot received:', snapshot);
+        console.log('Snapshot type:', typeof snapshot);
+
+        // Check if snapshot is valid and has exists method
+        if (snapshot && typeof snapshot.exists === 'function' && snapshot.exists()) {
+            console.log('Approval found:', snapshot.data());
             return { id: snapshot.id, ...snapshot.data() };
         }
 
+        console.log('Approval not found for userId:', userId);
         return null;
     } catch (error) {
         console.error('Error getting approval:', error);
+        console.error('Error code:', error.code);
+        console.error('Error message:', error.message);
+
+        // If collection doesn't exist or permission denied, return null
+        if (error.code === 'permission-denied' || error.code === 'not-found') {
+            console.log('userApprovals collection not accessible for userId:', userId);
+            return null;
+        }
+
         return null;
     }
 }
 
 // Approve user
 async function approveUser() {
-    if (!currentApprovalUserId) return;
+    console.log('approveUser called with currentApprovalUserId:', currentApprovalUserId);
+    if (!currentApprovalUserId) {
+        console.log('No currentApprovalUserId set');
+        return;
+    }
+    
+    // Check admin authentication
+    const currentUser = window.authService ? window.authService.getCurrentUser() : null;
+    if (!currentUser || currentUser.role !== 'admin') {
+        showToast('Permission denied. Only admins can approve users.', 'error');
+        return;
+    }
 
     try {
         const notes = document.getElementById('approvalNotes').value.trim();
         const currentUser = window.authService ? window.authService.getCurrentUser() : null;
 
+        console.log('Updating approval status...');
         // Update approval status
-        await window.db.collection('userApprovals').doc(currentApprovalUserId).update({
-            status: 'approved',
-            reviewedBy: currentUser ? currentUser.id : 'admin',
-            reviewedAt: new Date().toISOString(),
-            notes: notes
-        });
+        try {
+            await window.db.collection('userApprovals').doc(currentApprovalUserId).update({
+                status: 'approved',
+                reviewedBy: currentUser ? currentUser.uid : 'admin',
+                reviewedAt: new Date().toISOString(),
+                notes: notes
+            });
+            console.log('Approval status updated successfully');
+        } catch (approvalError) {
+            console.warn('Failed to update approval status:', approvalError);
+            // Continue with user update even if approval update fails
+        }
 
+        console.log('Updating user account...');
         // Enable user account
         await window.db.collection('users').doc(currentApprovalUserId).update({
             disabled: false,
@@ -2672,6 +2882,7 @@ async function approveUser() {
             approvedAt: new Date().toISOString(),
             approvedBy: currentUser ? currentUser.id : 'admin'
         });
+        console.log('User account updated successfully');
 
         showToast('User approved successfully! They can now sign in.');
         closeApprovalModal();
@@ -2685,20 +2896,39 @@ async function approveUser() {
 
 // Reject user
 async function rejectUser() {
-    if (!currentApprovalUserId) return;
+    console.log('rejectUser called with currentApprovalUserId:', currentApprovalUserId);
+    if (!currentApprovalUserId) {
+        console.log('No currentApprovalUserId set');
+        return;
+    }
+    
+    // Check admin authentication
+    const currentUser = window.authService ? window.authService.getCurrentUser() : null;
+    if (!currentUser || currentUser.role !== 'admin') {
+        showToast('Permission denied. Only admins can reject users.', 'error');
+        return;
+    }
 
     try {
         const notes = document.getElementById('approvalNotes').value.trim();
         const currentUser = window.authService ? window.authService.getCurrentUser() : null;
 
+        console.log('Updating approval status to rejected...');
         // Update approval status
-        await window.db.collection('userApprovals').doc(currentApprovalUserId).update({
-            status: 'rejected',
-            reviewedBy: currentUser ? currentUser.id : 'admin',
-            reviewedAt: new Date().toISOString(),
-            notes: notes
-        });
+        try {
+            await window.db.collection('userApprovals').doc(currentApprovalUserId).update({
+                status: 'rejected',
+                reviewedBy: currentUser ? currentUser.uid : 'admin',
+                reviewedAt: new Date().toISOString(),
+                notes: notes
+            });
+            console.log('Approval status updated to rejected successfully');
+        } catch (approvalError) {
+            console.warn('Failed to update approval status:', approvalError);
+            // Continue with user update even if approval update fails
+        }
 
+        console.log('Disabling user account...');
         // Disable user account
         await window.db.collection('users').doc(currentApprovalUserId).update({
             disabled: true,
@@ -2706,6 +2936,7 @@ async function rejectUser() {
             rejectedAt: new Date().toISOString(),
             rejectedBy: currentUser ? currentUser.id : 'admin'
         });
+        console.log('User account disabled successfully');
 
         showToast('User request rejected.');
         closeApprovalModal();
@@ -2719,15 +2950,55 @@ async function rejectUser() {
 
 // Quick approve
 async function quickApprove(userId) {
-    currentApprovalUserId = userId;
-    await approveUser();
+    console.log('quickApprove called with userId:', userId);
+
+    // Show loading state on the button
+    const button = event.target.closest('button');
+    if (button) {
+        button.disabled = true;
+        button.innerHTML = '<span class="spinner"></span> Approving...';
+        button.classList.add('loading');
+    }
+
+    try {
+        currentApprovalUserId = userId;
+        await approveUser();
+    } finally {
+        // Reset button state
+        if (button) {
+            button.disabled = false;
+            button.innerHTML = '✓ Quick Approve';
+            button.classList.remove('loading');
+        }
+    }
 }
+window.quickApprove = quickApprove;
 
 // Quick reject
 async function quickReject(userId) {
-    currentApprovalUserId = userId;
-    await rejectUser();
+    console.log('quickReject called with userId:', userId);
+
+    // Show loading state on the button
+    const button = event.target.closest('button');
+    if (button) {
+        button.disabled = true;
+        button.innerHTML = '<span class="spinner"></span> Rejecting...';
+        button.classList.add('loading');
+    }
+
+    try {
+        currentApprovalUserId = userId;
+        await rejectUser();
+    } finally {
+        // Reset button state
+        if (button) {
+            button.disabled = false;
+            button.innerHTML = '✗ Quick Reject';
+            button.classList.remove('loading');
+        }
+    }
 }
+window.quickReject = quickReject;
 
 // Close approval modal
 function closeApprovalModal() {
@@ -2735,23 +3006,6 @@ function closeApprovalModal() {
     currentApprovalUserId = null;
 }
 
-// Update getAllUsers to include pending approval status
-async function getAllUsers() {
-    try {
-        const usersRef = window.db.collection('users');
-        const snapshot = await usersRef.get();
-
-        const users = [];
-        snapshot.forEach(doc => {
-            users.push({ uid: doc.id, ...doc.data() });
-        });
-
-        return users;
-    } catch (error) {
-        console.error('Error getting users:', error);
-        return [];
-    }
-}
 
 // Display Users Management
 async function displayUsersManagement() {
@@ -2940,7 +3194,7 @@ function initializeUserManagementTab() {
         if (!window.userApprovalsInitialized) {
             initializeUserApprovals();
         }
-        
+
         // Always refresh the data displays when switching to users tab
         setTimeout(async () => {
             try {
@@ -2953,3 +3207,17 @@ function initializeUserManagementTab() {
         }, 100);
     }
 }
+
+// Expose approval functions globally for HTML onclick handlers
+window.reviewApproval = reviewApproval;
+window.quickApprove = quickApprove;
+window.quickReject = quickReject;
+
+console.log('Admin functions exposed globally:', {
+    reviewApproval: typeof window.reviewApproval,
+    quickApprove: typeof window.quickApprove,
+    quickReject: typeof window.quickReject,
+    editUser: typeof window.editUser,
+    deleteUser: typeof window.deleteUser,
+    toggleUserStatus: typeof window.toggleUserStatus
+});

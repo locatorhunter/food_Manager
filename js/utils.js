@@ -2432,3 +2432,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Make SecurityFramework globally available
 window.SecurityFramework = SecurityFramework;
+
+// Expose utility functions globally
+window.isValidName = isValidName;
+window.isValidEmail = isValidEmail;
+window.isValidPrice = isValidPrice;
+window.formatCurrency = formatCurrency;
+window.sanitizeInput = sanitizeInput;
+window.debounce = debounce;
+window.generateId = generateId;
+window.deepClone = deepClone;
+window.isEmpty = isEmpty;
+window.capitalize = capitalize;
+window.getHotelTypeEmoji = getHotelTypeEmoji;

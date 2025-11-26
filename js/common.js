@@ -82,17 +82,22 @@ function initializeNavbar() {
                         aria-controls="navbarNav">☰</button>
 
                 <ul class="navbar-nav" id="navbarNav" role="menubar">
+                    <li role="none"><a href="index.html"
+                                        class="nav-link"
+                                        data-page="index"
+                                        role="menuitem"
+                                        aria-label="Home page">Home</a></li>
                     <li role="none"><a href="menu.html"
                                         class="nav-link"
                                         data-page="menu"
                                         role="menuitem"
                                         aria-label="View menu and place orders">Menu</a></li>
-                    <li role="none"><a href="dashboard.html"
+                    ${isAdmin ? `<li role="none"><a href="dashboard.html"
                                         class="nav-link"
                                         data-page="dashboard"
                                         role="menuitem"
                                         aria-label="View order dashboard and analytics">Dashboard</a></li>
-                    ${isAdmin ? `<li role="none"><a href="admin.html"
+                    <li role="none"><a href="admin.html"
                                         class="nav-link"
                                         data-page="admin"
                                         role="menuitem"
@@ -105,7 +110,7 @@ function initializeNavbar() {
                 </ul>
 
                 <div class="navbar-user">
-                    ${user ? `<span class="user-greeting">Welcome, ${user.name}</span>` : ''}
+                    ${user ? `<span class="user-greeting">Welcome, ${user.displayName || user.name || user.email}</span>` : ''}
                     <button class="theme-toggle"
                             id="themeToggle"
                             title="Toggle theme"
@@ -719,3 +724,10 @@ function showOrderSummarySkeleton(container) {
     `;
     container.innerHTML = skeletonHtml;
 }
+
+// Expose functions globally for use in other scripts
+window.showToast = showToast;
+window.showLoadingOverlay = showLoadingOverlay;
+window.hideLoadingOverlay = hideLoadingOverlay;
+window.showElementLoading = showElementLoading;
+window.hideElementLoading = hideElementLoading;

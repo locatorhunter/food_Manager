@@ -104,6 +104,8 @@ class ModalManager {
         // Show modal
         modal.style.display = 'flex';
         modal.style.opacity = '0';
+        modal.style.pointerEvents = 'auto'; // Ensure modal can receive events
+        
         setTimeout(() => {
             modal.style.opacity = '1';
         }, 10);
@@ -116,6 +118,12 @@ class ModalManager {
                 confirmBtn.focus();
             }
         }, 100);
+
+        // Prevent accidental modal closing on double-click
+        modal.addEventListener('dblclick', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+        }, { once: true });
     }
 
     hide() {
