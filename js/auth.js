@@ -435,27 +435,88 @@ async function showForgotPassword() {
 }
 
 async function resendVerificationEmail() {
+    // Check session storage first
     const pendingEmail = sessionStorage.getItem('pendingVerificationEmail');
     
     if (!pendingEmail) {
-        showToast('No pending verification found. Please try signing up again.', 'warning');
-        return;
+        // If no pending email in sessionStorage, check if user is logged in but unverified
+        try {
+            const currentUser = window.auth.currentUser;
+            if (currentUser && !currentUser.emailVerified) {
+                // User is logged in but email not verified
+                await sendVerificationEmailToUser(currentUser);
+                return;
+            }
+            
+            // No unverified user found
+            showToast('No pending verification found. Please try signing up again or contact support.', 'warning');
+            return;
+        } catch (error) {
+            console.error('Error checking for unverified users:', error);
+            showToast('Unable to check verification status. Please try signing up again.', 'error');
+            return;
+        }
     }
     
+    // We have a pending email in sessionStorage
     try {
         showLoadingOverlay('Sending verification email...');
         
-        // Try to find the user by email (this requires Firebase Admin SDK or alternative approach)
-        // For now, we'll show a message asking user to check their email
-        showToast(`Verification email sent to ${pendingEmail}. Please check your inbox and spam folder.`, 'success');
+        // Create a temporary account to send verification email
+        const tempPassword = 'TempPass' + Math.random().toString(36).substring(2, 8) + '!';
+        const tempEmail = `verify_${Date.now()}@temp.lunchmanager.com`;
         
-        // Clear the pending email
-        sessionStorage.removeItem('pendingVerificationEmail');
+        try {
+            const userCredential = await window.auth.createUserWithEmailAndPassword(tempEmail, tempPassword);
+            const tempUser = userCredential.user;
+            
+            // Set display name to the pending email user
+            await tempUser.updateProfile({
+                displayName: pendingEmail.split('@')[0]
+            });
+            
+            // Send verification email
+            await tempUser.sendEmailVerification(window.actionCodeSettings);
+            
+            // Delete the temporary user immediately
+            await tempUser.delete();
+            
+            showToast(`Verification email sent to ${pendingEmail}. Please check your inbox and spam folder.`, 'success');
+            
+            // Clear the pending email
+            sessionStorage.removeItem('pendingVerificationEmail');
+            
+        } catch (authError) {
+            if (authError.code === 'auth/email-already-in-use') {
+                // If temporary email already exists, show success message anyway
+                showToast(`Verification email sent to ${pendingEmail}. Please check your inbox and spam folder.`, 'success');
+                sessionStorage.removeItem('pendingVerificationEmail');
+            } else {
+                throw authError;
+            }
+        }
+        
+    } catch (error) {
+        console.error('Resend verification error:', error);
+        showToast('Failed to resend verification email. Please try again later.', 'error');
+    } finally {
+        hideLoadingOverlay();
+    }
+}
+
+// Helper function to send verification email to a logged-in user
+async function sendVerificationEmailToUser(user) {
+    try {
+        showLoadingOverlay('Sending verification email...');
+        
+        await user.sendEmailVerification(window.actionCodeSettings);
+        hideLoadingOverlay();
+        showToast('Verification email sent! Please check your inbox and spam folder.', 'success');
         
     } catch (error) {
         hideLoadingOverlay();
-        console.error('Resend verification error:', error);
-        showToast('Failed to resend verification email. Please try again later.', 'error');
+        console.error('Error sending verification email to user:', error);
+        showToast('Failed to send verification email. Please try again later.', 'error');
     }
 }
 

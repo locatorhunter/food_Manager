@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Card Theme Contrast Test</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .theme-selector {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: var(--bg-secondary);
+            padding: 20px;
+            border-radius: 12px;
+            border: 2px solid var(--primary-color);
+            box-shadow: var(--shadow-lg);
+            z-index: 1000;
+        }
+        
+        .theme-selector h4 {
+            margin: 0 0 15px 0;
+            color: var(--text-primary);
+            font-size: 1rem;
+            text-align: center;
+        }
+        
+        .theme-selector button {
+            display: block;
+            width: 100%;
+            margin-bottom: 10px;
+            padding: 10px;
+            border: 2px solid var(--border-color);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .theme-selector button:hover {
+            border-color: var(--primary-color);
+            background: var(--primary-color);
+            color: white;
+        }
+        
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 100px 20px 20px;
+        }
+        
+        .test-section {
+            margin-bottom: 40px;
+        }
+        
+        .test-section h3 {
+            color: var(--text-primary);
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Theme Selector -->
+    <div class="theme-selector">
+        <h4>Theme Switcher</h4>
+        <button onclick="setTheme('light')">Light Theme</button>
+        <button onclick="setTheme('dark')">Dark Theme</button>
+        <button onclick="setTheme('retro-dark')">Retro Dark</button>
+        <button onclick="setTheme('retro-light')">Retro Light</button>
+    </div>
+
+    <div class="test-container">
+        <!-- Basic Cards Test -->
+        <div class="test-section">
+            <h3>Basic Cards</h3>
+            <div class="card">
+                <h2>Sample Card Title</h2>
+                <div class="card-description">
+                    This is a sample card description to test text contrast in different themes. 
+                    The text should be clearly readable with proper contrast ratios.
+                </div>
+                <p>Additional card content with more text to test readability.</p>
+            </div>
+            
+            <div class="card">
+                <h3>Card with H3 Heading</h3>
+                <p>This card uses h3 heading to test different heading levels.</p>
+                <div class="card-description">
+                    Secondary text for better hierarchy testing.
+                </div>
+            </div>
+        </div>
+
+        <!-- Menu Items Test -->
+        <div class="test-section">
+            <h3>Menu Item Cards</h3>
+            <div class="menu-items-grid card-size-medium">
+                <div class="menu-item-card">
+                    <div class="menu-item-no-image">🍕</div>
+                    <div class="menu-item-content">
+                        <div class="menu-item-header">
+                            <div class="menu-item-name">Margherita Pizza</div>
+                            <div class="menu-item-price">$12.99</div>
+                        </div>
+                        <div class="menu-item-category">Italian</div>
+                        <p>Classic pizza with fresh mozzarella and basil</p>
+                    </div>
+                </div>
+                
+                <div class="menu-item-card">
+                    <div class="menu-item-no-image">🍔</div>
+                    <div class="menu-item-content">
+                        <div class="menu-item-header">
+                            <div class="menu-item-name">Cheeseburger</div>
+                            <div class="menu-item-price">$8.99</div>
+                        </div>
+                        <div class="menu-item-category">American</div>
+                        <p>Juicy beef patty with cheese and fresh vegetables</p>
+                    </div>
+                </div>
+                
+                <div class="menu-item-card">
+                    <div class="menu-item-no-image">🍜</div>
+                    <div class="menu-item-content">
+                        <div class="menu-item-header">
+                            <div class="menu-item-name">Chicken Ramen</div>
+                            <div class="menu-item-price">$14.99</div>
+                        </div>
+                        <div class="menu-item-category">Asian</div>
+                        <p>Authentic Japanese ramen with tender chicken</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Popular Items Test -->
+        <div class="test-section">
+            <h3>Popular Item Cards</h3>
+            <div class="popular-items-grid">
+                <div class="popular-item-card">
+                    <div class="popular-item-image">
+                        <div class="no-image">🌮</div>
+                    </div>
+                    <div class="popular-item-info">
+                        <h4>Beef Tacos</h4>
+                        <div class="popular-item-details">
+                            <span class="popular-item-hotel">Mexican Grill</span>
+                            <span class="popular-item-price">$9.99</span>
+                        </div>
+                        <div class="popular-item-count">24 orders</div>
+                    </div>
+                </div>
+                
+                <div class="popular-item-card">
+                    <div class="popular-item-image">
+                        <div class="no-image">🥗</div>
+                    </div>
+                    <div class="popular-item-info">
+                        <h4>Caesar Salad</h4>
+                        <div class="popular-item-details">
+                            <span class="popular-item-hotel">Fresh Greens</span>
+                            <span class="popular-item-price">$7.99</span>
+                        </div>
+                        <div class="popular-item-count">18 orders</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- User Cards Test -->
+        <div class="test-section">
+            <h3>User Cards</h3>
+            <div class="users-grid">
+                <div class="user-card">
+                    <div class="user-header">
+                        <div class="user-avatar">JD</div>
+                        <div class="user-info">
+                            <h4>John Doe</h4>
+                            <p class="user-email">john.doe@example.com</p>
+                            <span class="user-role role-admin">Admin</span>
+                        </div>
+                        <div class="user-status">
+                            <span class="status-indicator active">Active</span>
+                        </div>
+                    </div>
+                    <div class="user-details">
+                        <div class="user-detail">
+                            <span class="detail-label">Role:</span>
+                            <span class="detail-value">Administrator</span>
+                        </div>
+                        <div class="user-detail">
+                            <span class="detail-label">Last Login:</span>
+                            <span class="detail-value">2 hours ago</span>
+                        </div>
+                    </div>
+                    <div class="user-actions">
+                        <button class="btn btn-info">Edit</button>
+                        <button class="btn btn-danger">Delete</button>
+                    </div>
+                </div>
+                
+                <div class="user-card">
+                    <div class="user-header">
+                        <div class="user-avatar">JS</div>
+                        <div class="user-info">
+                            <h4>Jane Smith</h4>
+                            <p class="user-email">jane.smith@example.com</p>
+                            <span class="user-role role-manager">Manager</span>
+                        </div>
+                        <div class="user-status">
+                            <span class="status-indicator active">Active</span>
+                        </div>
+                    </div>
+                    <div class="user-details">
+                        <div class="user-detail">
+                            <span class="detail-label">Role:</span>
+                            <span class="detail-value">Manager</span>
+                        </div>
+                        <div class="user-detail">
+                            <span class="detail-label">Last Login:</span>
+                            <span class="detail-value">1 day ago</span>
+                        </div>
+                    </div>
+                    <div class="user-actions">
+                        <button class="btn btn-info">Edit</button>
+                        <button class="btn btn-warning">Suspend</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function setTheme(theme) {
+            // Remove all theme classes
+            document.body.classList.remove('dark-mode', 'retro-dark', 'retro-light');
+            
+            // Add the selected theme class
+            if (theme === 'dark') {
+                document.body.classList.add('dark-mode');
+            } else if (theme === 'retro-dark') {
+                document.body.classList.add('retro-dark');
+            } else if (theme === 'retro-light') {
+                document.body.classList.add('retro-light');
+            }
+            // For light theme, no class needed as it's the default
+            
+            // Save theme preference
+            localStorage.setItem('preferred-theme', theme);
+        }
+        
+        // Load saved theme preference
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedTheme = localStorage.getItem('preferred-theme');
+            if (savedTheme) {
+                setTheme(savedTheme);
+            }
+        });
+    </script>
+</body>
+</html>

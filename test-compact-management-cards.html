@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Compact Management Cards</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: white;
+        }
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .test-section {
+            margin-bottom: 40px;
+        }
+        .test-title {
+            font-size: 2rem;
+            margin-bottom: 20px;
+            text-align: center;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .info-box {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .section-title {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1 class="test-title">🧪 Test Compact Management Cards</h1>
+        
+        <div class="info-box">
+            <h3>📝 Updated Design Features:</h3>
+            <ul>
+                <li><strong>Management Cards:</strong> Now use glassmorphism with reduced padding and smaller fonts</li>
+                <li><strong>Compact Layout:</strong> Less spacing, more content density</li>
+                <li><strong>Consistent Theme:</strong> White text on gradient background with backdrop blur</li>
+                <li><strong>Responsive Design:</strong> Mobile-friendly layout</li>
+            </ul>
+        </div>
+
+        <!-- Hotel Selection Section (was already compact) -->
+        <div class="test-section">
+            <h2 class="section-title">1️⃣ Hotel Selection (Compact Cards)</h2>
+            <div class="hotel-selection-compact">
+                <div class="hotel-selection-header">
+                    <h3 class="hotel-selection-title">
+                        🏨 Today's Hotel Selection
+                    </h3>
+                    <div class="hotel-count-badge">
+                        <span>2</span> selected
+                    </div>
+                </div>
+                
+                <div class="hotel-grid-compact">
+                    <div class="hotel-card-compact selected" data-hotel-id="1">
+                        <div class="hotel-card-header">
+                            <div class="hotel-info-compact">
+                                <h4 class="hotel-name-compact">The Garden Palace</h4>
+                                <div class="hotel-meta-compact">
+                                    <span class="hotel-type-badge hotel-type-veg">🥬 Veg</span>
+                                    <span>•</span>
+                                    <span>MG Road</span>
+                                </div>
+                                <div class="hotel-rating-compact">
+                                    ⭐ 4.5 <span>(127 reviews)</span>
+                                </div>
+                            </div>
+                            <div class="hotel-status-compact selected">
+                                <span class="status-icon">✓</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="hotel-card-compact selected" data-hotel-id="2">
+                        <div class="hotel-card-header">
+                            <div class="hotel-info-compact">
+                                <h4 class="hotel-name-compact">Spice Route Restaurant</h4>
+                                <div class="hotel-meta-compact">
+                                    <span class="hotel-type-badge hotel-type-non-veg">🍖 Non-Veg</span>
+                                    <span>•</span>
+                                    <span>Church Street</span>
+                                </div>
+                                <div class="hotel-rating-compact">
+                                    ⭐ 4.2 <span>(89 reviews)</span>
+                                </div>
+                            </div>
+                            <div class="hotel-status-compact selected">
+                                <span class="status-icon">✓</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="hotel-card-compact" data-hotel-id="3">
+                        <div class="hotel-card-header">
+                            <div class="hotel-info-compact">
+                                <h4 class="hotel-name-compact">Green Leaf Cafe</h4>
+                                <div class="hotel-meta-compact">
+                                    <span class="hotel-type-badge hotel-type-veg">🥬 Veg</span>
+                                    <span>•</span>
+                                    <span>Brigade Road</span>
+                                </div>
+                                <div class="hotel-rating-compact">
+                                    ⭐ 4.7 <span>(203 reviews)</span>
+                                </div>
+                            </div>
+                            <div class="hotel-status-compact">
+                                <span class="status-icon">+</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="hotel-selection-footer">
+                    <div class="selection-summary">
+                        <span>2 of 3 hotels selected</span>
+                    </div>
+                    <div class="selection-actions">
+                        <button class="selection-btn selection-btn-primary">Select All</button>
+                        <button class="selection-btn selection-btn-success">Confirm Selection</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hotel Management Section (now compact) -->
+        <div class="test-section">
+            <h2 class="section-title">2️⃣ Hotel Management (NEW Compact Cards)</h2>
+            
+            <!-- Search and Filter Controls -->
+            <div class="admin-controls">
+                <div class="control-group">
+                    <label>🔍 Search Hotels</label>
+                    <input type="text" placeholder="Search by hotel name..." class="search-input">
+                </div>
+                <div class="control-group">
+                    <label>🏷️ Filter by Type</label>
+                    <select class="filter-select">
+                        <option>All Types</option>
+                        <option>🥬 Vegetarian</option>
+                        <option>🍖 Non-Vegetarian</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>📊 Filter by Status</label>
+                    <select class="filter-select">
+                        <option>All Hotels</option>
+                        <option>Selected for Today</option>
+                        <option>Not Selected</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Sample Management Cards -->
+            <div class="hotel-management-card">
+                <div class="hotel-header">
+                    <div class="hotel-info">
+                        <h3>🥬 The Garden Palace <span class="hotel-item-count">(12/15 items)</span></h3>
+                        <span class="hotel-status selected">Selected for Today</span>
+                    </div>
+                    <div class="hotel-actions">
+                        <button class="btn btn-info btn-small">✏️ Edit Details</button>
+                        <button class="btn btn-primary btn-small">+ Add Menu Item</button>
+                        <button class="btn btn-secondary btn-small">Import CSV</button>
+                        <button class="btn btn-outline btn-small">📂 Expand</button>
+                        <button class="btn btn-danger btn-small">Delete Hotel</button>
+                    </div>
+                </div>
+                
+                <div class="menu-items-grid-admin">
+                    <div class="menu-item-admin-card">
+                        <div class="menu-item-admin-header">
+                            <strong>Paneer Butter Masala</strong>
+                            <span class="menu-item-price">₹180</span>
+                        </div>
+                        <div class="menu-item-admin-category">Main Course</div>
+                        <div class="menu-item-admin-status available">✓ Available</div>
+                        <div class="menu-item-admin-actions">
+                            <button class="btn btn-secondary btn-small">Mark Unavailable</button>
+                            <button class="btn btn-danger btn-small">Delete</button>
+                        </div>
+                    </div>
+                    
+                    <div class="menu-item-admin-card">
+                        <div class="menu-item-admin-header">
+                            <strong>Chicken Biryani</strong>
+                            <span class="menu-item-price">₹220</span>
+                        </div>
+                        <div class="menu-item-admin-category">Rice Items</div>
+                        <div class="menu-item-admin-status available">✓ Available</div>
+                        <div class="menu-item-admin-actions">
+                            <button class="btn btn-secondary btn-small">Mark Unavailable</button>
+                            <button class="btn btn-danger btn-small">Delete</button>
+                        </div>
+                    </div>
+                    
+                    <div class="menu-item-admin-card">
+                        <div class="menu-item-admin-header">
+                            <strong>Cauliflower Curry</strong>
+                            <span class="menu-item-price">₹140</span>
+                        </div>
+                        <div class="menu-item-admin-category">Vegetables</div>
+                        <div class="menu-item-admin-status unavailable">✗ Unavailable</div>
+                        <div class="menu-item-admin-actions">
+                            <button class="btn btn-secondary btn-small">Mark Available</button>
+                            <button class="btn btn-danger btn-small">Delete</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="hotel-management-card">
+                <div class="hotel-header">
+                    <div class="hotel-info">
+                        <h3>🍖 Spice Route Restaurant <span class="hotel-item-count">(8/10 items)</span></h3>
+                        <span class="hotel-status selected">Selected for Today</span>
+                    </div>
+                    <div class="hotel-actions">
+                        <button class="btn btn-info btn-small">✏️ Edit Details</button>
+                        <button class="btn btn-primary btn-small">+ Add Menu Item</button>
+                        <button class="btn btn-secondary btn-small">Import CSV</button>
+                        <button class="btn btn-outline btn-small">📂 Expand</button>
+                        <button class="btn btn-danger btn-small">Delete Hotel</button>
+                    </div>
+                </div>
+                
+                <div class="menu-items-grid-admin">
+                    <div class="menu-item-admin-card">
+                        <div class="menu-item-admin-header">
+                            <strong>Mutton Roganjosh</strong>
+                            <span class="menu-item-price">₹280</span>
+                        </div>
+                        <div class="menu-item-admin-category">Non-Veg</div>
+                        <div class="menu-item-admin-status available">✓ Available</div>
+                        <div class="menu-item-admin-actions">
+                            <button class="btn btn-secondary btn-small">Mark Unavailable</button>
+                            <button class="btn btn-danger btn-small">Delete</button>
+                        </div>
+                    </div>
+                    
+                    <div class="menu-item-admin-card">
+                        <div class="menu-item-admin-header">
+                            <strong>Fish Curry</strong>
+                            <span class="menu-item-price">₹250</span>
+                        </div>
+                        <div class="menu-item-admin-category">Seafood</div>
+                        <div class="menu-item-admin-status available">✓ Available</div>
+                        <div class="menu-item-admin-actions">
+                            <button class="btn btn-secondary btn-small">Mark Unavailable</button>
+                            <button class="btn btn-danger btn-small">Delete</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="hotel-management-card">
+                <div class="hotel-header">
+                    <div class="hotel-info">
+                        <h3>🥬 Green Leaf Cafe <span class="hotel-item-count">(6/8 items)</span></h3>
+                        <span class="hotel-status not-selected">Not Selected</span>
+                    </div>
+                    <div class="hotel-actions">
+                        <button class="btn btn-info btn-small">✏️ Edit Details</button>
+                        <button class="btn btn-primary btn-small">+ Add Menu Item</button>
+                        <button class="btn btn-secondary btn-small">Import CSV</button>
+                        <button class="btn btn-outline btn-small">📂 Expand</button>
+                        <button class="btn btn-danger btn-small">Delete Hotel</button>
+                    </div>
+                </div>
+                
+                <div class="menu-items-grid-admin">
+                    <div class="menu-item-admin-card">
+                        <div class="menu-item-admin-header">
+                            <strong>Vegetable Salad</strong>
+                            <span class="menu-item-price">₹120</span>
+                        </div>
+                        <div class="menu-item-admin-category">Salads</div>
+                        <div class="menu-item-admin-status available">✓ Available</div>
+                        <div class="menu-item-admin-actions">
+                            <button class="btn btn-secondary btn-small">Mark Unavailable</button>
+                            <button class="btn btn-danger btn-small">Delete</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="info-box">
+            <h3>✅ Expected Results:</h3>
+            <ul>
+                <li><strong>Management Cards:</strong> Should now have smaller padding, glassmorphism background, and white text</li>
+                <li><strong>Compact Design:</strong> Less spacing between elements, more content density</li>
+                <li><strong>Consistent Theme:</strong> All cards use the same blue gradient with backdrop blur</li>
+                <li><strong>Responsive Layout:</strong> Buttons wrap nicely on smaller screens</li>
+                <li><strong>Status Indicators:</strong> Green for selected, semi-transparent for not selected</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Test toast notifications
+        document.addEventListener('DOMContentLoaded', function() {
+            showToast('🧪 Compact Management Cards Test Loaded!', 'success');
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Consistent Colors Test</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .theme-selector {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: var(--bg-secondary);
+            padding: 20px;
+            border-radius: 12px;
+            border: 2px solid var(--primary-color);
+            box-shadow: var(--shadow-lg);
+            z-index: 1000;
+        }
+        
+        .theme-selector h4 {
+            margin: 0 0 15px 0;
+            color: var(--text-primary);
+            font-size: 1rem;
+            text-align: center;
+        }
+        
+        .theme-selector button {
+            display: block;
+            width: 100%;
+            margin-bottom: 10px;
+            padding: 10px;
+            border: 2px solid var(--border-color);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .theme-selector button:hover {
+            border-color: var(--primary-color);
+            background: var(--primary-color);
+            color: white;
+        }
+        
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 100px 20px 20px;
+        }
+        
+        .test-section {
+            margin-bottom: 40px;
+        }
+        
+        .test-section h3 {
+            color: var(--text-primary);
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+        }
+        
+        .color-consistency-demo {
+            background: var(--bg-secondary);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .demo-item {
+            margin-bottom: 15px;
+            padding: 10px;
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+        }
+        
+        .consistent-colors {
+            color: #2d3748;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <!-- Theme Selector -->
+    <div class="theme-selector">
+        <h4>Consistent Colors Test</h4>
+        <button onclick="setTheme('light')">Light Theme</button>
+        <button onclick="setTheme('dark')">Dark Theme</button>
+        <button onclick="setTheme('retro-dark')">Retro Dark</button>
+        <button onclick="setTheme('retro-light')">Retro Light</button>
+    </div>
+
+    <div class="test-container">
+        <!-- Color Consistency Demo -->
+        <div class="test-section">
+            <h3>Color Consistency Demonstration</h3>
+            <div class="color-consistency-demo">
+                <h4>All these elements now use the same color scheme:</h4>
+                <div class="demo-item">
+                    <div class="consistent-colors">🏨 Hotel Name: Pizza Palace</div>
+                    <div class="consistent-colors">⭐ Rating: 4.5 (120 reviews)</div>
+                    <div class="consistent-colors">📊 Menu Count: 25 items</div>
+                    <div class="consistent-colors">🍕 Menu Item: Margherita Pizza</div>
+                    <div class="consistent-colors">💰 Price: $12.99</div>
+                    <div class="consistent-colors">🏷️ Category: Italian</div>
+                    <div class="consistent-colors">🏪 Popular Item: Cheeseburger</div>
+                    <div class="consistent-colors">💲 Popular Price: $8.99</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Today's Hotel Selection with Consistent Colors -->
+        <div class="test-section">
+            <h3>Today's Hotel Selection (Consistent Colors)</h3>
+            
+            <!-- Regular hotel selection card -->
+            <div class="card">
+                <h3 class="hotel-selection-title">
+                    🏨 Today's Hotel Selection
+                </h3>
+                <div class="hotel-selection-grid">
+                    <div class="hotel-selection-card">
+                        <div class="hotel-selection-header">
+                            <div class="hotel-checkbox-label">
+                                <input type="checkbox" id="hotel1">
+                                <div class="hotel-info">
+                                    <div class="hotel-name">Pizza Palace <span class="hotel-item-count">25 items</span></div>
+                                    <div class="hotel-details">
+                                        <div class="hotel-stat">
+                                            <span class="stat-label">Type:</span>
+                                            <span class="stat-value">Italian</span>
+                                        </div>
+                                        <div class="hotel-stat">
+                                            <span class="stat-label">Rating:</span>
+                                            <span class="stat-value">⭐ 4.5 (120 reviews)</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="selection-indicator">Selected</div>
+                        </div>
+                    </div>
+                    
+                    <div class="hotel-selection-card">
+                        <div class="hotel-selection-header">
+                            <div class="hotel-checkbox-label">
+                                <input type="checkbox" id="hotel2">
+                                <div class="hotel-info">
+                                    <div class="hotel-name">Burger Joint <span class="hotel-item-count">18 items</span></div>
+                                    <div class="hotel-details">
+                                        <div class="hotel-stat">
+                                            <span class="stat-label">Type:</span>
+                                            <span class="stat-value">American</span>
+                                        </div>
+                                        <div class="hotel-stat">
+                                            <span class="stat-label">Rating:</span>
+                                            <span class="stat-value">⭐ 4.2 (89 reviews)</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="hotel-status not-selected">Not Selected</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Compact hotel selection card -->
+            <div class="hotel-selection-compact">
+                <div class="hotel-selection-header">
+                    <h3 class="hotel-selection-title">
+                        🏨 Today's Hotel Selection
+                    </h3>
+                    <div class="hotel-count-badge">2 Selected</div>
+                </div>
+                
+                <div class="hotel-grid-compact">
+                    <div class="hotel-card-compact selected">
+                        <div class="hotel-card-header">
+                            <div class="hotel-info-compact">
+                                <h4 class="hotel-name-compact">Pizza Palace</h4>
+                                <div class="hotel-meta-compact">
+                                    <span class="hotel-type-badge hotel-type-veg">Italian</span>
+                                    <span class="hotel-type-badge">25 Items</span>
+                                </div>
+                                <div class="hotel-rating-compact">⭐ 4.5 (120 reviews)</div>
+                            </div>
+                            <div class="hotel-status-compact selected">
+                                <span class="status-icon">✓</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="hotel-card-compact">
+                        <div class="hotel-card-header">
+                            <div class="hotel-info-compact">
+                                <h4 class="hotel-name-compact">Burger Joint</h4>
+                                <div class="hotel-meta-compact">
+                                    <span class="hotel-type-badge hotel-type-non-veg">American</span>
+                                    <span class="hotel-type-badge">18 Items</span>
+                                </div>
+                                <div class="hotel-rating-compact">⭐ 4.2 (89 reviews)</div>
+                            </div>
+                            <div class="hotel-status-compact">
+                                <span class="status-icon">○</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="hotel-selection-footer">
+                    <div class="selection-summary">2 of 5 hotels selected for today</div>
+                    <div class="selection-actions">
+                        <button class="selection-btn selection-btn-primary">Select All</button>
+                        <button class="selection-btn selection-btn-success">Confirm Selection</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Menu Cards with Consistent Colors -->
+        <div class="test-section">
+            <h3>Menu Cards (Consistent Colors)</h3>
+            
+            <div class="menu-items-grid card-size-medium">
+                <div class="menu-item-card">
+                    <div class="menu-item-no-image">🍕</div>
+                    <div class="menu-item-content">
+                        <div class="menu-item-header">
+                            <div class="menu-item-name">Margherita Pizza</div>
+                            <div class="menu-item-price">$12.99</div>
+                        </div>
+                        <div class="menu-item-category">Italian</div>
+                        <p>Classic pizza with fresh mozzarella and basil</p>
+                    </div>
+                </div>
+                
+                <div class="menu-item-card">
+                    <div class="menu-item-no-image">🍔</div>
+                    <div class="menu-item-content">
+                        <div class="menu-item-header">
+                            <div class="menu-item-name">Cheeseburger</div>
+                            <div class="menu-item-price">$8.99</div>
+                        </div>
+                        <div class="menu-item-category">American</div>
+                        <p>Juicy beef patty with cheese and fresh vegetables</p>
+                    </div>
+                </div>
+                
+                <div class="menu-item-card">
+                    <div class="menu-item-no-image">🍜</div>
+                    <div class="menu-item-content">
+                        <div class="menu-item-header">
+                            <div class="menu-item-name">Chicken Ramen</div>
+                            <div class="menu-item-price">$14.99</div>
+                        </div>
+                        <div class="menu-item-category">Asian</div>
+                        <p>Authentic Japanese ramen with tender chicken</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Popular Items with Consistent Colors -->
+        <div class="test-section">
+            <h3>Popular Items (Consistent Colors)</h3>
+            
+            <div class="popular-items-grid">
+                <div class="popular-item-card">
+                    <div class="popular-item-image">
+                        <div class="no-image">🌮</div>
+                    </div>
+                    <div class="popular-item-info">
+                        <h4>Beef Tacos</h4>
+                        <div class="popular-item-details">
+                            <span class="popular-item-hotel">Mexican Grill</span>
+                            <span class="popular-item-price">$9.99</span>
+                        </div>
+                        <div class="popular-item-count">24 orders</div>
+                    </div>
+                </div>
+                
+                <div class="popular-item-card">
+                    <div class="popular-item-image">
+                        <div class="no-image">🥗</div>
+                    </div>
+                    <div class="popular-item-info">
+                        <h4>Caesar Salad</h4>
+                        <div class="popular-item-details">
+                            <span class="popular-item-hotel">Fresh Greens</span>
+                            <span class="popular-item-price">$7.99</span>
+                        </div>
+                        <div class="popular-item-count">18 orders</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Manage Hotels & Menus with Consistent Colors -->
+        <div class="test-section">
+            <h3>Manage Hotels & Menus (Consistent Colors)</h3>
+            
+            <div class="card">
+                <h2>⚙️ Manage Hotels & Menus</h2>
+                <p class="card-description">Edit restaurant details and manage their menu items</p>
+                
+                <div class="hotel-management-card">
+                    <div class="hotel-header">
+                        <div class="hotel-info">
+                            <h3>Pizza Palace <span class="hotel-item-count">25 items</span></h3>
+                            <div class="hotel-details">
+                                <div class="hotel-stat">
+                                    <span class="stat-label">Rating:</span>
+                                    <span class="stat-value">⭐ 4.5 (120 reviews)</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="hotel-status selected">Active</div>
+                    </div>
+                    <div class="hotel-actions">
+                        <button class="btn btn-info">Edit Hotel</button>
+                        <button class="btn btn-primary">Manage Menu</button>
+                        <button class="btn btn-warning">View Orders</button>
+                    </div>
+                </div>
+                
+                <div class="hotel-management-card">
+                    <div class="hotel-header">
+                        <div class="hotel-info">
+                            <h3>Burger Joint <span class="hotel-item-count">18 items</span></h3>
+                            <div class="hotel-details">
+                                <div class="hotel-stat">
+                                    <span class="stat-label">Rating:</span>
+                                    <span class="stat-value">⭐ 4.2 (89 reviews)</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="hotel-status not-selected">Inactive</div>
+                    </div>
+                    <div class="hotel-actions">
+                        <button class="btn btn-info">Edit Hotel</button>
+                        <button class="btn btn-primary">Manage Menu</button>
+                        <button class="btn btn-warning">View Orders</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function setTheme(theme) {
+            // Remove all theme classes
+            document.body.classList.remove('dark-mode', 'retro-dark', 'retro-light');
+            
+            // Add the selected theme class
+            if (theme === 'dark') {
+                document.body.classList.add('dark-mode');
+            } else if (theme === 'retro-dark') {
+                document.body.classList.add('retro-dark');
+            } else if (theme === 'retro-light') {
+                document.body.classList.add('retro-light');
+            }
+            // For light theme, no class needed as it's the default
+            
+            // Save theme preference
+            localStorage.setItem('preferred-consistent-theme', theme);
+        }
+        
+        // Load saved theme preference
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedTheme = localStorage.getItem('preferred-consistent-theme');
+            if (savedTheme) {
+                setTheme(savedTheme);
+            }
+        });
+    </script>
+</body>
+</html>

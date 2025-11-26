@@ -119,6 +119,12 @@
             <div class="signup-footer">
                 <p>Already have an account? <a href="login.html">Sign In</a></p>
                 <p class="signup-help">Having trouble? <a href="#" onclick="showSignupHelp()">Get Help</a></p>
+                <div class="email-verification-help" style="margin-top: 15px; padding: 10px; background: #e3f2fd; border-radius: 5px; border-left: 4px solid #2196f3;">
+                    <p style="margin: 0; font-size: 0.9em; color: #1565c0;">
+                        <strong>📧 Email Verification:</strong> After creating your account, we'll send a verification email. 
+                        Check your inbox and spam folder. If you don't receive it, use the "Resend verification email" link on the login page.
+                    </p>
+                </div>
             </div>
 
             <script>
@@ -141,6 +147,13 @@
 4. Email Verification:
    - Check your email for verification link
    - Verify your email before signing in
+   - If you don't receive the email, check spam folder
+   - If you tried signing up before but didn't get verified, we'll automatically detect your existing account and help you resend the verification email
+
+5. Existing Account Issues:
+   - If you see "account already exists", don't worry!
+   - We'll detect incomplete registrations and help you resend verification
+   - You'll be redirected to login page to complete verification
 
 For technical issues, contact your administrator.`;
                     alert(helpText);
