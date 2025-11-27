@@ -462,43 +462,22 @@ async function resendVerificationEmail() {
     try {
         showLoadingOverlay('Sending verification email...');
         
-        // Create a temporary account to send verification email
-        const tempPassword = 'TempPass' + Math.random().toString(36).substring(2, 8) + '!';
-        const tempEmail = `verify_${Date.now()}@temp.lunchmanager.com`;
+        // Create a simple resend mechanism that doesn't rely on temporary accounts
+        // Instead, we'll guide users to the signup page with prefilled email
         
-        try {
-            const userCredential = await window.auth.createUserWithEmailAndPassword(tempEmail, tempPassword);
-            const tempUser = userCredential.user;
-            
-            // Set display name to the pending email user
-            await tempUser.updateProfile({
-                displayName: pendingEmail.split('@')[0]
-            });
-            
-            // Send verification email
-            await tempUser.sendEmailVerification(window.actionCodeSettings);
-            
-            // Delete the temporary user immediately
-            await tempUser.delete();
-            
-            showToast(`Verification email sent to ${pendingEmail}. Please check your inbox and spam folder.`, 'success');
-            
-            // Clear the pending email
-            sessionStorage.removeItem('pendingVerificationEmail');
-            
-        } catch (authError) {
-            if (authError.code === 'auth/email-already-in-use') {
-                // If temporary email already exists, show success message anyway
-                showToast(`Verification email sent to ${pendingEmail}. Please check your inbox and spam folder.`, 'success');
-                sessionStorage.removeItem('pendingVerificationEmail');
-            } else {
-                throw authError;
-            }
-        }
+        // Store the email for easy access
+        localStorage.setItem('resendVerificationEmail', pendingEmail);
+        
+        showToast(`We've prepared your email (${pendingEmail}) for verification. Please go to the signup page to resend.`, 'info');
+        
+        // Redirect to signup page with the email prefilled
+        setTimeout(() => {
+            window.location.href = `signup.html?email=${encodeURIComponent(pendingEmail)}&resend=true`;
+        }, 2000);
         
     } catch (error) {
         console.error('Resend verification error:', error);
-        showToast('Failed to resend verification email. Please try again later.', 'error');
+        showToast('Failed to prepare verification resend. Please try signing up again.', 'error');
     } finally {
         hideLoadingOverlay();
     }
@@ -520,7 +499,28 @@ async function sendVerificationEmailToUser(user) {
     }
 }
 
+// Direct function to send verification email by email address
+async function sendVerificationByEmail(email) {
+    try {
+        showLoadingOverlay('Sending verification email...');
+        
+        // For security, we can't directly send verification emails by email address
+        // Instead, we guide users to the proper flow
+        showToast('Please use the signup page to resend verification emails. Redirecting...', 'info');
+        
+        setTimeout(() => {
+            window.location.href = `signup.html?email=${encodeURIComponent(email)}&resend=true`;
+        }, 2000);
+        
+    } catch (error) {
+        hideLoadingOverlay();
+        console.error('Error sending verification by email:', error);
+        showToast('Failed to send verification email. Please try again later.', 'error');
+    }
+}
+
 // Make functions globally available
 window.togglePassword = togglePassword;
 window.showForgotPassword = showForgotPassword;
 window.resendVerificationEmail = resendVerificationEmail;
+window.sendVerificationByEmail = sendVerificationByEmail;

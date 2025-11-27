@@ -163,7 +163,8 @@ const ErrorHandler = {
             showToast = true,
             customMessage = null,
             showRetryButton = true,
-            context = 'operation'
+            context = 'operation',
+            forceShowToast = false // New option to force show toast regardless of suppression
         } = options;
 
         try {
@@ -173,11 +174,26 @@ const ErrorHandler = {
             
             const userMessage = customMessage || this.getUserMessage(error);
             
-            if (showToast) {
+            // Always show toast for critical operations like order placement, regardless of navigation state
+            const criticalOperations = ['placing order', 'creating group order', 'saving hotels', 'adding menu item'];
+            const isCriticalOperation = criticalOperations.some(op => context.toLowerCase().includes(op));
+            const shouldForceToast = forceShowToast || isCriticalOperation;
+            
+            if (showToast || shouldForceToast) {
                 if (showRetryButton && this.isNetworkError(error)) {
                     this.showRetryableError(userMessage, () => this.handleFirebaseOperation(operation, options));
                 } else {
-                    showToast(userMessage, 'error');
+                    // Ensure showToast function exists before calling it
+                    if (typeof window.showToast === 'function') {
+                        window.showToast(userMessage, 'error', 6000); // Show for 6 seconds for critical errors
+                    } else {
+                        // Fallback to console.error if showToast is not available
+                        console.error(`Error during ${context}:`, userMessage);
+                        // Try to create a basic alert as last resort
+                        if (typeof alert === 'function') {
+                            alert(`Error: ${userMessage}`);
+                        }
+                    }
                 }
             }
 
@@ -191,28 +207,37 @@ const ErrorHandler = {
      * @param {Function} retryFn - Retry function
      */
     showRetryableError(message, retryFn) {
-        const retryButton = document.createElement('button');
-        retryButton.textContent = '🔄 Retry';
-        retryButton.className = 'btn btn-primary';
-        retryButton.style.marginLeft = '10px';
-        
-        const toast = document.createElement('div');
-        toast.className = 'toast toast-error';
-        toast.innerHTML = `${message} `;
-        toast.appendChild(retryButton);
+        // Ensure showToast function exists before using it
+        if (typeof window.showToast === 'function') {
+            const retryButton = document.createElement('button');
+            retryButton.textContent = '🔄 Retry';
+            retryButton.className = 'btn btn-primary';
+            retryButton.style.marginLeft = '10px';
+            
+            const toast = document.createElement('div');
+            toast.className = 'toast toast-error';
+            toast.innerHTML = `${message} `;
+            toast.appendChild(retryButton);
 
-        retryButton.addEventListener('click', () => {
-            toast.remove();
-            retryFn();
-        });
-
-        document.body.appendChild(toast);
-
-        setTimeout(() => {
-            if (toast.parentNode) {
+            retryButton.addEventListener('click', () => {
                 toast.remove();
+                retryFn();
+            });
+
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    toast.remove();
+                }
+            }, 10000); // Show for 10 seconds
+        } else {
+            // Fallback if showToast is not available
+            console.error(`Error: ${message}`);
+            if (confirm(`${message}\n\nClick OK to retry.`)) {
+                retryFn();
             }
-        }, 10000); // Show for 10 seconds
+        }
     },
 
     /**
@@ -1149,40 +1174,34 @@ const ErrorBoundary = {
      * Setup global error suppression during navigation
      */
     setupGlobalErrorSuppression() {
-        // Override console.error to suppress navigation-related errors more aggressively
+        // Override console.error to suppress navigation-related errors more selectively
         const originalConsoleError = console.error;
         console.error = (...args) => {
             const message = args.join(' ').toLowerCase();
             
-            // Extremely aggressive suppression patterns for navigation-related errors
+            // More specific suppression patterns for actual navigation-related errors
             const suppressPatterns = [
-                'not found', 'failed to load', 'network', 'resource', 'script error',
-                'network error', 'load failed', 'cannot get', '404', 'net::err_',
-                'undefined', 'refused to connect', 'cors', 'fetch', 'xmlhttprequest',
-                'network request failed', 'internet disconnected', 'connection',
-                'timeout', 'aborted', 'cancelled', 'no response', 'unreachable'
+                'cannot get', 'net::err_', 'refused to connect',
+                'internet disconnected', 'chrome-error://'
             ];
             
-            // Check if we should suppress this error
-            const shouldSuppress = this.navigationState.suppressAllErrors || 
-                                 this.isNavigationRelatedError(message) ||
-                                 suppressPatterns.some(pattern => message.includes(pattern));
+            // Check if this is actually a navigation-related error
+            const isNavigationError = suppressPatterns.some(pattern => message.includes(pattern));
+            const shouldSuppress = this.navigationState.suppressAllErrors && isNavigationError;
             
             if (shouldSuppress) {
-                return; // Completely suppress navigation-related console errors
+                return; // Only suppress clearly navigation-related console errors
             }
             originalConsoleError.apply(console, args);
         };
 
-        // Also suppress console.warn during navigation
+        // Also suppress console.warn during navigation (less aggressive)
         const originalConsoleWarn = console.warn;
         console.warn = (...args) => {
             const message = args.join(' ').toLowerCase();
             if (this.navigationState.suppressAllErrors && 
-                (message.includes('not found') || 
-                 message.includes('deprecated') || 
-                 message.includes('warning'))) {
-                return; // Suppress navigation-related warnings
+                message.includes('chrome-error://')) {
+                return; // Only suppress obvious navigation warnings
             }
             originalConsoleWarn.apply(console, args);
         };
@@ -1207,8 +1226,13 @@ const ErrorBoundary = {
         // Override global fetch to suppress network errors during navigation
         const originalFetch = window.fetch;
         window.fetch = function(...args) {
-            if (ErrorBoundary.navigationState.suppressAllErrors) {
-                // Return a resolved promise to prevent unhandled rejections
+            const [url] = args;
+            
+            // Only suppress fetch requests that are clearly for navigation (HTML pages, same-origin navigations)
+            if (ErrorBoundary.navigationState.suppressAllErrors && 
+                typeof url === 'string' && 
+                (url.includes('.html') || url.endsWith('/') || url === window.location.href)) {
+                // Return a resolved promise for navigation requests
                 return Promise.resolve(new Response('', { status: 200, statusText: 'OK' }));
             }
             return originalFetch.apply(this, args);
@@ -1472,10 +1496,10 @@ const ErrorBoundary = {
             clearTimeout(this.navigationState.navigationTimeout);
         }
         
-        // Extended timeout for complex navigations
+        // Shorter timeout to minimize interference with normal operations
         this.navigationState.navigationTimeout = setTimeout(() => {
             this.endNavigation();
-        }, 5000); // Extended to 5 seconds
+        }, 2000); // Reduced to 2 seconds - sufficient for navigation, minimal interference
         
         console.log('Navigation started - error suppression active');
     },
@@ -1569,9 +1593,9 @@ const ErrorBoundary = {
      * @param {string} context - Error context
      */
     showUserFriendlyError(error, context) {
-        // Check if we're currently navigating - if so, suppress all errors
-        if (this.isNavigating()) {
-            return; // Completely suppress errors during navigation
+        // Check if error should be suppressed (but allow critical operations)
+        if (this.shouldSuppressError(error.message || error.toString(), context)) {
+            return; // Suppress non-critical errors
         }
         
         const message = ErrorHandler.getUserMessage(error);
@@ -1615,7 +1639,17 @@ const ErrorBoundary = {
         }
         
         if (!silentContexts.includes(context)) {
-            showToast(message, 'error', 6000);
+            // Ensure showToast function exists before calling it
+            if (typeof window.showToast === 'function') {
+                window.showToast(message, 'error', 6000);
+            } else {
+                // Fallback to console.error if showToast is not available
+                console.error(`Error: ${message}`);
+                // Try to create a basic alert as last resort
+                if (typeof alert === 'function') {
+                    alert(`Error: ${message}`);
+                }
+            }
         }
     },
 
@@ -1862,7 +1896,7 @@ const ErrorBoundary = {
     setupUltimateErrorSuppression() {
         // Global catch-all for any unhandled errors
         window.addEventListener('error', (event) => {
-            if (this.shouldSuppressError(event.message || event.error?.message)) {
+            if (this.shouldSuppressError(event.message || event.error?.message, 'Global Error')) {
                 event.preventDefault();
                 event.stopPropagation();
                 event.stopImmediatePropagation();
@@ -1872,7 +1906,7 @@ const ErrorBoundary = {
 
         // Global catch-all for unhandled promise rejections
         window.addEventListener('unhandledrejection', (event) => {
-            if (this.shouldSuppressError(event.reason?.message || event.reason)) {
+            if (this.shouldSuppressError(event.reason?.message || event.reason, 'Unhandled Promise Rejection')) {
                 event.preventDefault();
                 event.stopPropagation();
                 event.stopImmediatePropagation();
@@ -1882,7 +1916,7 @@ const ErrorBoundary = {
         // Override window.onerror for additional protection
         const originalOnError = window.onerror;
         window.onerror = (message, source, lineno, colno, error) => {
-            if (this.shouldSuppressError(message)) {
+            if (this.shouldSuppressError(message, 'Window Error')) {
                 return true; // Suppress the error
             }
             if (originalOnError) {
@@ -1894,7 +1928,7 @@ const ErrorBoundary = {
         // Override window.onunhandledrejection for additional protection
         const originalOnUnhandledRejection = window.onunhandledrejection;
         window.onunhandledrejection = (event) => {
-            if (this.shouldSuppressError(event.reason?.message || event.reason)) {
+            if (this.shouldSuppressError(event.reason?.message || event.reason, 'Window Unhandled Rejection')) {
                 event.preventDefault();
                 return;
             }
@@ -1924,14 +1958,25 @@ const ErrorBoundary = {
     /**
      * Check if an error should be suppressed based on patterns and navigation state
      * @param {string} errorMessage - The error message to check
+     * @param {string} context - Error context for critical operation detection
      * @returns {boolean} True if error should be suppressed
      */
-    shouldSuppressError(errorMessage) {
+    shouldSuppressError(errorMessage, context = '') {
         if (!errorMessage) return false;
         
         const message = errorMessage.toLowerCase();
         
-        // Always suppress during active navigation
+        // Critical operations should never be suppressed
+        const criticalContexts = ['placing order', 'creating group order', 'order placement'];
+        const isCriticalOperation = criticalContexts.some(ctx => 
+            context.toLowerCase().includes(ctx)
+        );
+        
+        if (isCriticalOperation) {
+            return false; // Never suppress critical operation errors
+        }
+        
+        // Always suppress during active navigation (for non-critical operations)
         if (this.navigationState.suppressAllErrors) {
             return true;
         }

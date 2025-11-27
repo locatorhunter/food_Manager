@@ -1,7 +1,7 @@
 # Navigation Error Suppression Implementation
 
 ## Overview
-Implemented a comprehensive, multi-layered approach to completely suppress "not found" errors during navigation. This aggressive fix ensures that navigation-related errors are completely eliminated while preserving legitimate error reporting.
+Implemented a comprehensive, multi-layered approach to suppress "not found" errors during navigation. This balanced fix ensures that navigation-related errors are eliminated while preserving legitimate error reporting and API functionality.
 
 ## Key Components Implemented
 
@@ -106,6 +106,67 @@ const suppressPatterns = [
 - ✅ **Easier Debugging**: Clear separation of navigation vs. real errors
 - ✅ **Better Error Tracking**: Legitimate errors more visible
 - ✅ **Production Ready**: Robust error suppression for production environments
+
+## Recent Fixes (2025-11-27)
+
+### Issue Resolved: API Request Failures
+The original implementation was too aggressive and interfered with legitimate API requests, causing the following errors:
+- API requests returning dummy responses
+- Console errors being suppressed too broadly
+- Navigation detection triggering too frequently
+
+### Improvements Made
+
+#### 1. Refined Error Suppression Patterns
+**Before**: Suppressed all errors containing 'network', 'fetch', 'timeout', 'connection', etc.
+```javascript
+const suppressPatterns = [
+    'not found', 'failed to load', 'network', 'resource', 'script error',
+    'network error', 'load failed', 'cannot get', '404', 'net::err_',
+    'undefined', 'refused to connect', 'cors', 'fetch', 'xmlhttprequest',
+    'network request failed', 'internet disconnected', 'connection',
+    'timeout', 'aborted', 'cancelled', 'no response', 'unreachable'
+];
+```
+
+**After**: Only suppress clearly navigation-related errors
+```javascript
+const suppressPatterns = [
+    'cannot get', 'net::err_', 'refused to connect',
+    'internet disconnected', 'chrome-error://'
+];
+```
+
+#### 2. Selective Fetch Interception
+**Before**: Suppressed ALL fetch requests during navigation
+```javascript
+if (ErrorBoundary.navigationState.suppressAllErrors) {
+    return Promise.resolve(new Response('', { status: 200, statusText: 'OK' }));
+}
+```
+
+**After**: Only suppress navigation-related requests (HTML pages, same-origin navigations)
+```javascript
+if (ErrorBoundary.navigationState.suppressAllErrors && 
+    typeof url === 'string' && 
+    (url.includes('.html') || url.endsWith('/') || url === window.location.href)) {
+    return Promise.resolve(new Response('', { status: 200, statusText: 'OK' }));
+}
+```
+
+#### 3. Reduced Navigation Timeout
+**Before**: 5 seconds of error suppression
+**After**: 2 seconds of error suppression (sufficient for navigation, minimal interference)
+
+#### 4. More Specific Warning Suppression
+**Before**: Suppressed warnings containing 'not found', 'deprecated', 'warning'
+**After**: Only suppress obvious navigation warnings like 'chrome-error://'
+
+### Result
+- ✅ **API requests now work normally** during page interactions
+- ✅ **Legitimate errors are properly reported** 
+- ✅ **Navigation-related errors are still suppressed** where appropriate
+- ✅ **Toast notifications and other features function correctly**
 
 ## Usage
 
