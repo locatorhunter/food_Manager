@@ -16,10 +16,64 @@ if (document.readyState === 'loading') {
 }
 
 function initializeSignupPage() {
+    console.log('Initializing signup page...');
     setupFormValidation();
     setupPasswordStrengthChecker();
     setupRoleSelection();
     setupModalHandlers();
+    
+    // Check URL parameters for resend verification
+    const urlParams = new URLSearchParams(window.location.search);
+    const resendEmail = urlParams.get('email');
+    const isResend = urlParams.get('resend') === 'true';
+    
+    if (resendEmail && isResend) {
+        console.log('Handling resend verification for:', resendEmail);
+        // Pre-fill the email field
+        const emailField = document.getElementById('email');
+        if (emailField) {
+            emailField.value = resendEmail;
+        }
+        
+        // Show resend verification modal or automatically trigger resend
+        setTimeout(() => {
+            handleResendVerification(resendEmail);
+        }, 500);
+        
+        // Clean up URL parameters
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+    
+    // Clear any existing pending verification email when page loads (unless we're resending)
+    if (!isResend) {
+        sessionStorage.removeItem('pendingVerificationEmail');
+    }
+    
+    console.log('Signup page initialized successfully');
+}
+
+async function handleResendVerification(email) {
+    try {
+        showLoadingOverlay('Resending verification email...');
+        
+        // Try to check if user exists and send verification
+        const userExists = await checkExistingUser(email);
+        
+        if (userExists.exists) {
+            // User exists, try to send verification by signing in temporarily
+            // Since we can't know the password, we'll guide user to login page
+            showToast('Account found. Please go to the login page and use "Forgot Password" to verify your email.', 'info');
+        } else {
+            // User doesn't exist, this might be a new signup attempt
+            showToast('Please complete the signup process to receive a verification email.', 'info');
+        }
+        
+    } catch (error) {
+        console.error('Error handling resend verification:', error);
+        showToast('Error processing resend request. Please try signing up again.', 'error');
+    } finally {
+        hideLoadingOverlay();
+    }
 }
 
 function setupFormValidation() {
@@ -666,3 +720,6 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('Firestore initialized:', !!window.db);
     }, 500);
 });
+
+// Expose functions globally for use in other scripts
+window.handleResendVerification = handleResendVerification;

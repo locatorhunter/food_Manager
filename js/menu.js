@@ -87,6 +87,9 @@ async function initializeMenuPage() {
     setupSearch();
     setupItemModal();
     setupEventDelegation();
+    
+    // Update floating order summary if items are already selected
+    updateFloatingOrderSummary();
 
     window.addEventListener('hotelsUpdated', async () => {
         selectedItems = {};
@@ -351,25 +354,6 @@ function displayMenuItems(hotel, items) {
         `;
     });
 
-    // Add floating order summary if items selected
-    const hasSelectedItems = Object.values(selectedItems).some(item => item.quantity > 0);
-    if (hasSelectedItems) {
-        const total = Object.values(selectedItems).reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        const totalItems = Object.values(selectedItems).reduce((sum, item) => sum + item.quantity, 0);
-        html += `
-            <div class="floating-order-summary">
-                <button class="cart-btn" onclick="showCartModal()" title="View Cart">🛒</button>
-                <div class="order-summary-content">
-                    <span>${totalItems} items • ₹${total.toFixed(2)}</span>
-                    <div class="floating-order-actions">
-                        <button class="cancel-order-btn btn btn-primary" onclick="cancelOrder()">Cancel</button>
-                        <button class="place-order-btn btn btn-primary" onclick="showOrderModal()">Place Order</button>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-
     html += '</div>';
     return html;
 }
@@ -400,6 +384,7 @@ async function incrementQuantity(hotelId, itemId, hotelName) {
             }
 
             // Normal increment logic
+            const wasFirstItem = Object.keys(selectedItems).length === 0;
             if (!selectedItems[itemKey]) {
                 selectedItems[itemKey] = {
                     ...item,
@@ -410,7 +395,14 @@ async function incrementQuantity(hotelId, itemId, hotelName) {
             }
             selectedItems[itemKey].quantity++;
             updateMenuDisplay(itemKey);
-            await displayHotelsMenu(); // Refresh to show floating summary
+            
+            // Only refresh menu if this is the first item being added (for initial display)
+            if (wasFirstItem) {
+                await displayHotelsMenu(); // Refresh menu display
+                updateFloatingOrderSummary(); // Update floating summary after menu refresh
+            } else {
+                updateFloatingOrderSummary(); // Update floating summary immediately for subsequent items
+            }
         }
     } catch (error) {
         console.error('Error incrementing quantity:', error);
@@ -421,6 +413,8 @@ async function decrementQuantity(hotelId, itemId, hotelName) {
     const itemKey = `${hotelId}-${itemId}`;
 
     if (selectedItems[itemKey] && selectedItems[itemKey].quantity > 0) {
+        const wasLastItem = Object.keys(selectedItems).length === 1;
+        
         selectedItems[itemKey].quantity--;
 
         if (selectedItems[itemKey].quantity === 0) {
@@ -428,8 +422,48 @@ async function decrementQuantity(hotelId, itemId, hotelName) {
         }
 
         updateMenuDisplay(itemKey);
-        await displayHotelsMenu(); // Refresh to show floating summary
+        
+        // Only refresh menu if cart is now empty
+        if (wasLastItem) {
+            await displayHotelsMenu(); // Refresh menu display when cart becomes empty
+            updateFloatingOrderSummary(); // Update floating summary after menu refresh
+        } else {
+            updateFloatingOrderSummary(); // Update floating summary immediately for non-last items
+        }
     }
+}
+
+// Update only the floating order summary without re-rendering the entire menu
+function updateFloatingOrderSummary() {
+    const hasSelectedItems = Object.values(selectedItems).some(item => item.quantity > 0);
+    
+    // Always remove any existing floating summaries first to prevent duplicates
+    const existingSummaries = document.querySelectorAll('.floating-order-summary');
+    existingSummaries.forEach(summary => summary.remove());
+    
+    if (hasSelectedItems) {
+        const total = Object.values(selectedItems).reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        const totalItems = Object.values(selectedItems).reduce((sum, item) => sum + item.quantity, 0);
+        
+        // Create new floating summary
+        const container = document.getElementById('hotelsMenuContainer');
+        if (container) {
+            const floatingSummaryHtml = `
+                <div class="floating-order-summary">
+                    <button class="cart-btn" onclick="showCartModal()" title="View Cart">🛒</button>
+                    <div class="order-summary-content">
+                        <span>${totalItems} items • ₹${total.toFixed(2)}</span>
+                        <div class="floating-order-actions">
+                            <button class="cancel-order-btn btn btn-primary" onclick="cancelOrder()">Cancel</button>
+                            <button class="place-order-btn btn btn-primary" onclick="showOrderModal()">Place Order</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            container.insertAdjacentHTML('beforeend', floatingSummaryHtml);
+        }
+    }
+    // If no items selected, the floating summary is already removed above
 }
 
 function updateMenuDisplay(itemKey) {
@@ -753,62 +787,62 @@ async function confirmGroupOrdering() {
     // Show loading overlay
     showLoadingOverlay('Placing group order...');
 
-    // Create participants array
-    const participants = participantNames.map(name => ({
-        name: name,
-        shareAmount: perPersonShare
-    }));
-
-    // Adjust the last person's share to account for rounding
-    const totalShares = participants.reduce((sum, p) => sum + p.shareAmount, 0);
-    if (totalShares > total) {
-        participants[participants.length - 1].shareAmount -= (totalShares - total);
-    }
-
-    // Group items by hotel for order
-    const ordersByHotel = {};
-    items.forEach(item => {
-        if (!ordersByHotel[item.hotelName]) {
-            ordersByHotel[item.hotelName] = [];
-        }
-        ordersByHotel[item.hotelName].push({
-            name: item.name,
-            price: item.price,
-            quantity: item.quantity,
-            category: item.category
-        });
-    });
-
-    // Get current user information
-    const currentUser = window.authService ? window.authService.getCurrentUser() : null;
-
-    // Create orders for each hotel
-    const orderPromises = Object.entries(ordersByHotel).map(([hotelName, hotelItems]) => {
-        const hotelTotal = hotelItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-
-        const order = {
-            employeeName: participants[0].name, // Primary participant
-            items: hotelItems,
-            total: hotelTotal,
-            hotelName,
-            isGroupOrder: true,
-            participants: participants,
-            userId: currentUser ? currentUser.id : null,
-            userEmail: currentUser ? currentUser.email : null,
-            userRole: currentUser ? currentUser.role : 'employee',
-            orderTimestamp: new Date().toISOString()
-        };
-
-        return StorageManager.addOrder(order);
-    });
-
     try {
+        // Create participants array
+        const participants = participantNames.map(name => ({
+            name: name,
+            shareAmount: perPersonShare
+        }));
+
+        // Adjust the last person's share to account for rounding
+        const totalShares = participants.reduce((sum, p) => sum + p.shareAmount, 0);
+        if (totalShares > total) {
+            participants[participants.length - 1].shareAmount -= (totalShares - total);
+        }
+
+        // Group items by hotel for order
+        const ordersByHotel = {};
+        items.forEach(item => {
+            if (!ordersByHotel[item.hotelName]) {
+                ordersByHotel[item.hotelName] = [];
+            }
+            ordersByHotel[item.hotelName].push({
+                name: item.name,
+                price: item.price,
+                quantity: item.quantity,
+                category: item.category
+            });
+        });
+
+        // Get current user information
+        const currentUser = window.authService ? window.authService.getCurrentUser() : null;
+
+        // Create orders for each hotel
+        const orderPromises = Object.entries(ordersByHotel).map(([hotelName, hotelItems]) => {
+            const hotelTotal = hotelItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+            const order = {
+                employeeName: participants[0].name, // Primary participant
+                items: hotelItems,
+                total: hotelTotal,
+                hotelName,
+                isGroupOrder: true,
+                participants: participants,
+                userId: currentUser ? (currentUser.uid || currentUser.id || null) : null,
+                userEmail: currentUser ? currentUser.email : null,
+                userRole: currentUser ? currentUser.role : 'employee',
+                orderTimestamp: new Date().toISOString()
+            };
+
+            return StorageManager.addOrder(order);
+        });
+
         await Promise.all(orderPromises);
 
         // Hide loading overlay
         hideLoadingOverlay();
 
-        showToast(`Group order placed successfully for ${selectedGroupSize} people!`);
+        showToast(`Group order placed successfully for ${selectedGroupSize} people!`, 'success');
 
         // Reset and close
         selectedItems = {};
@@ -824,7 +858,18 @@ async function confirmGroupOrdering() {
     } catch (error) {
         console.error('Error placing group order:', error);
         hideLoadingOverlay();
-        showToast('Error placing order. Please try again.', 'error');
+        
+        // Show more specific error message
+        let errorMessage = 'Failed to place order. ';
+        if (error.message && error.message.includes('permission')) {
+            errorMessage += 'Please check your login status and try again.';
+        } else if (error.message && error.message.includes('network')) {
+            errorMessage += 'Please check your internet connection and try again.';
+        } else {
+            errorMessage += 'Please try again in a moment.';
+        }
+        
+        showToast(errorMessage, 'error', 8000); // Show for 8 seconds
     }
 }
 
@@ -1024,7 +1069,7 @@ async function placeOrders(ordersByHotel, employeeName) {
                 items: hotelItems,
                 total: hotelTotal,
                 hotelName,
-                userId: currentUser ? currentUser.id : null,
+                userId: currentUser ? (currentUser.uid || currentUser.id || null) : null,
                 userEmail: currentUser ? currentUser.email : null,
                 userRole: currentUser ? currentUser.role : 'employee',
                 orderTimestamp: new Date().toISOString()
@@ -1047,7 +1092,18 @@ async function placeOrders(ordersByHotel, employeeName) {
     } catch (error) {
         console.error('Error placing orders:', error);
         hideLoadingOverlay();
-        showToast('Failed to place order. Please try again.', 'error');
+        
+        // Show more specific error message
+        let errorMessage = 'Failed to place order. ';
+        if (error.message && error.message.includes('permission')) {
+            errorMessage += 'Please check your login status and try again.';
+        } else if (error.message && error.message.includes('network')) {
+            errorMessage += 'Please check your internet connection and try again.';
+        } else {
+            errorMessage += 'Please try again in a moment.';
+        }
+        
+        showToast(errorMessage, 'error', 8000); // Show for 8 seconds
     }
 }
 
@@ -1401,8 +1457,15 @@ async function updateCartQuantity(itemKey, newQuantity) {
     if (selectedItems[itemKey]) {
         selectedItems[itemKey].quantity = newQuantity;
         updateMenuDisplay(itemKey);
-        await displayHotelsMenu(); // Refresh floating summary
         updateCartModalItem(itemKey, newQuantity); // Update specific item in cart modal
+        updateCartModalTotals(); // Update totals in cart modal
+        updateFloatingOrderSummary(); // Update floating summary immediately
+        
+        // Only refresh the menu if this is the first item being added
+        const itemCount = Object.keys(selectedItems).length;
+        if (itemCount === 1) {
+            await displayHotelsMenu(); // Refresh floating summary only for first item
+        }
     }
 }
 
@@ -1420,9 +1483,8 @@ async function removeFromCart(itemKey) {
             removeCartModalItem(itemKey);
             updateCartModalTotals();
         }
-
-        // Always refresh the menu display to update floating summary
-        await displayHotelsMenu();
+        // Always update floating summary to reflect current state
+        updateFloatingOrderSummary();
     }
 }
 
@@ -1663,7 +1725,10 @@ async function updateGroupOrderCostBreakdown() {
 
 async function confirmGroupOrder() {
     try {
-        if (!currentGroupOrderItem || !selectedGroupOrderSize) return;
+        if (!currentGroupOrderItem || !selectedGroupOrderSize) {
+            showToast('Invalid group order configuration', 'error');
+            return;
+        }
 
         // Collect names directly from input fields
         const participantNames = [];
@@ -1700,68 +1765,96 @@ async function confirmGroupOrder() {
         // Show loading overlay
         showLoadingOverlay('Creating group order...');
 
-        // Create participants array
-        const participants = participantNames.map(name => ({
-            name: name,
-            shareAmount: perPersonShare
-        }));
+        try {
+            // Create participants array
+            const participants = participantNames.map(name => ({
+                name: name,
+                shareAmount: perPersonShare
+            }));
 
-        // Adjust the last person's share to account for rounding
-        const totalShares = participants.reduce((sum, p) => sum + p.shareAmount, 0);
-        if (totalShares > itemPrice) {
-            participants[participants.length - 1].shareAmount -= (totalShares - itemPrice);
-        }
-
-        // Get current user information
-        const currentUser = window.authService ? window.authService.getCurrentUser() : null;
-
-        // Create the group order
-        const order = {
-            employeeName: participants[0].name, // Primary participant
-            items: [{
-                name: currentGroupOrderItem.name,
-                price: currentGroupOrderItem.price,
-                quantity: 1,
-                category: currentGroupOrderItem.category
-            }],
-            total: currentGroupOrderItem.price,
-            hotelName: currentGroupOrderItem.hotelName,
-            isGroupOrder: true,
-            participants: participants,
-            userId: currentUser ? currentUser.id : null,
-            userEmail: currentUser ? currentUser.email : null,
-            userRole: currentUser ? currentUser.role : 'employee',
-            orderTimestamp: new Date().toISOString()
-        };
-
-        const result = await StorageManager.addOrder(order);
-        if (result) {
-            // Hide loading overlay
-            hideLoadingOverlay();
-
-            showToast('Group order placed successfully!');
-
-            // Handle potential errors in post-order operations gracefully
-            try {
-                closeGroupOrderModal();
-
-                // Add to selected items for UI consistency
-                const itemKey = `${currentGroupOrderItem.hotelId}-${currentGroupOrderItem.id}`;
-                selectedItems[itemKey] = {
-                    ...currentGroupOrderItem,
-                    quantity: 1
-                };
-
-                await displayHotelsMenu();
-            } catch (postOrderError) {
-                console.error('Error in post-order operations:', postOrderError);
-                // Don't show error toast for post-order operation failures
+            // Adjust the last person's share to account for rounding
+            const totalShares = participants.reduce((sum, p) => sum + p.shareAmount, 0);
+            if (totalShares > itemPrice) {
+                participants[participants.length - 1].shareAmount -= (totalShares - itemPrice);
             }
+
+            // Get current user information
+            const currentUser = window.authService ? window.authService.getCurrentUser() : null;
+
+            // Create the group order
+            const order = {
+                employeeName: participants[0].name, // Primary participant
+                items: [{
+                    name: currentGroupOrderItem.name,
+                    price: currentGroupOrderItem.price,
+                    quantity: 1,
+                    category: currentGroupOrderItem.category
+                }],
+                total: currentGroupOrderItem.price,
+                hotelName: currentGroupOrderItem.hotelName,
+                isGroupOrder: true,
+                participants: participants,
+                userId: currentUser ? (currentUser.uid || currentUser.id || null) : null,
+                userEmail: currentUser ? currentUser.email : null,
+                userRole: currentUser ? currentUser.role : 'employee',
+                orderTimestamp: new Date().toISOString()
+            };
+
+            const result = await StorageManager.addOrder(order);
+            if (result) {
+                // Hide loading overlay
+                hideLoadingOverlay();
+
+                showToast('Group order placed successfully!', 'success');
+
+                // Handle potential errors in post-order operations gracefully
+                try {
+                    closeGroupOrderModal();
+
+                    // Add to selected items for UI consistency
+                    const itemKey = `${currentGroupOrderItem.hotelId}-${currentGroupOrderItem.id}`;
+                    selectedItems[itemKey] = {
+                        ...currentGroupOrderItem,
+                        quantity: 1
+                    };
+
+                    await displayHotelsMenu();
+                } catch (postOrderError) {
+                    console.error('Error in post-order operations:', postOrderError);
+                    // Don't show error toast for post-order operation failures
+                }
+            }
+        } catch (dbError) {
+            console.error('Database error during group order:', dbError);
+            hideLoadingOverlay();
+            
+            // Show more specific error message
+            let errorMessage = 'Failed to create group order. ';
+            if (dbError.message && dbError.message.includes('permission')) {
+                errorMessage += 'Please check your login status and try again.';
+            } else if (dbError.message && dbError.message.includes('network')) {
+                errorMessage += 'Please check your internet connection and try again.';
+            } else {
+                errorMessage += 'Please try again in a moment.';
+            }
+            
+            showToast(errorMessage, 'error', 8000);
         }
     } catch (error) {
         console.error('Error placing group order:', error);
         hideLoadingOverlay();
-        showToast('Error placing order. Please try again.', 'error');
+        
+        // Show more specific error message
+        let errorMessage = 'Failed to place group order. ';
+        if (error.message && error.message.includes('permission')) {
+            errorMessage += 'Please check your login status and try again.';
+        } else if (error.message && error.message.includes('network')) {
+            errorMessage += 'Please check your internet connection and try again.';
+        } else {
+            errorMessage += 'Please try again in a moment.';
+        }
+        
+        showToast(errorMessage, 'error', 8000);
     }
 }
 

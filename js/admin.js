@@ -2966,7 +2966,7 @@ async function approveUser() {
             disabled: false,
             pendingApproval: false,
             approvedAt: new Date().toISOString(),
-            approvedBy: currentUser ? currentUser.id : 'admin'
+            approvedBy: currentUser ? (currentUser.uid || currentUser.id || 'admin') : 'admin'
         });
         console.log('User account updated successfully');
 
@@ -3020,7 +3020,7 @@ async function rejectUser() {
             disabled: true,
             pendingApproval: false,
             rejectedAt: new Date().toISOString(),
-            rejectedBy: currentUser ? currentUser.id : 'admin'
+            rejectedBy: currentUser ? (currentUser.uid || currentUser.id || 'admin') : 'admin'
         });
         console.log('User account disabled successfully');
 

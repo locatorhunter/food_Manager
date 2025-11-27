@@ -1014,3 +1014,7 @@ function scrollToMenu() {
         window.location.href = 'menu.html';
     }
 }
+
+// Expose functions globally for use in other scripts
+window.displayPopularItems = displayPopularItems;
+window.scrollToMenu = scrollToMenu;

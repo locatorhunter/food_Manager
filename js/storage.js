@@ -271,7 +271,9 @@ const StorageManager = {
             return order;
         }, { 
             context: 'placing order',
-            customMessage: 'Failed to place your order. Please check your connection and try again.'
+            customMessage: 'Failed to place your order. Please check your connection and try again.',
+            forceShowToast: true, // Force show toast for order placement
+            showRetryButton: true
         });
     },
 

@@ -735,3 +735,13 @@ window.showLoadingOverlay = showLoadingOverlay;
 window.hideLoadingOverlay = hideLoadingOverlay;
 window.showElementLoading = showElementLoading;
 window.hideElementLoading = hideElementLoading;
+window.toggleTheme = toggleTheme;
+window.setTheme = setTheme;
+
+// Wrapper function for async toggleTheme to work with onclick handlers
+window.toggleThemeClick = function() {
+    toggleTheme().catch(error => {
+        console.error('Error toggling theme:', error);
+        showToast('Error changing theme. Please try again.', 'error');
+    });
+};
