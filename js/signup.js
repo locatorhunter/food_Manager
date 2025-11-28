@@ -54,23 +54,41 @@ function initializeSignupPage() {
 
 async function handleResendVerification(email) {
     try {
-        showLoadingOverlay('Resending verification email...');
+        showLoadingOverlay('Checking account status...');
         
-        // Try to check if user exists and send verification
+        // Try to check if user exists in Firestore
         const userExists = await checkExistingUser(email);
         
         if (userExists.exists) {
-            // User exists, try to send verification by signing in temporarily
-            // Since we can't know the password, we'll guide user to login page
-            showToast('Account found. Please go to the login page and use "Forgot Password" to verify your email.', 'info');
+            console.log('User found in Firestore:', userExists.data);
+            
+            const userData = userExists.data;
+            
+            if (userData.emailVerified) {
+                // Account is already verified
+                showToast('This email is already verified. Please try logging in.', 'success');
+                setTimeout(() => {
+                    window.location.href = 'login.html';
+                }, 2000);
+            } else {
+                // Account exists but not verified
+                showToast('Account found but not verified. Since you know your password, please use "Forgot Password" on the login page to receive a verification email.', 'info');
+                
+                // Store the email for easy access
+                localStorage.setItem('resendVerificationEmail', email);
+                
+                setTimeout(() => {
+                    window.location.href = 'login.html';
+                }, 3000);
+            }
         } else {
-            // User doesn't exist, this might be a new signup attempt
-            showToast('Please complete the signup process to receive a verification email.', 'info');
+            // User doesn't exist, this is likely a new signup
+            showToast('No account found with this email. Please complete the signup process to create a new account and receive a verification email.', 'info');
         }
         
     } catch (error) {
         console.error('Error handling resend verification:', error);
-        showToast('Error processing resend request. Please try signing up again.', 'error');
+        showToast('Error checking account status. Please try signing up again.', 'error');
     } finally {
         hideLoadingOverlay();
     }
@@ -486,33 +504,45 @@ async function createUserAccount(formData) {
         const user = userCredential.user;
         console.log('Firebase Auth user created:', user.uid);
 
-        // Send email verification
+        // Send email verification with simplified approach
         console.log('Sending email verification...');
+        let emailSent = false;
+        let verificationError = null;
+        
         try {
-            // Try with actionCodeSettings first, fall back to simple verification
-            if (window.actionCodeSettings && window.actionCodeSettings.url) {
-                await user.sendEmailVerification(window.actionCodeSettings);
-                console.log('Email verification sent with actionCodeSettings');
-            } else {
-                await user.sendEmailVerification();
-                console.log('Email verification sent (simple mode)');
+            // Method 1: Try simple email verification without actionCodeSettings
+            await user.sendEmailVerification();
+            emailSent = true;
+            console.log('Email verification sent successfully (simple method)');
+            
+        } catch (error1) {
+            console.warn('Simple method failed, trying with actionCodeSettings:', error1.code);
+            verificationError = error1;
+            
+            try {
+                // Method 2: Try with actionCodeSettings if available
+                if (window.actionCodeSettings) {
+                    await user.sendEmailVerification(window.actionCodeSettings);
+                    emailSent = true;
+                    console.log('Email verification sent with actionCodeSettings');
+                }
+            } catch (error2) {
+                console.warn('actionCodeSettings method also failed:', error2.code);
+                verificationError = error2;
             }
-            
-            // Store user email temporarily for resend functionality
-            sessionStorage.setItem('pendingVerificationEmail', formData.email);
-            console.log('Email verification sent successfully');
-            
-        } catch (verificationError) {
-            console.error('Email verification failed:', verificationError);
-            
-            // Store user email temporarily for resend functionality
-            sessionStorage.setItem('pendingVerificationEmail', formData.email);
+        }
+        
+        // Store user email temporarily for resend functionality regardless of success
+        sessionStorage.setItem('pendingVerificationEmail', formData.email);
+        
+        if (!emailSent && verificationError) {
+            console.error('Email verification failed completely:', verificationError);
             
             let errorMessage = 'Account created but verification email failed to send. ';
             
             switch (verificationError.code) {
                 case 'auth/unauthorized-continue-uri':
-                    errorMessage += 'Please contact support to verify your email manually.';
+                    errorMessage += 'Domain not authorized. Please contact support.';
                     break;
                 case 'auth/invalid-email':
                     errorMessage += 'Please check your email address and try again.';
