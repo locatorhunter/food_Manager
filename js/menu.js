@@ -370,20 +370,7 @@ async function incrementQuantity(hotelId, itemId, hotelName) {
         if (item) {
             const itemKey = `${hotelId}-${itemId}`;
 
-            // Check if this is the first time adding this item
-            const isFirstAddition = !selectedItems[itemKey] || selectedItems[itemKey].quantity === 0;
-
-            if (isFirstAddition) {
-                // Check if item price exceeds the limit
-                const maxAmount = await StorageManager.getMaxAmountPerPerson();
-                if (item.price > maxAmount) {
-                    // Show group order modal instead of normal increment
-                    showGroupOrderModal(item, hotel);
-                    return;
-                }
-            }
-
-            // Normal increment logic
+            // Normal increment logic - removed premature limit check
             const wasFirstItem = Object.keys(selectedItems).length === 0;
             if (!selectedItems[itemKey]) {
                 selectedItems[itemKey] = {
