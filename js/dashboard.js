@@ -227,6 +227,7 @@ function displayOrdersTable(orders, container) {
                     <th>Status</th>
                     <th>Date & Time</th>
                     <th>Employee</th>
+                    <th>User Email</th>
                     <th>Hotel</th>
                     <th>Items</th>
                     <th>Total</th>
@@ -259,6 +260,9 @@ function displayOrdersTable(orders, container) {
                 <td>
                     ${order.employeeName}
                     ${isGroupOrder ? `<br><small style="color: var(--text-secondary);">+ ${order.participants.length - 1} others</small>` : ''}
+                </td>
+                <td>
+                    ${order.userEmail ? order.userEmail : '<span style="color: var(--text-secondary);">N/A</span>'}
                 </td>
                 <td>${order.hotelName}</td>
                 <td>${itemsList}</td>
@@ -350,6 +354,7 @@ function displayGroupedOrders(orders, groupBy, container) {
                     <th>Status</th>
                     <th>Date & Time</th>
                     <th>Employee</th>
+                    <th>User Email</th>
                     <th>Hotel</th>
                     <th>Items</th>
                     <th>Total</th>
@@ -381,6 +386,9 @@ function displayGroupedOrders(orders, groupBy, container) {
                     <td>
                         ${order.employeeName}
                         ${isGroupOrder ? `<br><small style="color: var(--text-secondary);">+ ${order.participants.length - 1} others</small>` : ''}
+                    </td>
+                    <td>
+                        ${order.userEmail ? order.userEmail : '<span style="color: var(--text-secondary);">N/A</span>'}
                     </td>
                     <td>${order.hotelName}</td>
                     <td>${itemsList}</td>
@@ -679,19 +687,20 @@ function exportToCSV() {
         return;
     }
 
-    let csv = 'Date,Time,Employee,Hotel,Items,Total\n';
+    let csv = 'Date,Time,Employee,User Email,Hotel,Items,Total\n';
 
     filteredOrders.forEach(order => {
         const date = formatDateOnly(order.timestamp);
         const time = new Date(order.timestamp).toLocaleTimeString('en-IN');
         const items = order.items.map(item => `${item.name} (${item.quantity})`).join('; ');
+        const userEmail = order.userEmail || 'N/A';
 
         if (order.isGroupOrder) {
             // For group orders, include participant details
             const participants = order.participants.map(p => `${p.name}(${formatCurrency(p.shareAmount)})`).join('; ');
-            csv += `"${date}","${time}","${order.employeeName} (Group)","${order.hotelName}","${items} [Group: ${participants}]",${order.total}\n`;
+            csv += `"${date}","${time}","${order.employeeName} (Group)","${userEmail}","${order.hotelName}","${items} [Group: ${participants}]",${order.total}\n`;
         } else {
-            csv += `"${date}","${time}","${order.employeeName}","${order.hotelName}","${items}",${order.total}\n`;
+            csv += `"${date}","${time}","${order.employeeName}","${userEmail}","${order.hotelName}","${items}",${order.total}\n`;
         }
     });
 
@@ -834,11 +843,12 @@ async function downloadOrdersPDF() {
         // Table headers
         doc.setFontSize(10);
         doc.setFont('helvetica', 'bold');
-        doc.text('Date & Time', 20, yPosition);
-        doc.text('Employee', 60, yPosition);
-        doc.text('Hotel', 100, yPosition);
-        doc.text('Items', 130, yPosition);
-        doc.text('Total', 170, yPosition);
+        doc.text('Date & Time', 15, yPosition);
+        doc.text('Employee', 50, yPosition);
+        doc.text('Email', 80, yPosition);
+        doc.text('Hotel', 105, yPosition);
+        doc.text('Items', 135, yPosition);
+        doc.text('Total', 165, yPosition);
         yPosition += 8;
 
         // Table rows
@@ -850,11 +860,12 @@ async function downloadOrdersPDF() {
 
                 // Repeat headers on new page
                 doc.setFont('helvetica', 'bold');
-                doc.text('Date & Time', 20, yPosition);
-                doc.text('Employee', 60, yPosition);
-                doc.text('Hotel', 100, yPosition);
-                doc.text('Items', 130, yPosition);
-                doc.text('Total', 170, yPosition);
+                doc.text('Date & Time', 15, yPosition);
+                doc.text('Employee', 50, yPosition);
+                doc.text('Email', 80, yPosition);
+                doc.text('Hotel', 105, yPosition);
+                doc.text('Items', 135, yPosition);
+                doc.text('Total', 165, yPosition);
                 yPosition += 8;
                 doc.setFont('helvetica', 'normal');
             }
@@ -865,6 +876,7 @@ async function downloadOrdersPDF() {
 
             const items = order.items.map(item => `${item.name}(${item.quantity})`).join(', ');
             const total = formatCurrency(order.total);
+            const userEmail = order.userEmail || 'N/A';
 
             let employeeName = order.employeeName;
             if (order.isGroupOrder) {
@@ -872,14 +884,15 @@ async function downloadOrdersPDF() {
             }
 
             // Handle long text wrapping
-            const maxWidth = 30;
+            const maxWidth = 25;
             const wrappedItems = doc.splitTextToSize(items, maxWidth);
 
-            doc.text(dateTime, 20, yPosition);
-            doc.text(employeeName, 60, yPosition);
-            doc.text(order.hotelName, 100, yPosition);
-            doc.text(wrappedItems[0], 130, yPosition); // First line of items
-            doc.text(total, 170, yPosition);
+            doc.text(dateTime, 15, yPosition);
+            doc.text(employeeName, 50, yPosition);
+            doc.text(userEmail, 80, yPosition);
+            doc.text(order.hotelName, 105, yPosition);
+            doc.text(wrappedItems[0], 135, yPosition); // First line of items
+            doc.text(total, 165, yPosition);
 
             yPosition += 8;
 
@@ -889,14 +902,14 @@ async function downloadOrdersPDF() {
                     doc.addPage();
                     yPosition = 30;
                 }
-                doc.text(wrappedItems[i], 130, yPosition);
+                doc.text(wrappedItems[i], 135, yPosition);
                 yPosition += 8;
             }
 
             // Add participant details for group orders
             if (order.isGroupOrder && order.participants) {
                 const participantsText = `Participants: ${order.participants.map(p => `${p.name}(${formatCurrency(p.shareAmount)})`).join(', ')}`;
-                const wrappedParticipants = doc.splitTextToSize(participantsText, 150);
+                const wrappedParticipants = doc.splitTextToSize(participantsText, 140);
 
                 wrappedParticipants.forEach((line, index) => {
                     if (yPosition > 270) {
@@ -905,7 +918,7 @@ async function downloadOrdersPDF() {
                     }
                     doc.setFontSize(8);
                     doc.setTextColor(100, 100, 100); // Gray color for participants
-                    doc.text(line, 20, yPosition);
+                    doc.text(line, 15, yPosition);
                     yPosition += 6;
                 });
 
@@ -944,6 +957,7 @@ async function showGroupOrderDetails(orderId) {
                     <p><strong>Total Amount:</strong> ${formatCurrency(order.total)}</p>
                     <p><strong>Hotel:</strong> ${order.hotelName}</p>
                     <p><strong>Order Time:</strong> ${formatDate(order.timestamp)}</p>
+                    <p><strong>User Email:</strong> ${order.userEmail || 'N/A'}</p>
                 </div>
 
                 <h4>Participants (${order.participants.length})</h4>
