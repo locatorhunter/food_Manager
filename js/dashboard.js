@@ -18,6 +18,7 @@ async function initializeDashboard() {
     await setupControls();
     displayOrders();
     await displayOrderSummary();
+    await displayDistributionChecklist();
     await displayPopularItems();
 
     window.addEventListener('orderAdded', refreshDashboard);
@@ -137,6 +138,14 @@ async function setupControls() {
     document.getElementById('exportBtn').addEventListener('click', exportToCSV);
     document.getElementById('downloadSummaryPDFBtn').addEventListener('click', downloadSummaryPDF);
     document.getElementById('downloadOrdersPDFBtn').addEventListener('click', downloadOrdersPDF);
+
+    // Checklist controls
+    document.getElementById('refreshChecklistBtn').addEventListener('click', async () => {
+        await displayDistributionChecklist();
+        showToast('Distribution checklist refreshed!');
+    });
+    document.getElementById('printChecklistBtn').addEventListener('click', printDistributionChecklist);
+    document.getElementById('downloadChecklistPDFBtn').addEventListener('click', downloadChecklistPDF);
 }
 
 function applyFilters() {
@@ -611,10 +620,149 @@ async function displayOrderSummary() {
     }
 }
 
+async function displayDistributionChecklist() {
+    const container = document.getElementById('distributionChecklist');
+    if (!container) return; // Not on page with checklist
+
+    try {
+        const todaysOrders = await StorageManager.getTodaysOrders();
+        const orders = todaysOrders.filter(order => !order.completed);
+
+        if (orders.length === 0) {
+            container.innerHTML = '<p class="empty-message">No pending orders to distribute</p>';
+            return;
+        }
+
+        // Group orders by employee and collect their items
+        const employeeOrders = {};
+
+        orders.forEach(order => {
+            const employeeKey = order.isGroupOrder ? `group_${order.id}` : order.employeeName;
+
+            if (!employeeOrders[employeeKey]) {
+                employeeOrders[employeeKey] = {
+                    employeeName: order.employeeName,
+                    userEmail: order.userEmail,
+                    hotelName: order.hotelName,
+                    items: [],
+                    total: 0,
+                    orderTime: order.timestamp,
+                    isGroupOrder: order.isGroupOrder,
+                    participants: order.participants || []
+                };
+            }
+
+            // Add items to employee's order
+            order.items.forEach(item => {
+                employeeOrders[employeeKey].items.push({
+                    name: item.name,
+                    quantity: item.quantity,
+                    price: item.price,
+                    hotel: order.hotelName
+                });
+            });
+
+            employeeOrders[employeeKey].total += order.total;
+        });
+
+        // Sort employees alphabetically (groups at the end)
+        const sortedEmployees = Object.keys(employeeOrders).sort((a, b) => {
+            const aIsGroup = a.startsWith('group_');
+            const bIsGroup = b.startsWith('group_');
+
+            if (aIsGroup && !bIsGroup) return 1;
+            if (!aIsGroup && bIsGroup) return -1;
+
+            return a.localeCompare(b);
+        });
+
+        let html = '<div class="checklist-header"><h3>📋 Distribution Checklist - ' + new Date().toLocaleDateString() + '</h3></div>';
+        html += '<div class="checklist-items">';
+
+        sortedEmployees.forEach(employeeKey => {
+            const employeeData = employeeOrders[employeeKey];
+            const orderTime = new Date(employeeData.orderTime).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+
+            // For group orders, show all participants
+            const displayName = employeeData.isGroupOrder
+                ? `👥 Group Order (${employeeData.participants.length} people)`
+                : employeeData.employeeName;
+
+            const participantsList = employeeData.isGroupOrder
+                ? employeeData.participants.map(p => p.name).join(', ')
+                : '';
+
+            html += `
+                <div class="checklist-employee ${employeeData.isGroupOrder ? 'group-order' : ''}">
+                    <div class="employee-header">
+                        <div class="employee-info">
+                            <h4>${displayName}</h4>
+                            ${employeeData.isGroupOrder ? `<div class="group-participants">Participants: ${participantsList}</div>` : ''}
+                            <div class="employee-details">
+                                <span class="hotel-badge">${employeeData.hotelName}</span>
+                                <span class="order-time">Ordered at ${orderTime}</span>
+                                ${employeeData.userEmail ? `<span class="email-info">${employeeData.userEmail}</span>` : ''}
+                            </div>
+                        </div>
+                        <div class="distribution-status">
+                            <input type="checkbox" class="distribution-checkbox" data-employee="${employeeKey}">
+                            <label>Distributed</label>
+                        </div>
+                    </div>
+                    <div class="employee-items">
+                        <div class="checklist-compact">
+            `;
+
+            employeeData.items.forEach((item, index) => {
+                html += `
+                    <div class="checklist-item-row">
+                        <span class="item-number">${index + 1}</span>
+                        <span class="item-name">${item.name}</span>
+                        <span class="item-qty">${item.quantity}</span>
+                        <span class="item-amount">${formatCurrency(item.price * item.quantity)}</span>
+                    </div>
+                `;
+            });
+
+            html += `
+                            <div class="checklist-total">
+                                <span class="total-label">Total:</span>
+                                <span class="total-amount">${formatCurrency(employeeData.total)}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        html += '</div>';
+        html += '<div class="checklist-footer"><p><strong>Total Orders:</strong> ' + sortedEmployees.length + ' | <strong>Total Items:</strong> ' + orders.length + '</p></div>';
+
+        container.innerHTML = html;
+
+        // Add event listeners for distribution checkboxes
+        document.querySelectorAll('.distribution-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const employeeCard = this.closest('.checklist-employee');
+                if (this.checked) {
+                    employeeCard.classList.add('distributed');
+                } else {
+                    employeeCard.classList.remove('distributed');
+                }
+            });
+        });
+
+    } catch (error) {
+        console.error('Error displaying distribution checklist:', error);
+        container.innerHTML = '<p class="empty-message">Error loading distribution checklist</p>';
+    }
+}
+
 async function refreshDashboard() {
     await loadOrders();
     displayOrders();
     await displayOrderSummary();
+    await displayDistributionChecklist();
 }
 
 async function handleCustomDate() {
@@ -674,6 +822,65 @@ function printOrderSummary() {
             <p><strong>Time:</strong> ${new Date().toLocaleTimeString()}</p>
             <hr>
             ${summaryElement.innerHTML}
+        </body>
+        </html>
+    `);
+    printWindow.document.close();
+    printWindow.print();
+}
+
+function printDistributionChecklist() {
+    const checklistElement = document.getElementById('distributionChecklist');
+    if (!checklistElement || checklistElement.innerHTML.includes('No pending orders')) {
+        showToast('No checklist to print', 'error');
+        return;
+    }
+
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Food Distribution Checklist - ${new Date().toLocaleDateString()}</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 20px; font-size: 12px; line-height: 1.4; }
+                .checklist-header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
+                .checklist-header h3 { margin: 0; color: #333; font-size: 16px; }
+                .checklist-employee { margin-bottom: 15px; border: 1px solid #ddd; border-radius: 6px; overflow: hidden; page-break-inside: avoid; }
+                .employee-header { background: #f8f9fa; padding: 10px; border-bottom: 1px solid #dee2e6; }
+                .employee-info h4 { margin: 0 0 4px 0; color: #333; font-size: 14px; }
+                .group-participants { font-size: 11px; color: #666; background: #fff3cd; padding: 3px 6px; border-radius: 3px; margin-bottom: 4px; }
+                .employee-details { display: flex; gap: 10px; flex-wrap: wrap; font-size: 11px; color: #666; }
+                .hotel-badge { background: #e3f2fd; color: #1976d2; padding: 2px 6px; border-radius: 8px; font-weight: 500; }
+                .order-time, .email-info { color: #666; }
+                .distribution-status { margin-top: 6px; }
+                .distribution-status input[type="checkbox"] { margin-right: 6px; transform: scale(1.1); }
+                .employee-items { padding: 10px; }
+                .checklist-compact { background: white; border: 1px solid #ddd; border-radius: 4px; }
+                .checklist-item-row { display: flex; align-items: center; padding: 6px 8px; border-bottom: 1px solid #eee; font-size: 11px; }
+                .checklist-item-row:last-child { border-bottom: none; }
+                .item-number { width: 25px; text-align: center; font-weight: 600; color: #2563eb; }
+                .item-name { flex: 1; font-weight: 500; }
+                .item-qty { width: 35px; text-align: center; font-weight: 600; background: #f8f9fa; padding: 2px 4px; border-radius: 3px; margin: 0 6px; }
+                .item-amount { width: 60px; text-align: right; font-weight: 600; }
+                .checklist-total { display: flex; justify-content: space-between; align-items: center; padding: 8px; background: #f8f9fa; border-top: 1px solid #dee2e6; font-weight: 700; }
+                .checklist-footer { text-align: center; margin-top: 20px; padding: 10px; background: #f8f9fa; border-radius: 6px; font-size: 11px; }
+                .distributed { background: #d4edda !important; }
+                .group-order { border-left: 3px solid #ffc107; }
+                @media print {
+                    body { margin: 0; font-size: 11px; }
+                    .distribution-status { display: none !important; }
+                    .checklist-employee { page-break-inside: avoid; }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="checklist-header">
+                <h3>📋 Food Distribution Checklist</h3>
+                <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
+                <p><strong>Time:</strong> ${new Date().toLocaleTimeString()}</p>
+            </div>
+            ${checklistElement.innerHTML}
         </body>
         </html>
     `);
@@ -935,6 +1142,165 @@ async function downloadOrdersPDF() {
 
     } catch (error) {
         console.error('Error generating PDF:', error);
+        showToast('Error generating PDF', 'error');
+    }
+}
+
+async function downloadChecklistPDF() {
+    const checklistElement = document.getElementById('distributionChecklist');
+    if (!checklistElement || checklistElement.innerHTML.includes('No pending orders')) {
+        showToast('No checklist to download', 'error');
+        return;
+    }
+
+    try {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+
+        // Add title
+        doc.setFontSize(20);
+        doc.text('Food Distribution Checklist', 20, 30);
+
+        // Add date
+        doc.setFontSize(12);
+        doc.text(`Date: ${new Date().toLocaleDateString()}`, 20, 45);
+        doc.text(`Time: ${new Date().toLocaleTimeString()}`, 20, 55);
+
+        let yPosition = 70;
+
+        // Get checklist data
+        const todaysOrders = await StorageManager.getTodaysOrders();
+        const orders = todaysOrders.filter(order => !order.completed);
+
+        // Group orders by employee
+        const employeeOrders = {};
+
+        orders.forEach(order => {
+            const employeeKey = order.isGroupOrder ? `group_${order.id}` : order.employeeName;
+
+            if (!employeeOrders[employeeKey]) {
+                employeeOrders[employeeKey] = {
+                    employeeName: order.employeeName,
+                    userEmail: order.userEmail,
+                    hotelName: order.hotelName,
+                    items: [],
+                    total: 0,
+                    orderTime: order.timestamp,
+                    isGroupOrder: order.isGroupOrder,
+                    participants: order.participants || []
+                };
+            }
+
+            order.items.forEach(item => {
+                employeeOrders[employeeKey].items.push({
+                    name: item.name,
+                    quantity: item.quantity,
+                    price: item.price
+                });
+            });
+
+            employeeOrders[employeeKey].total += order.total;
+        });
+
+        // Sort employees alphabetically (groups at the end)
+        const sortedEmployees = Object.keys(employeeOrders).sort((a, b) => {
+            const aIsGroup = a.startsWith('group_');
+            const bIsGroup = b.startsWith('group_');
+
+            if (aIsGroup && !bIsGroup) return 1;
+            if (!aIsGroup && bIsGroup) return -1;
+
+            return a.localeCompare(b);
+        });
+
+        // Generate PDF content
+        sortedEmployees.forEach(employeeKey => {
+            // Check if we need a new page
+            if (yPosition > 220) {
+                doc.addPage();
+                yPosition = 30;
+            }
+
+            const employeeData = employeeOrders[employeeKey];
+            const orderTime = new Date(employeeData.orderTime).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+
+            // Employee header
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+
+            const displayName = employeeData.isGroupOrder
+                ? `👥 Group Order (${employeeData.participants.length} people)`
+                : employeeData.employeeName;
+
+            doc.text(`${displayName}`, 20, yPosition);
+            yPosition += 8;
+
+            // Group participants
+            if (employeeData.isGroupOrder) {
+                doc.setFontSize(10);
+                doc.setFont('helvetica', 'normal');
+                const participantsList = employeeData.participants.map(p => p.name).join(', ');
+                doc.text(`Participants: ${participantsList}`, 20, yPosition);
+                yPosition += 6;
+            }
+
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`Hotel: ${employeeData.hotelName} | Ordered at: ${orderTime}`, 20, yPosition);
+            if (employeeData.userEmail) {
+                yPosition += 6;
+                doc.text(`Email: ${employeeData.userEmail}`, 20, yPosition);
+            }
+            yPosition += 10;
+
+            // Items table
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'bold');
+
+            // Table headers
+            doc.text('S.No', 20, yPosition);
+            doc.text('Food Item', 35, yPosition);
+            doc.text('Qty', 140, yPosition);
+            doc.text('Amount', 160, yPosition);
+            yPosition += 6;
+
+            // Table rows
+            doc.setFont('helvetica', 'normal');
+            employeeData.items.forEach((item, index) => {
+                if (yPosition > 270) {
+                    doc.addPage();
+                    yPosition = 30;
+                }
+
+                doc.text(`${index + 1}`, 20, yPosition);
+                doc.text(item.name, 35, yPosition);
+                doc.text(`${item.quantity}`, 140, yPosition);
+                doc.text(formatCurrency(item.price * item.quantity), 160, yPosition);
+                yPosition += 6;
+            });
+
+            // Total
+            doc.setFont('helvetica', 'bold');
+            doc.text(`Total: ${formatCurrency(employeeData.total)}`, 20, yPosition + 5);
+            yPosition += 15;
+        });
+
+        // Add summary at the end
+        if (yPosition > 250) {
+            doc.addPage();
+            yPosition = 30;
+        }
+
+        doc.setFontSize(12);
+        doc.text(`Summary: ${sortedEmployees.length} orders, ${orders.length} items`, 20, yPosition);
+
+        // Save the PDF
+        const fileName = `distribution-checklist-${new Date().toISOString().split('T')[0]}.pdf`;
+        doc.save(fileName);
+        showToast('Distribution checklist PDF downloaded successfully!');
+
+    } catch (error) {
+        console.error('Error generating checklist PDF:', error);
         showToast('Error generating PDF', 'error');
     }
 }

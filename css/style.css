@@ -8849,3 +8849,284 @@ body.retro-light .selection-summary {
         padding: 0.75rem;
     }
 }
+
+/* FOOD DISTRIBUTION CHECKLIST STYLES */
+.checklist-content {
+    max-height: 600px;
+    overflow-y: auto;
+}
+
+.checklist-header {
+    text-align: center;
+    margin-bottom: 15px;
+    padding: 10px;
+    background: var(--bg-tertiary);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.checklist-header h3 {
+    margin: 0;
+    color: var(--text-primary);
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+.checklist-items {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.checklist-employee {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 12px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.checklist-employee:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border-color: var(--primary-color);
+}
+
+.checklist-employee.distributed {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(5, 150, 105, 0.04));
+    border-color: var(--success-color);
+}
+
+.checklist-employee.group-order {
+    border-left: 4px solid var(--warning-color);
+}
+
+.employee-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 10px;
+    gap: 10px;
+}
+
+.employee-info h4 {
+    margin: 0 0 4px 0;
+    color: var(--text-primary);
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.group-participants {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+    margin-bottom: 4px;
+    padding: 4px 8px;
+    background: rgba(245, 158, 11, 0.1);
+    border-radius: 4px;
+    border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.employee-details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.hotel-badge {
+    background: var(--bg-accent);
+    color: #000000;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.75rem;
+    border: 1px solid var(--primary-color);
+}
+
+.order-time {
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.email-info {
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.distribution-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    flex-shrink: 0;
+}
+
+.distribution-status input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--primary-color);
+    cursor: pointer;
+}
+
+.employee-items {
+    margin-top: 8px;
+}
+
+.checklist-compact {
+    background: var(--bg-primary);
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+}
+
+.checklist-item-row {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.85rem;
+    transition: background 0.2s ease;
+}
+
+.checklist-item-row:hover {
+    background: rgba(37, 99, 235, 0.03);
+}
+
+.checklist-item-row:last-child {
+    border-bottom: none;
+}
+
+.item-number {
+    width: 30px;
+    text-align: center;
+    font-weight: 600;
+    color: var(--primary-color);
+    font-size: 0.8rem;
+}
+
+.item-name {
+    flex: 1;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.item-qty {
+    width: 40px;
+    text-align: center;
+    font-weight: 600;
+    background: var(--bg-tertiary);
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin: 0 8px;
+}
+
+.item-amount {
+    width: 70px;
+    text-align: right;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.checklist-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    background: var(--bg-tertiary);
+    border-top: 1px solid var(--border-color);
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.total-label {
+    font-size: 0.9rem;
+}
+
+.total-amount {
+    color: var(--primary-color);
+    font-size: 0.95rem;
+}
+
+.checklist-footer {
+    text-align: center;
+    margin-top: 15px;
+    padding: 10px;
+    background: var(--bg-tertiary);
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+}
+
+/* Print Styles for Checklist */
+@media print {
+    .checklist-employee {
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+
+    .distribution-status {
+        display: none !important;
+    }
+
+    .checklist-header {
+        background: white !important;
+        border: 2px solid #000 !important;
+        -webkit-print-color-adjust: exact;
+        color-adjust: exact;
+    }
+
+    .checklist-table th {
+        background: #333 !important;
+        -webkit-print-color-adjust: exact;
+        color-adjust: exact;
+    }
+
+    .hotel-badge {
+        background: #f0f0f0 !important;
+        border: 1px solid #000 !important;
+        -webkit-print-color-adjust: exact;
+        color-adjust: exact;
+    }
+}
+
+/* Responsive Design for Checklist */
+@media (max-width: 768px) {
+    .checklist-content {
+        max-height: 400px;
+    }
+
+    .checklist-employee {
+        padding: 15px;
+    }
+
+    .employee-header {
+        flex-direction: column;
+        gap: 10px;
+        align-items: flex-start;
+    }
+
+    .distribution-status {
+        align-self: flex-end;
+    }
+
+    .checklist-table {
+        font-size: 0.85rem;
+    }
+
+    .checklist-table th,
+    .checklist-table td {
+        padding: 8px 12px;
+    }
+
+    .employee-details {
+        flex-direction: column;
+        gap: 6px;
+    }
+}
