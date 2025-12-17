@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://*.firebaseio.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://www.gstatic.com https://identitytoolkit.googleapis.com https://firestore.googleapis.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com;">
+    <title>Auragram - OfzHub</title>
+    <link rel="stylesheet" href="css/style.css?v=1.0.4">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-functions-compat.js"></script>
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCLzX2loYEmPjk0AgH0caHLFBso9yPYTCc",
+            authDomain: "foodmanager-19cbb.firebaseapp.com",
+            projectId: "foodmanager-19cbb",
+            storageBucket: "foodmanager-19cbb.firebasestorage.app",
+            messagingSenderId: "853074932493",
+            appId: "1:853074932493:web:779a3bd8e5e501cb86f644",
+            measurementId: "G-639Z6PMW6R"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // Action Code Settings for email verification and password reset
+        const currentDomain = window.location.hostname;
+        const isLocalhost = currentDomain === 'localhost' || currentDomain === '127.0.0.1';
+
+        window.actionCodeSettings = {
+            url: isLocalhost ?
+                `http://${currentDomain}/login.html` :
+                `https://${currentDomain}/login.html`,
+            handleCodeInApp: false
+        };
+
+        // Make Firebase available globally
+        window.firebaseDB = database;
+        window.auth = auth;
+        window.db = db;
+        window.functions = firebase.functions();
+        window.firebaseRef = (path) => database.ref(path);
+        window.firebaseSet = (ref, data) => ref.set(data);
+        window.firebaseGet = (ref) => ref.once('value');
+        window.firebaseOnValue = (ref, callback) => ref.on('value', callback);
+        window.firebasePush = (ref) => ref.push();
+        window.firebaseUpdate = (ref, data) => ref.update(data);
+        window.firebaseRemove = (ref) => ref.remove();
+        console.log('Firebase initialized successfully');
+    </script>
+    <style>
+        /* Auragram specific styles */
+        .auragram-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .create-post-card {
+            background: var(--bg-secondary, #fff);
+            border: 1px solid var(--border-color, #dee2e6);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .post-input-area {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .post-textarea {
+            flex: 1;
+            border: 1px solid var(--border-color, #dee2e6);
+            border-radius: 8px;
+            padding: 12px;
+            resize: vertical;
+            min-height: 80px;
+            font-family: inherit;
+            font-size: 14px;
+        }
+
+        .post-textarea:focus {
+            outline: none;
+            border-color: var(--primary-color, #007bff);
+            box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+        }
+
+        .post-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 12px;
+        }
+
+        .post-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .image-preview {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 8px;
+            margin-top: 12px;
+            display: none;
+        }
+
+        .posts-feed {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .post-card {
+            background: var(--bg-secondary, #fff);
+            border: 1px solid var(--border-color, #dee2e6);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .post-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px;
+            border-bottom: 1px solid var(--border-color, #dee2e6);
+        }
+
+        .post-user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .post-user-info {
+            flex: 1;
+        }
+
+        .post-username {
+            font-weight: 600;
+            color: var(--text-color, #333);
+            margin: 0;
+        }
+
+        .post-timestamp {
+            font-size: 12px;
+            color: var(--text-muted, #6c757d);
+            margin: 0;
+        }
+
+        .post-content {
+            padding: 16px;
+        }
+
+        .post-text {
+            margin: 0 0 12px 0;
+            line-height: 1.5;
+            white-space: pre-wrap;
+        }
+
+        .post-image {
+            width: 100%;
+            max-height: 400px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+
+        .post-actions-bar {
+            display: flex;
+            gap: 16px;
+            padding: 8px 16px;
+            border-top: 1px solid var(--border-color, #dee2e6);
+        }
+
+        .action-button {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px;
+            border: none;
+            background: none;
+            color: var(--text-muted, #6c757d);
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            font-size: 14px;
+        }
+
+        .action-button:hover {
+            background: var(--bg-tertiary, #f8f9fa);
+            color: var(--text-color, #333);
+        }
+
+        .action-button.liked {
+            color: #e74c3c;
+        }
+
+        .comments-section {
+            border-top: 1px solid var(--border-color, #dee2e6);
+            padding: 16px;
+        }
+
+        .comment {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .comment:last-child {
+            margin-bottom: 0;
+        }
+
+        .comment-avatar {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 10px;
+            flex-shrink: 0;
+        }
+
+        .comment-content {
+            flex: 1;
+        }
+
+        .comment-text {
+            margin: 0;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .comment-meta {
+            font-size: 12px;
+            color: var(--text-muted, #6c757d);
+            margin-top: 2px;
+        }
+
+        .add-comment {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border-color, #dee2e6);
+        }
+
+        .comment-input {
+            flex: 1;
+            border: 1px solid var(--border-color, #dee2e6);
+            border-radius: 16px;
+            padding: 8px 12px;
+            font-size: 14px;
+            resize: none;
+            min-height: 32px;
+            max-height: 80px;
+        }
+
+        .comment-input:focus {
+            outline: none;
+            border-color: var(--primary-color, #007bff);
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid var(--primary-color, #007bff);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-muted, #6c757d);
+        }
+
+        .empty-state h3 {
+            margin: 0 0 8px 0;
+            color: var(--text-color, #333);
+        }
+
+        /* Mobile responsiveness */
+        @media (max-width: 768px) {
+            .auragram-container {
+                padding: 10px;
+            }
+
+            .create-post-card,
+            .post-card {
+                border-radius: 8px;
+            }
+
+            .post-header,
+            .post-content,
+            .post-actions-bar,
+            .comments-section {
+                padding: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav id="navbar"></nav>
+
+    <main class="container">
+        <div class="auragram-container">
+            <h1 style="text-align: center; margin-bottom: 30px;">📸 Auragram</h1>
+
+            <!-- Create Post Card -->
+            <div class="create-post-card">
+                <div class="post-input-area">
+                    <div class="user-avatar" id="currentUserAvatar">?</div>
+                    <textarea
+                        class="post-textarea"
+                        id="postContent"
+                        placeholder="What's on your mind? Share your thoughts, photos, or opinions..."
+                        maxlength="1000"></textarea>
+                </div>
+
+                <img id="imagePreview" class="image-preview" alt="Preview">
+
+                <div class="post-actions">
+                    <div class="post-buttons">
+                        <button class="btn btn-outline btn-small" onclick="document.getElementById('imageInput').click()">
+                            📷 Photo
+                        </button>
+                        <input type="file" id="imageInput" accept="image/*" style="display: none;" onchange="previewImage()">
+                    </div>
+                    <button class="btn btn-primary" id="postButton" onclick="createPost()">
+                        <span id="postButtonText">Post</span>
+                        <span id="postButtonLoading" style="display: none;">
+                            <span class="loading-spinner"></span>
+                        </span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Posts Feed -->
+            <div id="postsFeed" class="posts-feed">
+                <div class="empty-state">
+                    <h3>📝 No posts yet</h3>
+                    <p>Be the first to share something! Create a post above to get started.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 OfzHub. All rights reserved. | Developed by Vijay</p>
+    </footer>
+
+
+    <script src="js/modal.js?v=1.0.4"></script>
+    <script src="js/utils.js?v=1.0.4"></script>
+    <script src="js/auth.js?v=1.0.1"></script>
+    <script src="js/storage.js?v=1.0.4"></script>
+    <script src="js/common.js?v=1.0.4"></script>
+    <script src="js/auragram.js?v=1.0.0"></script>
+</body>
+</html>

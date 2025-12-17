@@ -70,9 +70,9 @@ function initializeNavbar() {
     const navbarHtml = `
         <div class="navbar" role="navigation" aria-label="Main navigation">
             <div class="navbar-container">
-                <a href="index.html" class="navbar-brand" aria-label="Lunch Manager Home">
-                    <div class="navbar-logo" aria-hidden="true">🍽️</div>
-                    <span>Lunch Manager</span>
+                <a href="index.html" class="navbar-brand" aria-label="OfzHub Home">
+                    <div class="navbar-logo" aria-hidden="true">🏢</div>
+                    <span>OfzHub</span>
                 </a>
 
                 <button class="mobile-menu-toggle"
@@ -96,7 +96,12 @@ function initializeNavbar() {
                                         class="nav-link"
                                         data-page="user-orders"
                                         role="menuitem"
-                                        aria-label="View my order history">My Orders</a></li>` : ''}
+                                        aria-label="View my order history">My Orders</a></li>
+                    <li role="none"><a href="auragram.html"
+                                         class="nav-link"
+                                         data-page="auragram"
+                                         role="menuitem"
+                                         aria-label="View social feed and share posts">Auragram</a></li>` : ''}
                     ${isAdmin ? `<li role="none"><a href="dashboard.html"
                                         class="nav-link"
                                         data-page="dashboard"
@@ -199,7 +204,7 @@ async function initializeTheme() {
             setTheme(savedTheme);
         } else {
             // Fallback to localStorage if StorageManager not available
-            const savedTheme = localStorage.getItem('lunchManager_theme') || 'retro-light';
+            const savedTheme = localStorage.getItem('ofzhub_theme') || 'retro-light';
             setTheme(savedTheme);
         }
     } catch (error) {
@@ -271,11 +276,11 @@ async function toggleTheme() {
         if (typeof StorageManager !== 'undefined' && typeof StorageManager.setTheme === 'function') {
             await StorageManager.setTheme(newTheme);
         } else {
-            localStorage.setItem('lunchManager_theme', newTheme);
+            localStorage.setItem('ofzhub_theme', newTheme);
         }
     } catch (error) {
         console.warn('Error saving theme:', error);
-        localStorage.setItem('lunchManager_theme', newTheme);
+        localStorage.setItem('ofzhub_theme', newTheme);
     }
 
     // Update ARIA label
@@ -290,12 +295,19 @@ async function toggleTheme() {
 }
 
 async function initializeBanner() {
+    // Only initialize banner if banner element exists
+    const bannerElement = document.getElementById('banner');
+    if (!bannerElement) {
+        console.log('Banner element not found, skipping banner initialization');
+        return;
+    }
+
     await updateBanner();
     await loadAndDisplayNotice();
     window.addEventListener('hotelsUpdated', updateBanner);
     // Update banner when localStorage changes from other pages
     window.addEventListener('storage', async (e) => {
-        if (e.key && e.key.startsWith('lunchManager_selectedHotels')) {
+        if (e.key && e.key.startsWith('ofzhub_selectedHotels')) {
             await updateBanner();
         }
     });

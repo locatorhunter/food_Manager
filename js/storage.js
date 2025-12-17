@@ -9,7 +9,10 @@ const StorageManager = {
         SELECTED_HOTELS: 'selectedHotels',
         ORDERS: 'orders',
         THEME: 'theme',
-        SETTINGS: 'settings'
+        SETTINGS: 'settings',
+        OFFISOGRAM_POSTS: 'offisogram/posts',
+        OFFISOGRAM_COMMENTS: 'offisogram/comments',
+        OFFISOGRAM_REACTIONS: 'offisogram/reactions'
     },
 
     // Initialize real-time listeners
@@ -476,6 +479,185 @@ const StorageManager = {
         const notices = await this.getNotices();
         const updatedNotices = notices.map(n => ({ ...n, active: false, updatedAt: new Date().toISOString() }));
         await this.saveNotices(updatedNotices);
+    },
+
+    // ===== OFFISOGRAM - POSTS =====
+    async getPosts() {
+        try {
+            const postsRef = firebaseRef(StorageManager.PATHS.OFFISOGRAM_POSTS);
+            const snapshot = await firebaseGet(postsRef);
+            const data = snapshot.val() || {};
+            return Object.values(data).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        } catch (error) {
+            console.error('Error fetching posts:', error);
+            return [];
+        }
+    },
+
+    async addPost(postData) {
+        try {
+            postData.id = Date.now().toString() + '_' + Math.random().toString(36).substr(2, 9);
+            postData.createdAt = new Date().toISOString();
+            postData.updatedAt = new Date().toISOString();
+            postData.likes = 0;
+            postData.comments = 0;
+
+            const postRef = firebaseRef(`${StorageManager.PATHS.OFFISOGRAM_POSTS}/${postData.id}`);
+            await firebaseSet(postRef, postData);
+            return postData;
+        } catch (error) {
+            console.error('Error adding post:', error);
+            throw error;
+        }
+    },
+
+    async updatePost(postId, updates) {
+        try {
+            const postRef = firebaseRef(`${StorageManager.PATHS.OFFISOGRAM_POSTS}/${postId}`);
+            await firebaseUpdate(postRef, { ...updates, updatedAt: new Date().toISOString() });
+        } catch (error) {
+            console.error('Error updating post:', error);
+            throw error;
+        }
+    },
+
+    async deletePost(postId) {
+        try {
+            const postRef = firebaseRef(`${StorageManager.PATHS.OFFISOGRAM_POSTS}/${postId}`);
+            await firebaseRemove(postRef);
+        } catch (error) {
+            console.error('Error deleting post:', error);
+            throw error;
+        }
+    },
+
+    async getPostById(postId) {
+        try {
+            const posts = await this.getPosts();
+            return posts.find(p => p.id === postId);
+        } catch (error) {
+            console.error('Error fetching post:', error);
+            return null;
+        }
+    },
+
+    // ===== OFFISOGRAM - COMMENTS =====
+    async getComments(postId) {
+        try {
+            const commentsRef = firebaseRef(`${StorageManager.PATHS.OFFISOGRAM_COMMENTS}/${postId}`);
+            const snapshot = await firebaseGet(commentsRef);
+            const data = snapshot.val() || {};
+            return Object.values(data).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+        } catch (error) {
+            console.error('Error fetching comments:', error);
+            return [];
+        }
+    },
+
+    async addComment(postId, commentData) {
+        try {
+            commentData.id = Date.now().toString() + '_' + Math.random().toString(36).substr(2, 9);
+            commentData.postId = postId;
+            commentData.createdAt = new Date().toISOString();
+
+            const commentRef = firebaseRef(`${StorageManager.PATHS.OFFISOGRAM_COMMENTS}/${postId}/${commentData.id}`);
+            await firebaseSet(commentRef, commentData);
+
+            // Update comment count on post
+            const post = await this.getPostById(postId);
+            if (post) {
+                await this.updatePost(postId, { comments: (post.comments || 0) + 1 });
+            }
+
+            return commentData;
+        } catch (error) {
+            console.error('Error adding comment:', error);
+            throw error;
+        }
+    },
+
+    async deleteComment(postId, commentId) {
+        try {
+            const commentRef = firebaseRef(`${StorageManager.PATHS.OFFISOGRAM_COMMENTS}/${postId}/${commentId}`);
+            await firebaseRemove(commentRef);
+
+            // Update comment count on post
+            const post = await this.getPostById(postId);
+            if (post) {
+                await this.updatePost(postId, { comments: Math.max(0, (post.comments || 0) - 1) });
+            }
+        } catch (error) {
+            console.error('Error deleting comment:', error);
+            throw error;
+        }
+    },
+
+    // ===== OFFISOGRAM - REACTIONS =====
+    async getReactions(postId) {
+        try {
+            const reactionsRef = firebaseRef(`${StorageManager.PATHS.OFFISOGRAM_REACTIONS}/${postId}`);
+            const snapshot = await firebaseGet(reactionsRef);
+            const data = snapshot.val() || {};
+            return Object.values(data);
+        } catch (error) {
+            console.error('Error fetching reactions:', error);
+            return [];
+        }
+    },
+
+    async addReaction(postId, userId, reactionType = 'like') {
+        try {
+            const reactionId = `${userId}_${reactionType}`;
+            const reactionData = {
+                id: reactionId,
+                postId: postId,
+                userId: userId,
+                type: reactionType,
+                createdAt: new Date().toISOString()
+            };
+
+            const reactionRef = firebaseRef(`${StorageManager.PATHS.OFFISOGRAM_REACTIONS}/${postId}/${reactionId}`);
+            await firebaseSet(reactionRef, reactionData);
+
+            // Update like count on post
+            const post = await this.getPostById(postId);
+            if (post) {
+                await this.updatePost(postId, { likes: (post.likes || 0) + 1 });
+            }
+
+            return reactionData;
+        } catch (error) {
+            console.error('Error adding reaction:', error);
+            throw error;
+        }
+    },
+
+    async removeReaction(postId, userId, reactionType = 'like') {
+        try {
+            const reactionId = `${userId}_${reactionType}`;
+            const reactionRef = firebaseRef(`${StorageManager.PATHS.OFFISOGRAM_REACTIONS}/${postId}/${reactionId}`);
+            await firebaseRemove(reactionRef);
+
+            // Update like count on post
+            const post = await this.getPostById(postId);
+            if (post) {
+                await this.updatePost(postId, { likes: Math.max(0, (post.likes || 0) - 1) });
+            }
+        } catch (error) {
+            console.error('Error removing reaction:', error);
+            throw error;
+        }
+    },
+
+    async hasUserReacted(postId, userId, reactionType = 'like') {
+        try {
+            const reactions = await this.getReactions(postId);
+            const reactionId = `${userId}_${reactionType}`;
+            return reactions.some(r => r.id === reactionId);
+        } catch (error) {
+            console.error('Error checking user reaction:', error);
+            return false;
+        }
     },
 
     // ===== RESET =====
