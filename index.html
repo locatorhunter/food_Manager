@@ -61,6 +61,18 @@
     <!-- Hero Section -->
     <section class="hero-section">
         <div class="hero-content">
+            <!-- Notice Banner -->
+            <div id="noticeBanner" class="notice-banner" style="display: none;">
+                <div class="notice-content">
+                    <span class="notice-icon">ℹ️</span>
+                    <div class="notice-text">
+                        <strong id="noticeTitle">Notice</strong>
+                        <span id="noticeMessage">Loading...</span>
+                    </div>
+                    <button class="notice-close" onclick="hideNotice()" title="Close notice">×</button>
+                </div>
+            </div>
+
             <h1>Welcome to Lunch Manager</h1>
             <p class="hero-subtitle">Order your lunch with ease and enjoy great food.</p>
             <div class="hero-buttons">
@@ -124,6 +136,7 @@
                 }
 
                 displayPopularItems();
+                loadAndDisplayNotice();
             };
 
             // Listen for auth state changes
@@ -134,6 +147,7 @@
                         const currentUser = window.authService ? window.authService.getCurrentUser() : null;
                         if (currentUser) {
                             displayPopularItems();
+                            loadAndDisplayNotice();
                         } else {
                             // Wait a bit for user data to be loaded
                             setTimeout(checkUserData, 500);
@@ -152,9 +166,73 @@
             setTimeout(() => {
                 if (window.authService && window.authService.getCurrentUser()) {
                     displayPopularItems();
+                    loadAndDisplayNotice();
                 }
             }, 100);
         });
+
+        // Notice Banner Functions
+        async function loadAndDisplayNotice() {
+            try {
+                const notice = await StorageManager.getCurrentNotice();
+                if (notice && notice.active !== false) {
+                    displayNotice(notice);
+                } else {
+                    hideNotice();
+                }
+            } catch (error) {
+                console.error('Error loading notice:', error);
+                hideNotice();
+            }
+        }
+
+        function displayNotice(notice) {
+            const banner = document.getElementById('noticeBanner');
+            const titleEl = document.getElementById('noticeTitle');
+            const messageEl = document.getElementById('noticeMessage');
+            const iconEl = banner.querySelector('.notice-icon');
+
+            if (banner && titleEl && messageEl && iconEl) {
+                // Set content
+                titleEl.textContent = notice.title || 'Notice';
+                messageEl.textContent = notice.message;
+
+                // Set type-specific styling
+                const type = notice.type || 'info';
+                banner.className = `notice-banner notice-${type}`;
+
+                // Set icon
+                switch (type) {
+                    case 'success':
+                        iconEl.textContent = '✅';
+                        break;
+                    case 'warning':
+                        iconEl.textContent = '⚠️';
+                        break;
+                    case 'error':
+                        iconEl.textContent = '❌';
+                        break;
+                    case 'quote':
+                        iconEl.textContent = '💭';
+                        break;
+                    default:
+                        iconEl.textContent = 'ℹ️';
+                }
+
+                // Show banner
+                banner.style.display = 'block';
+
+                // Add slide-down animation
+                banner.style.animation = 'slideDownNotice 0.5s ease-out';
+            }
+        }
+
+        function hideNotice() {
+            const banner = document.getElementById('noticeBanner');
+            if (banner) {
+                banner.style.display = 'none';
+            }
+        }
     </script>
 </body>
 </html>

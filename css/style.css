@@ -695,7 +695,7 @@ body.retro-light .card h3 {
 .hero-section {
     display: flex;
     align-items: center;
-    min-height: 100vh;
+    min-height: 80vh;
     background: var(--hero-bg);
     padding: 80px 0;
     position: relative;
@@ -721,6 +721,241 @@ body.retro-light .card h3 {
     text-align: center;
     position: relative;
     z-index: 1;
+}
+
+/* NOTICE BANNER */
+.notice-banner {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 100%);
+    backdrop-filter: blur(10px);
+    border-radius: 12px;
+    margin-bottom: 30px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    animation: slideDownNotice 0.5s ease-out;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Notice type variants */
+.notice-info {
+    border-left: 4px solid #007bff;
+}
+
+.notice-info .notice-icon {
+    color: #007bff;
+}
+
+.notice-info strong {
+    color: #007bff;
+}
+
+.notice-success {
+    border-left: 4px solid #28a745;
+}
+
+.notice-success .notice-icon {
+    color: #28a745;
+}
+
+.notice-success strong {
+    color: #28a745;
+}
+
+.notice-warning {
+    border-left: 4px solid #ffc107;
+}
+
+.notice-warning .notice-icon {
+    color: #ffc107;
+}
+
+.notice-warning strong {
+    color: #ffc107;
+}
+
+.notice-error {
+    border-left: 4px solid #dc3545;
+}
+
+.notice-error .notice-icon {
+    color: #dc3545;
+}
+
+.notice-error strong {
+    color: #dc3545;
+}
+
+.notice-quote {
+    border-left: 4px solid #6f42c1;
+}
+
+.notice-quote .notice-icon {
+    color: #6f42c1;
+}
+
+.notice-quote strong {
+    color: #6f42c1;
+}
+
+@keyframes slideDownNotice {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.notice-content {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 16px 20px;
+}
+
+.notice-icon {
+    font-size: 1.5rem;
+    flex-shrink: 0;
+}
+
+.notice-text {
+    flex: 1;
+    text-align: left;
+}
+
+.notice-text strong {
+    display: block;
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.notice-text span {
+    font-size: 0.95rem;
+    line-height: 1.4;
+}
+
+.notice-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--text-secondary);
+    padding: 4px;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.notice-close:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    transform: scale(1.1);
+}
+
+/* Notice types */
+.notice-banner.notice-success {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(5, 150, 105, 0.1) 100%);
+    border-left: 4px solid var(--success-color);
+}
+
+.notice-banner.notice-success .notice-icon {
+    color: var(--success-color);
+}
+
+.notice-banner.notice-success .notice-text strong {
+    color: var(--success-color);
+}
+
+.notice-banner.notice-warning {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(217, 119, 6, 0.1) 100%);
+    border-left: 4px solid var(--warning-color);
+}
+
+.notice-banner.notice-warning .notice-icon {
+    color: var(--warning-color);
+}
+
+.notice-banner.notice-warning .notice-text strong {
+    color: var(--warning-color);
+}
+
+.notice-banner.notice-error {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(220, 38, 38, 0.1) 100%);
+    border-left: 4px solid var(--danger-color);
+}
+
+.notice-banner.notice-error .notice-icon {
+    color: var(--danger-color);
+}
+
+.notice-banner.notice-error .notice-text strong {
+    color: var(--danger-color);
+}
+
+.notice-banner.notice-info {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(37, 99, 235, 0.1) 100%);
+    border-left: 4px solid var(--primary-color);
+}
+
+.notice-banner.notice-info .notice-icon {
+    color: var(--primary-color);
+}
+
+.notice-banner.notice-info .notice-text strong {
+    color: var(--primary-color);
+}
+
+.notice-banner.notice-quote {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(124, 58, 237, 0.1) 100%);
+    border-left: 4px solid #8b5cf6;
+}
+
+.notice-banner.notice-quote .notice-icon {
+    color: #8b5cf6;
+}
+
+.notice-banner.notice-quote .notice-text strong {
+    color: #8b5cf6;
+}
+
+/* Responsive notice banner */
+@media (max-width: 768px) {
+    .notice-banner {
+        margin-bottom: 20px;
+        max-width: 100%;
+    }
+
+    .notice-content {
+        gap: 12px;
+        padding: 14px 16px;
+    }
+
+    .notice-icon {
+        font-size: 1.3rem;
+    }
+
+    .notice-text strong {
+        font-size: 1rem;
+    }
+
+    .notice-text span {
+        font-size: 0.9rem;
+    }
+
+    .notice-close {
+        font-size: 1.3rem;
+        width: 28px;
+        height: 28px;
+    }
 }
 
 .hero-content h1 {

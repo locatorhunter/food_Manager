@@ -383,6 +383,101 @@ const StorageManager = {
         }
     },
 
+    // ===== NOTICE MANAGEMENT =====
+    async getNotices() {
+        try {
+            const noticesRef = firebaseRef(`${StorageManager.PATHS.SETTINGS}/notices`);
+            const snapshot = await firebaseGet(noticesRef);
+            const data = snapshot.val();
+            return Array.isArray(data) ? data : [];
+        } catch (error) {
+            console.error('Error fetching notices:', error);
+            return [];
+        }
+    },
+
+    async saveNotices(notices) {
+        try {
+            const noticesRef = firebaseRef(`${StorageManager.PATHS.SETTINGS}/notices`);
+            await firebaseSet(noticesRef, notices);
+        } catch (error) {
+            console.error('Error saving notices:', error);
+            throw error;
+        }
+    },
+
+    async addNotice(noticeData) {
+        try {
+            const notices = await this.getNotices();
+            noticeData.id = Date.now().toString() + '_' + Math.random().toString(36).substr(2, 9);
+            noticeData.createdAt = new Date().toISOString();
+            noticeData.updatedAt = new Date().toISOString();
+            notices.push(noticeData);
+            await this.saveNotices(notices);
+            return noticeData;
+        } catch (error) {
+            console.error('Error adding notice:', error);
+            throw error;
+        }
+    },
+
+    async updateNotice(noticeId, updates) {
+        try {
+            const notices = await this.getNotices();
+            const index = notices.findIndex(n => n.id === noticeId);
+            if (index !== -1) {
+                notices[index] = { ...notices[index], ...updates, updatedAt: new Date().toISOString() };
+                await this.saveNotices(notices);
+                return notices[index];
+            }
+            return null;
+        } catch (error) {
+            console.error('Error updating notice:', error);
+            throw error;
+        }
+    },
+
+    async deleteNotice(noticeId) {
+        try {
+            const notices = await this.getNotices();
+            const filteredNotices = notices.filter(n => n.id !== noticeId);
+            await this.saveNotices(filteredNotices);
+        } catch (error) {
+            console.error('Error deleting notice:', error);
+            throw error;
+        }
+    },
+
+    // Legacy function for backward compatibility
+    async getCurrentNotice() {
+        const notices = await this.getNotices();
+        return notices.find(n => n.active !== false) || null;
+    },
+
+    async saveNotice(noticeData) {
+        // For backward compatibility, update the first active notice or create new one
+        const notices = await this.getNotices();
+        const existingIndex = notices.findIndex(n => n.active !== false);
+
+        if (existingIndex !== -1) {
+            notices[existingIndex] = { ...notices[existingIndex], ...noticeData, updatedAt: new Date().toISOString() };
+        } else {
+            noticeData.id = Date.now().toString() + '_' + Math.random().toString(36).substr(2, 9);
+            noticeData.createdAt = new Date().toISOString();
+            noticeData.updatedAt = new Date().toISOString();
+            notices.push(noticeData);
+        }
+
+        await this.saveNotices(notices);
+    },
+
+    async clearNotice() {
+        // For backward compatibility, deactivate all notices
+        const notices = await this.getNotices();
+        const updatedNotices = notices.map(n => ({ ...n, active: false, updatedAt: new Date().toISOString() }));
+        await this.saveNotices(updatedNotices);
+    },
+
     // ===== RESET =====
     async resetAll() {
         try {

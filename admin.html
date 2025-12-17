@@ -508,6 +508,32 @@
             margin-top: 5px;
         }
 
+        /* Notice Management Styles */
+        .btn-small {
+            padding: 4px 8px;
+            font-size: 0.8em;
+            border-radius: 4px;
+            border: 1px solid;
+            cursor: pointer;
+            margin: 0 2px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-small:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .btn-info {
+            background: #17a2b8;
+            border-color: #17a2b8;
+            color: white;
+        }
+
+        .btn-info:hover {
+            background: #138496;
+        }
+
         /* Danger Zone Styles */
         .danger-zone-section {
             background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
@@ -1231,6 +1257,25 @@
                             <div id="dangerZoneResults" class="danger-result" style="display: none;"></div>
                         </div>
 
+                        <!-- Notice/Announcement Management -->
+                        <div class="testing-section">
+                            <h3>📢 Notice Management</h3>
+                            <p class="test-description">Create and manage multiple notices that appear in the hero banner on the home page</p>
+
+                            <!-- Add New Notice Button -->
+                            <div class="test-controls" style="margin-bottom: 20px;">
+                                <button onclick="showAddNoticeModal()" class="btn btn-primary">➕ Add New Notice</button>
+                                <button onclick="loadAllNotices()" class="btn btn-info">🔄 Refresh Notices</button>
+                            </div>
+
+                            <!-- Notices List -->
+                            <div id="noticesList" class="test-results">
+                                <p>Loading notices...</p>
+                            </div>
+
+                            <div id="noticeManagementResults" class="test-results"></div>
+                        </div>
+
                         <!-- Additional Testing Tools -->
                         <div class="testing-section">
                             <h3>🔍 Quick Diagnostics</h3>
@@ -1254,13 +1299,13 @@
                 <span class="modal-close" onclick="closeEmailTestModal()">&times;</span>
                 <h2>📧 Email Verification Test</h2>
                 <p>Enter a test email address to verify the email verification system is working correctly.</p>
-                
+
                 <div class="form-group">
                     <label for="testEmailAddress">Test Email Address</label>
                     <input type="email" id="testEmailAddress" placeholder="test@example.com" style="width: 100%; padding: 10px; margin: 10px 0;">
                     <small class="form-help">Use a real email address you can access for testing</small>
                 </div>
-                
+
                 <div class="test-progress" id="testProgress" style="display: none;">
                     <div class="progress-step active" data-step="1">
                         <span class="step-icon">🔧</span>
@@ -1279,12 +1324,56 @@
                         <span class="step-text">Cleaning up test data...</span>
                     </div>
                 </div>
-                
+
                 <div class="test-results" id="emailTestResults"></div>
-                
+
                 <div class="modal-actions">
                     <button onclick="closeEmailTestModal()" class="btn btn-secondary">Cancel</button>
                     <button onclick="runEmailVerificationTest()" class="btn btn-primary" id="startEmailTestBtn">▶️ Start Test</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add/Edit Notice Modal -->
+        <div id="noticeModal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <span class="modal-close" onclick="closeNoticeModal()">&times;</span>
+                <h2 id="noticeModalTitle">➕ Add New Notice</h2>
+
+                <input type="hidden" id="editingNoticeId">
+
+                <div class="form-group">
+                    <label for="modalNoticeTitle">Notice Title</label>
+                    <input type="text" id="modalNoticeTitle" placeholder="e.g., Special Announcement" maxlength="100" required>
+                </div>
+                <div class="form-group">
+                    <label for="modalNoticeMessage">Notice Message</label>
+                    <textarea id="modalNoticeMessage" rows="4" placeholder="Enter your notice message here..." maxlength="500" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="modalNoticeType">Notice Type</label>
+                    <select id="modalNoticeType" required>
+                        <option value="info">ℹ️ Information</option>
+                        <option value="success">✅ Success</option>
+                        <option value="warning">⚠️ Warning</option>
+                        <option value="error">❌ Error</option>
+                        <option value="quote">💭 Daily Quote</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="modalNoticePriority">Priority (higher numbers show first)</label>
+                    <input type="number" id="modalNoticePriority" placeholder="0" min="0" max="100" value="0">
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="modalNoticeActive" checked>
+                        Active (visible to users)
+                    </label>
+                </div>
+
+                <div class="modal-actions">
+                    <button onclick="closeNoticeModal()" class="btn btn-secondary">Cancel</button>
+                    <button onclick="saveNoticeFromModal()" class="btn btn-primary" id="saveNoticeBtn">💾 Save Notice</button>
                 </div>
             </div>
         </div>
@@ -1372,6 +1461,11 @@
 
             // Initialize admin functionality (this will be handled by admin.js)
             console.log('Admin page initialized for user:', window.authService.getCurrentUser().name);
+
+            // Load notices when page loads
+            setTimeout(() => {
+                loadAllNotices();
+            }, 500);
         });
 
         // Testing Tools Functions
@@ -2571,17 +2665,256 @@
 
                 const reportStr = JSON.stringify(report, null, 2);
                 const reportBlob = new Blob([reportStr], {type: 'application/json'});
-                
+
                 const link = document.createElement('a');
                 link.href = URL.createObjectURL(reportBlob);
                 link.download = `system-report-${new Date().toISOString().split('T')[0]}.json`;
                 link.click();
-                
+
                 showMaintenanceResult('📋 System report generated and downloaded successfully!', 'success');
 
             } catch (error) {
                 console.error('Error generating system report:', error);
                 showMaintenanceResult(`❌ Error generating report: ${error.message}`, 'error');
+            }
+        }
+
+        // Notice Management Functions (Multiple Notices Support)
+        async function loadAllNotices() {
+            try {
+                showNoticeResult('🔄 Loading notices...', 'info');
+
+                const notices = await StorageManager.getNotices();
+                displayNoticesList(notices);
+
+                showNoticeResult(`✅ Loaded ${notices.length} notice(s) successfully!`, 'success');
+            } catch (error) {
+                console.error('Error loading notices:', error);
+                showNoticeResult(`❌ Error loading notices: ${error.message}`, 'error');
+            }
+        }
+
+        function displayNoticesList(notices) {
+            const container = document.getElementById('noticesList');
+
+            if (!notices || notices.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">No notices found. Click "Add New Notice" to create your first notice.</p>';
+                return;
+            }
+
+            // Sort notices by priority (higher first) and active status
+            const sortedNotices = notices.sort((a, b) => {
+                if (a.active !== b.active) return a.active === false ? 1 : -1;
+                return (b.priority || 0) - (a.priority || 0);
+            });
+
+            let html = '<div style="max-height: 600px; overflow-y: auto;">';
+
+            sortedNotices.forEach(notice => {
+                const typeEmoji = getNoticeTypeEmoji(notice.type);
+                const typeColor = getNoticeTypeColor(notice.type);
+                const isActive = notice.active !== false;
+                const priority = notice.priority || 0;
+
+                html += `
+                    <div style="border: 1px solid #ddd; border-radius: 8px; padding: 15px; margin-bottom: 15px; background: ${isActive ? '#f8f9fa' : '#f5f5f5'};">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <span style="font-size: 1.2em;">${typeEmoji}</span>
+                                <div>
+                                    <strong style="color: ${typeColor}; font-size: 1.1em;">${notice.title || 'Notice'}</strong>
+                                    <div style="font-size: 0.85em; color: #666; margin-top: 2px;">
+                                        Priority: ${priority} | Status: ${isActive ? '✅ Active' : '❌ Inactive'}
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 5px;">
+                                <button onclick="toggleNoticeActive('${notice.id}', ${!isActive})"
+                                        class="btn btn-small ${isActive ? 'btn-warning' : 'btn-success'}"
+                                        title="${isActive ? 'Deactivate' : 'Activate'} notice">
+                                    ${isActive ? '⏸️' : '▶️'}
+                                </button>
+                                <button onclick="editNotice('${notice.id}')"
+                                        class="btn btn-small btn-info"
+                                        title="Edit notice">
+                                    ✏️
+                                </button>
+                                <button onclick="deleteNotice('${notice.id}')"
+                                        class="btn btn-small btn-danger"
+                                        title="Delete notice">
+                                    🗑️
+                                </button>
+                            </div>
+                        </div>
+                        <div style="color: #333; line-height: 1.4; margin-bottom: 10px;">${notice.message}</div>
+                        <div style="font-size: 0.8em; color: #666;">
+                            Created: ${notice.createdAt ? new Date(notice.createdAt).toLocaleString() : 'Unknown'} |
+                            Updated: ${notice.updatedAt ? new Date(notice.updatedAt).toLocaleString() : 'Unknown'}
+                            ${notice.updatedBy ? ` | By: ${notice.updatedBy}` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        function showAddNoticeModal() {
+            document.getElementById('noticeModalTitle').textContent = '➕ Add New Notice';
+            document.getElementById('editingNoticeId').value = '';
+            document.getElementById('modalNoticeTitle').value = '';
+            document.getElementById('modalNoticeMessage').value = '';
+            document.getElementById('modalNoticeType').value = 'info';
+            document.getElementById('modalNoticePriority').value = '0';
+            document.getElementById('modalNoticeActive').checked = true;
+            document.getElementById('saveNoticeBtn').textContent = '💾 Add Notice';
+
+            document.getElementById('noticeModal').style.display = 'flex';
+        }
+
+        function editNotice(noticeId) {
+            // Find the notice to edit
+            StorageManager.getNotices().then(notices => {
+                const notice = notices.find(n => n.id === noticeId);
+                if (notice) {
+                    document.getElementById('noticeModalTitle').textContent = '✏️ Edit Notice';
+                    document.getElementById('editingNoticeId').value = notice.id;
+                    document.getElementById('modalNoticeTitle').value = notice.title || '';
+                    document.getElementById('modalNoticeMessage').value = notice.message || '';
+                    document.getElementById('modalNoticeType').value = notice.type || 'info';
+                    document.getElementById('modalNoticePriority').value = notice.priority || 0;
+                    document.getElementById('modalNoticeActive').checked = notice.active !== false;
+                    document.getElementById('saveNoticeBtn').textContent = '💾 Update Notice';
+
+                    document.getElementById('noticeModal').style.display = 'flex';
+                }
+            }).catch(error => {
+                console.error('Error loading notice for editing:', error);
+                showNoticeResult('❌ Error loading notice for editing', 'error');
+            });
+        }
+
+        function closeNoticeModal() {
+            document.getElementById('noticeModal').style.display = 'none';
+        }
+
+        async function saveNoticeFromModal() {
+            try {
+                const title = document.getElementById('modalNoticeTitle').value.trim();
+                const message = document.getElementById('modalNoticeMessage').value.trim();
+                const type = document.getElementById('modalNoticeType').value;
+                const priority = parseInt(document.getElementById('modalNoticePriority').value) || 0;
+                const active = document.getElementById('modalNoticeActive').checked;
+                const editingId = document.getElementById('editingNoticeId').value;
+
+                if (!message) {
+                    showNoticeResult('❌ Notice message is required!', 'error');
+                    document.getElementById('modalNoticeMessage').focus();
+                    return;
+                }
+
+                showNoticeResult('💾 Saving notice...', 'info');
+
+                const noticeData = {
+                    title: title || 'Notice',
+                    message: message,
+                    type: type,
+                    priority: priority,
+                    active: active,
+                    updatedAt: new Date().toISOString(),
+                    updatedBy: window.auth.currentUser ? window.auth.currentUser.email : 'admin'
+                };
+
+                if (editingId) {
+                    // Update existing notice
+                    await StorageManager.updateNotice(editingId, noticeData);
+                    showNoticeResult('✅ Notice updated successfully!', 'success');
+                } else {
+                    // Add new notice
+                    noticeData.createdAt = new Date().toISOString();
+                    await StorageManager.addNotice(noticeData);
+                    showNoticeResult('✅ Notice added successfully!', 'success');
+                }
+
+                // Close modal and refresh list
+                closeNoticeModal();
+                await loadAllNotices();
+
+            } catch (error) {
+                console.error('Error saving notice:', error);
+                showNoticeResult(`❌ Error saving notice: ${error.message}`, 'error');
+            }
+        }
+
+        async function toggleNoticeActive(noticeId, active) {
+            try {
+                showNoticeResult(`${active ? '▶️' : '⏸️'} ${active ? 'Activating' : 'Deactivating'} notice...`, 'info');
+
+                await StorageManager.updateNotice(noticeId, {
+                    active: active,
+                    updatedAt: new Date().toISOString(),
+                    updatedBy: window.auth.currentUser ? window.auth.currentUser.email : 'admin'
+                });
+
+                showNoticeResult(`✅ Notice ${active ? 'activated' : 'deactivated'} successfully!`, 'success');
+                await loadAllNotices();
+
+            } catch (error) {
+                console.error('Error toggling notice active status:', error);
+                showNoticeResult(`❌ Error updating notice status: ${error.message}`, 'error');
+            }
+        }
+
+        async function deleteNotice(noticeId) {
+            const confirmed = confirm('Are you sure you want to delete this notice? This action cannot be undone.');
+            if (!confirmed) return;
+
+            try {
+                showNoticeResult('🗑️ Deleting notice...', 'info');
+
+                await StorageManager.deleteNotice(noticeId);
+
+                showNoticeResult('✅ Notice deleted successfully!', 'success');
+                await loadAllNotices();
+
+            } catch (error) {
+                console.error('Error deleting notice:', error);
+                showNoticeResult(`❌ Error deleting notice: ${error.message}`, 'error');
+            }
+        }
+
+        function getNoticeTypeEmoji(type) {
+            switch (type) {
+                case 'success': return '✅';
+                case 'warning': return '⚠️';
+                case 'error': return '❌';
+                case 'quote': return '💭';
+                default: return 'ℹ️';
+            }
+        }
+
+        function getNoticeTypeColor(type) {
+            switch (type) {
+                case 'success': return '#28a745';
+                case 'warning': return '#ffc107';
+                case 'error': return '#dc3545';
+                case 'quote': return '#6f42c1';
+                default: return '#007bff';
+            }
+        }
+
+        function showNoticeResult(message, type = 'info') {
+            const element = document.getElementById('noticeManagementResults');
+            if (element) {
+                element.innerHTML = `<div class="test-result ${type}" style="margin: 10px 0; padding: 10px; border-radius: 5px; font-family: monospace;">${message}</div>`;
+
+                // Auto-hide after 5 seconds for non-error messages
+                if (type !== 'error') {
+                    setTimeout(() => {
+                        element.innerHTML = '';
+                    }, 5000);
+                }
             }
         }
     </script>

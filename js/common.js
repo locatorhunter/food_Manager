@@ -291,6 +291,7 @@ async function toggleTheme() {
 
 async function initializeBanner() {
     await updateBanner();
+    await loadAndDisplayNotice();
     window.addEventListener('hotelsUpdated', updateBanner);
     // Update banner when localStorage changes from other pages
     window.addEventListener('storage', async (e) => {
@@ -592,17 +593,20 @@ function positionToast(toast, position = 'auto') {
     }
     
     // Apply positioning styles with fixed positioning for corner display
-    const additionalStyles = `
-        position: fixed;
-        top: ${typeof topPosition === 'number' ? topPosition + 'px' : topPosition};
-        left: ${typeof leftPosition === 'number' ? leftPosition + 'px' : leftPosition};
-        right: ${typeof rightPosition === 'number' ? rightPosition + 'px' : rightPosition};
-        bottom: ${typeof bottomPosition === 'number' ? bottomPosition + 'px' : bottomPosition};
-        transform: none;
-        z-index: ${9999 + toastIndex};
-    `;
-    
-    toast.style.cssText += additionalStyles;
+    // Skip fixed positioning for notice banners (they use inline positioning)
+    if (!toast.classList.contains('notice-banner')) {
+        const additionalStyles = `
+            position: fixed;
+            top: ${typeof topPosition === 'number' ? topPosition + 'px' : topPosition};
+            left: ${typeof leftPosition === 'number' ? leftPosition + 'px' : leftPosition};
+            right: ${typeof rightPosition === 'number' ? rightPosition + 'px' : rightPosition};
+            bottom: ${typeof bottomPosition === 'number' ? bottomPosition + 'px' : bottomPosition};
+            transform: none;
+            z-index: ${9999 + toastIndex};
+        `;
+
+        toast.style.cssText += additionalStyles;
+    }
 }
 
 const style = document.createElement('style');
@@ -750,3 +754,124 @@ window.toggleThemeClick = function() {
         showToast('Error changing theme. Please try again.', 'error');
     });
 };
+
+// ===== NOTICE DISPLAY FUNCTIONS =====
+async function loadAndDisplayNotice() {
+    try {
+        const notices = await StorageManager.getNotices();
+        displayNotices(notices);
+    } catch (error) {
+        console.error('Error loading notices:', error);
+    }
+}
+
+function displayNotices(notices) {
+    const heroContent = document.querySelector('.hero-content');
+    if (!heroContent) return;
+
+    // Remove existing notice banners
+    const existingBanners = heroContent.querySelectorAll('.notice-banner');
+    existingBanners.forEach(banner => banner.remove());
+
+    // Filter active notices and sort by priority (higher priority first)
+    const activeNotices = notices
+        .filter(notice => notice && notice.active !== false && notice.message)
+        .sort((a, b) => (b.priority || 0) - (a.priority || 0));
+
+    if (activeNotices.length === 0) {
+        return;
+    }
+
+    // Find the position to insert notices (before the h1)
+    const h1Element = heroContent.querySelector('h1');
+    let insertPosition = h1Element;
+
+    // Create and insert notice banners
+    activeNotices.forEach((notice, index) => {
+        const noticeBanner = createNoticeBanner(notice, index);
+        heroContent.insertBefore(noticeBanner, insertPosition);
+    });
+}
+
+function createNoticeBanner(notice, index) {
+    const noticeBanner = document.createElement('div');
+    noticeBanner.className = `notice-banner notice-${notice.type || 'info'}`;
+    noticeBanner.id = `noticeBanner-${notice.id || index}`;
+    noticeBanner.style.display = 'block';
+
+    // Add slide-in animation with staggered delay
+    noticeBanner.style.transform = 'translateY(-20px)';
+    noticeBanner.style.opacity = '0';
+    noticeBanner.style.transition = 'all 0.5s ease';
+
+    setTimeout(() => {
+        noticeBanner.style.transform = 'translateY(0)';
+        noticeBanner.style.opacity = '1';
+    }, 100 + (index * 100)); // Stagger animations
+
+    const typeEmoji = getNoticeTypeEmoji(notice.type);
+    const typeColor = getNoticeTypeColor(notice.type);
+
+    noticeBanner.innerHTML = `
+        <div class="notice-content">
+            <span class="notice-icon">${typeEmoji}</span>
+            <div class="notice-text">
+                <strong id="noticeTitle-${notice.id || index}">${notice.title || 'Notice'}</strong>
+                <span id="noticeMessage-${notice.id || index}">${notice.message}</span>
+            </div>
+            <button class="notice-close" onclick="hideNoticeBanner('${notice.id || index}')" title="Close notice">×</button>
+        </div>
+    `;
+
+    return noticeBanner;
+}
+
+function hideNoticeBanner(noticeId) {
+    const noticeBanner = document.getElementById(`noticeBanner-${noticeId}`);
+    if (noticeBanner) {
+        noticeBanner.style.transform = 'translateY(-20px)';
+        noticeBanner.style.opacity = '0';
+        setTimeout(() => {
+            if (noticeBanner.parentNode) {
+                noticeBanner.parentNode.removeChild(noticeBanner);
+            }
+        }, 300);
+    }
+}
+
+function hideNotice() {
+    // Legacy function for backward compatibility
+    const noticeBanners = document.querySelectorAll('.notice-banner');
+    noticeBanners.forEach(banner => {
+        banner.style.transform = 'translateY(-20px)';
+        banner.style.opacity = '0';
+        setTimeout(() => {
+            if (banner.parentNode) {
+                banner.parentNode.removeChild(banner);
+            }
+        }, 300);
+    });
+}
+
+function getNoticeTypeEmoji(type) {
+    switch (type) {
+        case 'success': return '✅';
+        case 'warning': return '⚠️';
+        case 'error': return '❌';
+        case 'quote': return '💭';
+        default: return 'ℹ️';
+    }
+}
+
+function getNoticeTypeColor(type) {
+    switch (type) {
+        case 'success': return '#28a745';
+        case 'warning': return '#ffc107';
+        case 'error': return '#dc3545';
+        case 'quote': return '#6f42c1';
+        default: return '#007bff';
+    }
+}
+
+// Make functions globally available
+window.hideNotice = hideNotice;
