@@ -104,6 +104,13 @@ async function populateHotelFilter() {
 }
 
 async function setupControls() {
+    // Set default date for checklist to today
+    const checklistDateFilter = document.getElementById('checklistDateFilter');
+    if (checklistDateFilter) {
+        const today = new Date().toISOString().split('T')[0];
+        checklistDateFilter.value = today;
+    }
+
     // Date filter with custom range
     const dateFilterElement = document.getElementById('dateFilter');
     if (!dateFilterElement) return; // Not on dashboard page
@@ -140,8 +147,15 @@ async function setupControls() {
     document.getElementById('downloadOrdersPDFBtn').addEventListener('click', downloadOrdersPDF);
 
     // Checklist controls
+    document.getElementById('checklistDateFilter').addEventListener('change', async () => {
+        const selectedDate = document.getElementById('checklistDateFilter').value;
+        await displayDistributionChecklist(selectedDate);
+        showToast('Distribution checklist updated!');
+    });
+
     document.getElementById('refreshChecklistBtn').addEventListener('click', async () => {
-        await displayDistributionChecklist();
+        const selectedDate = document.getElementById('checklistDateFilter').value;
+        await displayDistributionChecklist(selectedDate);
         showToast('Distribution checklist refreshed!');
     });
     document.getElementById('printChecklistBtn').addEventListener('click', printDistributionChecklist);
@@ -620,13 +634,29 @@ async function displayOrderSummary() {
     }
 }
 
-async function displayDistributionChecklist() {
+async function displayDistributionChecklist(selectedDate = null) {
     const container = document.getElementById('distributionChecklist');
     if (!container) return; // Not on page with checklist
 
     try {
-        const todaysOrders = await StorageManager.getTodaysOrders();
-        const orders = todaysOrders.filter(order => !order.completed);
+        let orders;
+        if (selectedDate) {
+            // Get orders for the selected date
+            const allOrders = await StorageManager.getOrders();
+            const targetDate = new Date(selectedDate);
+            targetDate.setHours(0, 0, 0, 0);
+            const nextDay = new Date(targetDate);
+            nextDay.setDate(nextDay.getDate() + 1);
+
+            orders = allOrders.filter(order => {
+                const orderDate = new Date(order.timestamp);
+                return orderDate >= targetDate && orderDate < nextDay && !order.completed;
+            });
+        } else {
+            // Default to today's orders
+            const todaysOrders = await StorageManager.getTodaysOrders();
+            orders = todaysOrders.filter(order => !order.completed);
+        }
 
         if (orders.length === 0) {
             container.innerHTML = '<p class="empty-message">No pending orders to distribute</p>';
@@ -676,7 +706,8 @@ async function displayDistributionChecklist() {
             return a.localeCompare(b);
         });
 
-        let html = '<div class="checklist-header"><h3>📋 Distribution Checklist - ' + new Date().toLocaleDateString() + '</h3></div>';
+        const displayDate = selectedDate ? new Date(selectedDate).toLocaleDateString() : new Date().toLocaleDateString();
+        let html = '<div class="checklist-header"><h3>📋 Distribution Checklist - ' + displayDate + '</h3></div>';
         html += '<div class="checklist-items">';
 
         sortedEmployees.forEach(employeeKey => {
@@ -836,12 +867,15 @@ function printDistributionChecklist() {
         return;
     }
 
+    const selectedDate = document.getElementById('checklistDateFilter').value;
+    const displayDate = selectedDate ? new Date(selectedDate).toLocaleDateString() : new Date().toLocaleDateString();
+
     const printWindow = window.open('', '_blank');
     printWindow.document.write(`
         <!DOCTYPE html>
         <html>
         <head>
-            <title>Food Distribution Checklist - ${new Date().toLocaleDateString()}</title>
+            <title>Food Distribution Checklist - ${displayDate}</title>
             <style>
                 body { font-family: Arial, sans-serif; margin: 20px; font-size: 12px; line-height: 1.4; }
                 .checklist-header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
@@ -877,7 +911,7 @@ function printDistributionChecklist() {
         <body>
             <div class="checklist-header">
                 <h3>📋 Food Distribution Checklist</h3>
-                <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
+                <p><strong>Date:</strong> ${displayDate}</p>
                 <p><strong>Time:</strong> ${new Date().toLocaleTimeString()}</p>
             </div>
             ${checklistElement.innerHTML}
@@ -1157,20 +1191,39 @@ async function downloadChecklistPDF() {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
 
+        const selectedDate = document.getElementById('checklistDateFilter').value;
+        const displayDate = selectedDate ? new Date(selectedDate).toLocaleDateString() : new Date().toLocaleDateString();
+
         // Add title
         doc.setFontSize(20);
         doc.text('Food Distribution Checklist', 20, 30);
 
         // Add date
         doc.setFontSize(12);
-        doc.text(`Date: ${new Date().toLocaleDateString()}`, 20, 45);
+        doc.text(`Date: ${displayDate}`, 20, 45);
         doc.text(`Time: ${new Date().toLocaleTimeString()}`, 20, 55);
 
         let yPosition = 70;
 
         // Get checklist data
-        const todaysOrders = await StorageManager.getTodaysOrders();
-        const orders = todaysOrders.filter(order => !order.completed);
+        let orders;
+        if (selectedDate) {
+            // Get orders for the selected date
+            const allOrders = await StorageManager.getOrders();
+            const targetDate = new Date(selectedDate);
+            targetDate.setHours(0, 0, 0, 0);
+            const nextDay = new Date(targetDate);
+            nextDay.setDate(nextDay.getDate() + 1);
+
+            orders = allOrders.filter(order => {
+                const orderDate = new Date(order.timestamp);
+                return orderDate >= targetDate && orderDate < nextDay && !order.completed;
+            });
+        } else {
+            // Default to today's orders
+            const todaysOrders = await StorageManager.getTodaysOrders();
+            orders = todaysOrders.filter(order => !order.completed);
+        }
 
         // Group orders by employee
         const employeeOrders = {};
@@ -1295,7 +1348,8 @@ async function downloadChecklistPDF() {
         doc.text(`Summary: ${sortedEmployees.length} orders, ${orders.length} items`, 20, yPosition);
 
         // Save the PDF
-        const fileName = `distribution-checklist-${new Date().toISOString().split('T')[0]}.pdf`;
+        const fileDate = selectedDate || new Date().toISOString().split('T')[0];
+        const fileName = `distribution-checklist-${fileDate}.pdf`;
         doc.save(fileName);
         showToast('Distribution checklist PDF downloaded successfully!');
 
