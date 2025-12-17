@@ -357,10 +357,42 @@ function previewImage() {
     }
 }
 
+function renderSkeletonPosts() {
+    const skeletonPosts = [];
+    for (let i = 0; i < 3; i++) {
+        skeletonPosts.push(`
+            <div class="skeleton-post">
+                <div class="skeleton-post-header">
+                    <div class="skeleton skeleton-avatar"></div>
+                    <div class="skeleton-user-info">
+                        <div class="skeleton skeleton-username"></div>
+                        <div class="skeleton skeleton-timestamp"></div>
+                    </div>
+                </div>
+                <div class="skeleton-post-content">
+                    <div class="skeleton skeleton-text skeleton-long"></div>
+                    <div class="skeleton skeleton-text skeleton-medium"></div>
+                    <div class="skeleton skeleton-text skeleton-short"></div>
+                    <div class="skeleton skeleton-image"></div>
+                </div>
+                <div class="skeleton-post-actions">
+                    <div class="skeleton skeleton-action"></div>
+                    <div class="skeleton skeleton-action"></div>
+                </div>
+            </div>
+        `);
+    }
+    return skeletonPosts.join('');
+}
+
 async function loadPosts() {
+    const postsFeed = document.getElementById('postsFeed');
+
+    // Show skeleton loading
+    postsFeed.innerHTML = renderSkeletonPosts();
+
     try {
         const posts = await StorageManager.getPosts();
-        const postsFeed = document.getElementById('postsFeed');
 
         if (posts.length === 0) {
             postsFeed.innerHTML = `
@@ -378,6 +410,13 @@ async function loadPosts() {
     } catch (error) {
         console.error('Error loading posts:', error);
         showToast('Error loading posts. Please refresh.', 'error');
+        // On error, show empty state
+        postsFeed.innerHTML = `
+            <div class="empty-state">
+                <h3>❌ Error loading posts</h3>
+                <p>Please refresh the page to try again.</p>
+            </div>
+        `;
     }
 }
 

@@ -322,6 +322,101 @@
             color: var(--text-color, #333);
         }
 
+        /* Skeleton loading styles */
+        .skeleton {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: skeleton-loading 1.5s infinite;
+            border-radius: 4px;
+        }
+
+        @keyframes skeleton-loading {
+            0% {
+                background-position: 200% 0;
+            }
+            100% {
+                background-position: -200% 0;
+            }
+        }
+
+        .skeleton-post {
+            background: var(--bg-secondary, #fff);
+            border: 1px solid var(--border-color, #dee2e6);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .skeleton-post-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px;
+            border-bottom: 1px solid var(--border-color, #dee2e6);
+        }
+
+        .skeleton-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .skeleton-user-info {
+            flex: 1;
+        }
+
+        .skeleton-username {
+            height: 16px;
+            width: 120px;
+            margin-bottom: 4px;
+        }
+
+        .skeleton-timestamp {
+            height: 12px;
+            width: 80px;
+        }
+
+        .skeleton-post-content {
+            padding: 16px;
+        }
+
+        .skeleton-text {
+            height: 14px;
+            margin-bottom: 8px;
+        }
+
+        .skeleton-text.short {
+            width: 70%;
+        }
+
+        .skeleton-text.medium {
+            width: 85%;
+        }
+
+        .skeleton-text.long {
+            width: 95%;
+        }
+
+        .skeleton-image {
+            height: 200px;
+            width: 100%;
+            margin-bottom: 12px;
+        }
+
+        .skeleton-post-actions {
+            display: flex;
+            gap: 16px;
+            padding: 8px 16px;
+            border-top: 1px solid var(--border-color, #dee2e6);
+        }
+
+        .skeleton-action {
+            height: 16px;
+            width: 40px;
+        }
+
         /* Mobile responsiveness */
         @media (max-width: 768px) {
             .auragram-container {
@@ -329,14 +424,18 @@
             }
 
             .create-post-card,
-            .post-card {
+            .post-card,
+            .skeleton-post {
                 border-radius: 8px;
             }
 
             .post-header,
             .post-content,
             .post-actions-bar,
-            .comments-section {
+            .comments-section,
+            .skeleton-post-header,
+            .skeleton-post-content,
+            .skeleton-post-actions {
                 padding: 12px;
             }
         }
