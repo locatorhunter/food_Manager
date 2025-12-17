@@ -92,6 +92,11 @@ function initializeNavbar() {
                                         data-page="menu"
                                         role="menuitem"
                                         aria-label="View menu and place orders">Menu</a></li>
+                    ${user ? `<li role="none"><a href="user-orders.html"
+                                        class="nav-link"
+                                        data-page="user-orders"
+                                        role="menuitem"
+                                        aria-label="View my order history">My Orders</a></li>` : ''}
                     ${isAdmin ? `<li role="none"><a href="dashboard.html"
                                         class="nav-link"
                                         data-page="dashboard"
