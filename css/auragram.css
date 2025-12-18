@@ -31,14 +31,19 @@
 }
 
 .auragram-title {
-    font-size: 2.5rem;
-    font-weight: 800;
-    margin-bottom: 10px;
+    font-family: 'Great Vibes', cursive;
+    font-size: 6rem;
+    font-weight: 400;
+    /* Script fonts usually look better with normal weight */
+    margin-bottom: 5px;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    letter-spacing: -1px;
+    letter-spacing: 1px;
+    padding-bottom: 10px;
+    /* Ensure descenders aren't cut off */
+    line-height: 1.2;
 }
 
 .user-controls {
