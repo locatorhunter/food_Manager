@@ -12,7 +12,8 @@ const StorageManager = {
         SETTINGS: 'settings',
         OFFISOGRAM_POSTS: 'offisogram/posts',
         OFFISOGRAM_COMMENTS: 'offisogram/comments',
-        OFFISOGRAM_REACTIONS: 'offisogram/reactions'
+        OFFISOGRAM_REACTIONS: 'offisogram/reactions',
+        USER_PROFILES: 'userProfiles'
     },
 
     // Initialize real-time listeners
@@ -658,6 +659,136 @@ const StorageManager = {
             console.error('Error checking user reaction:', error);
             return false;
         }
+    },
+
+    // ===== USER PROFILES =====
+    async getUserProfile(userId) {
+        try {
+            const profileRef = firebaseRef(`${StorageManager.PATHS.USER_PROFILES}/${userId}`);
+            const snapshot = await firebaseGet(profileRef);
+            const profile = snapshot.val();
+            
+            // If no profile exists, create a default one from auth data
+            if (!profile) {
+                const user = window.authService.getCurrentUser();
+                if (user && user.uid === userId) {
+                    const defaultProfile = {
+                        id: userId,
+                        displayName: user.displayName || user.name || user.email || 'User',
+                        email: user.email,
+                        profilePhoto: null,
+                        bio: '',
+                        createdAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString()
+                    };
+                    await this.updateUserProfile(userId, defaultProfile);
+                    return defaultProfile;
+                }
+            }
+            
+            return profile;
+        } catch (error) {
+            console.error('Error fetching user profile:', error);
+            return null;
+        }
+    },
+
+    async updateUserProfile(userId, updates) {
+        try {
+            const profileRef = firebaseRef(`${StorageManager.PATHS.USER_PROFILES}/${userId}`);
+            const updateData = {
+                ...updates,
+                updatedAt: new Date().toISOString()
+            };
+            await firebaseUpdate(profileRef, updateData);
+            return updateData;
+        } catch (error) {
+            console.error('Error updating user profile:', error);
+            throw error;
+        }
+    },
+
+    async uploadProfilePhoto(userId, imageData) {
+        try {
+            // Compress image if needed
+            let compressedImageData = imageData;
+            if (typeof imageData === 'string' && imageData.startsWith('data:image/')) {
+                // If it's already a data URL, we can try to compress it
+                compressedImageData = await this.compressImageData(imageData);
+            }
+
+            const profileRef = firebaseRef(`${StorageManager.PATHS.USER_PROFILES}/${userId}`);
+            await firebaseUpdate(profileRef, {
+                profilePhoto: compressedImageData,
+                updatedAt: new Date().toISOString()
+            });
+            return compressedImageData;
+        } catch (error) {
+            console.error('Error uploading profile photo:', error);
+            throw error;
+        }
+    },
+
+    async getUserPosts(userId) {
+        try {
+            const allPosts = await this.getPosts();
+            return allPosts.filter(post => post.userId === userId);
+        } catch (error) {
+            console.error('Error fetching user posts:', error);
+            return [];
+        }
+    },
+
+    // Helper function to compress image data
+    async compressImageData(dataUrl) {
+        return new Promise((resolve, reject) => {
+            try {
+                const img = new window.Image();
+                img.onload = () => {
+                    try {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        
+                        // Set max dimensions for profile photos (smaller than post images)
+                        const maxDimension = 200;
+                        let { width, height } = img;
+                        
+                        if (width > height) {
+                            if (width > maxDimension) {
+                                height = (height * maxDimension) / width;
+                                width = maxDimension;
+                            }
+                        } else {
+                            if (height > maxDimension) {
+                                width = (width * maxDimension) / height;
+                                height = maxDimension;
+                            }
+                        }
+                        
+                        canvas.width = width;
+                        canvas.height = height;
+                        ctx.drawImage(img, 0, 0, width, height);
+                        
+                        // Higher quality for profile photos since they're smaller
+                        const compressed = canvas.toDataURL('image/jpeg', 0.9);
+                        resolve(compressed);
+                    } catch (error) {
+                        console.warn('Image compression failed, using original:', error);
+                        resolve(dataUrl); // Return original if compression fails
+                    }
+                };
+                
+                img.onerror = () => {
+                    console.warn('Image loading failed for compression');
+                    resolve(dataUrl); // Return original if loading fails
+                };
+                
+                img.src = dataUrl;
+            } catch (error) {
+                console.warn('Error creating image for compression:', error);
+                resolve(dataUrl); // Return original if image creation fails
+            }
+        });
     },
 
     // ===== RESET =====

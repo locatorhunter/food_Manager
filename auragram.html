@@ -1,11 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://*.firebaseio.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://www.gstatic.com https://identitytoolkit.googleapis.com https://firestore.googleapis.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com;">
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://*.firebaseio.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://www.gstatic.com https://identitytoolkit.googleapis.com https://firestore.googleapis.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com;">
     <title>Auragram - OfzHub</title>
-    <link rel="stylesheet" href="css/style.css?v=1.0.4">
+    <link rel="stylesheet" href="css/style.css?v=1.0.5">
+    <link rel="stylesheet" href="css/auragram.css?v=1.0.6">
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
@@ -55,418 +58,44 @@
         window.firebaseRemove = (ref) => ref.remove();
         console.log('Firebase initialized successfully');
     </script>
-    <style>
-        /* Auragram specific styles */
-        .auragram-container {
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        .create-post-card {
-            background: var(--bg-secondary, #fff);
-            border: 1px solid var(--border-color, #dee2e6);
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-
-        .post-input-area {
-            display: flex;
-            gap: 12px;
-            align-items: flex-start;
-        }
-
-        .user-avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
-            flex-shrink: 0;
-        }
-
-        .post-textarea {
-            flex: 1;
-            border: 1px solid var(--border-color, #dee2e6);
-            border-radius: 8px;
-            padding: 12px;
-            resize: vertical;
-            min-height: 80px;
-            font-family: inherit;
-            font-size: 14px;
-        }
-
-        .post-textarea:focus {
-            outline: none;
-            border-color: var(--primary-color, #007bff);
-            box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
-        }
-
-        .post-actions {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 12px;
-        }
-
-        .post-buttons {
-            display: flex;
-            gap: 8px;
-        }
-
-        .image-preview {
-            max-width: 100%;
-            max-height: 300px;
-            border-radius: 8px;
-            margin-top: 12px;
-            display: none;
-        }
-
-        .posts-feed {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .post-card {
-            background: var(--bg-secondary, #fff);
-            border: 1px solid var(--border-color, #dee2e6);
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-
-        .post-header {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 16px;
-            border-bottom: 1px solid var(--border-color, #dee2e6);
-        }
-
-        .post-user-avatar {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
-            font-size: 14px;
-        }
-
-        .post-user-info {
-            flex: 1;
-        }
-
-        .post-username {
-            font-weight: 600;
-            color: var(--text-color, #333);
-            margin: 0;
-        }
-
-        .post-timestamp {
-            font-size: 12px;
-            color: var(--text-muted, #6c757d);
-            margin: 0;
-        }
-
-        .post-content {
-            padding: 16px;
-        }
-
-        .post-text {
-            margin: 0 0 12px 0;
-            line-height: 1.5;
-            white-space: pre-wrap;
-        }
-
-        .post-image {
-            width: 100%;
-            max-height: 400px;
-            object-fit: cover;
-            border-radius: 8px;
-            margin-bottom: 12px;
-        }
-
-        .post-actions-bar {
-            display: flex;
-            gap: 16px;
-            padding: 8px 16px;
-            border-top: 1px solid var(--border-color, #dee2e6);
-        }
-
-        .action-button {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            padding: 8px;
-            border: none;
-            background: none;
-            color: var(--text-muted, #6c757d);
-            cursor: pointer;
-            border-radius: 6px;
-            transition: all 0.2s ease;
-            font-size: 14px;
-        }
-
-        .action-button:hover {
-            background: var(--bg-tertiary, #f8f9fa);
-            color: var(--text-color, #333);
-        }
-
-        .action-button.liked {
-            color: #e74c3c;
-        }
-
-        .comments-section {
-            border-top: 1px solid var(--border-color, #dee2e6);
-            padding: 16px;
-        }
-
-        .comment {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 12px;
-        }
-
-        .comment:last-child {
-            margin-bottom: 0;
-        }
-
-        .comment-avatar {
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
-            font-size: 10px;
-            flex-shrink: 0;
-        }
-
-        .comment-content {
-            flex: 1;
-        }
-
-        .comment-text {
-            margin: 0;
-            font-size: 14px;
-            line-height: 1.4;
-        }
-
-        .comment-meta {
-            font-size: 12px;
-            color: var(--text-muted, #6c757d);
-            margin-top: 2px;
-        }
-
-        .add-comment {
-            display: flex;
-            gap: 8px;
-            margin-top: 12px;
-            padding-top: 12px;
-            border-top: 1px solid var(--border-color, #dee2e6);
-        }
-
-        .comment-input {
-            flex: 1;
-            border: 1px solid var(--border-color, #dee2e6);
-            border-radius: 16px;
-            padding: 8px 12px;
-            font-size: 14px;
-            resize: none;
-            min-height: 32px;
-            max-height: 80px;
-        }
-
-        .comment-input:focus {
-            outline: none;
-            border-color: var(--primary-color, #007bff);
-        }
-
-        .loading-spinner {
-            display: inline-block;
-            width: 16px;
-            height: 16px;
-            border: 2px solid #f3f3f3;
-            border-top: 2px solid var(--primary-color, #007bff);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 40px 20px;
-            color: var(--text-muted, #6c757d);
-        }
-
-        .empty-state h3 {
-            margin: 0 0 8px 0;
-            color: var(--text-color, #333);
-        }
-
-        /* Skeleton loading styles */
-        .skeleton {
-            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-            background-size: 200% 100%;
-            animation: skeleton-loading 1.5s infinite;
-            border-radius: 4px;
-        }
-
-        @keyframes skeleton-loading {
-            0% {
-                background-position: 200% 0;
-            }
-            100% {
-                background-position: -200% 0;
-            }
-        }
-
-        .skeleton-post {
-            background: var(--bg-secondary, #fff);
-            border: 1px solid var(--border-color, #dee2e6);
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-        }
-
-        .skeleton-post-header {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 16px;
-            border-bottom: 1px solid var(--border-color, #dee2e6);
-        }
-
-        .skeleton-avatar {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            flex-shrink: 0;
-        }
-
-        .skeleton-user-info {
-            flex: 1;
-        }
-
-        .skeleton-username {
-            height: 16px;
-            width: 120px;
-            margin-bottom: 4px;
-        }
-
-        .skeleton-timestamp {
-            height: 12px;
-            width: 80px;
-        }
-
-        .skeleton-post-content {
-            padding: 16px;
-        }
-
-        .skeleton-text {
-            height: 14px;
-            margin-bottom: 8px;
-        }
-
-        .skeleton-text.short {
-            width: 70%;
-        }
-
-        .skeleton-text.medium {
-            width: 85%;
-        }
-
-        .skeleton-text.long {
-            width: 95%;
-        }
-
-        .skeleton-image {
-            height: 200px;
-            width: 100%;
-            margin-bottom: 12px;
-        }
-
-        .skeleton-post-actions {
-            display: flex;
-            gap: 16px;
-            padding: 8px 16px;
-            border-top: 1px solid var(--border-color, #dee2e6);
-        }
-
-        .skeleton-action {
-            height: 16px;
-            width: 40px;
-        }
-
-        /* Mobile responsiveness */
-        @media (max-width: 768px) {
-            .auragram-container {
-                padding: 10px;
-            }
-
-            .create-post-card,
-            .post-card,
-            .skeleton-post {
-                border-radius: 8px;
-            }
-
-            .post-header,
-            .post-content,
-            .post-actions-bar,
-            .comments-section,
-            .skeleton-post-header,
-            .skeleton-post-content,
-            .skeleton-post-actions {
-                padding: 12px;
-            }
-        }
-    </style>
 </head>
+
 <body>
     <nav id="navbar"></nav>
 
     <main class="container">
         <div class="auragram-container">
-            <h1 style="text-align: center; margin-bottom: 30px;">📸 Auragram</h1>
+            <div class="auragram-header">
+                <h1 class="auragram-title">📸 Auragram</h1>
+                <div class="user-controls">
+                    <button class="btn btn-outline" onclick="openProfileModal()">
+                        👤 My Profile
+                    </button>
+                </div>
+            </div>
 
             <!-- Create Post Card -->
             <div class="create-post-card">
                 <div class="post-input-area">
-                    <div class="user-avatar" id="currentUserAvatar">?</div>
-                    <textarea
-                        class="post-textarea"
-                        id="postContent"
+                    <div class="user-avatar" id="currentUserAvatar" onclick="openProfileModal()"
+                        style="cursor: pointer;" title="Click to view profile">?</div>
+                    <textarea class="post-textarea" id="postContent"
                         placeholder="What's on your mind? Share your thoughts, photos, or opinions..."
                         maxlength="1000"></textarea>
                 </div>
 
-                <img id="imagePreview" class="image-preview" alt="Preview">
+                <div id="imagePreviewContainer" class="image-preview-container">
+                    <img id="imagePreview" class="image-preview" alt="Preview">
+                    <button class="remove-image-btn" onclick="removeImage()">✕</button>
+                </div>
 
                 <div class="post-actions">
                     <div class="post-buttons">
-                        <button class="btn btn-outline btn-small" onclick="document.getElementById('imageInput').click()">
+                        <button class="media-btn" onclick="document.getElementById('imageInput').click()">
                             📷 Photo
                         </button>
-                        <input type="file" id="imageInput" accept="image/*" style="display: none;" onchange="previewImage()">
+                        <input type="file" id="imageInput" accept="image/*" style="display: none;"
+                            onchange="previewImage()">
                     </div>
                     <button class="btn btn-primary" id="postButton" onclick="createPost()">
                         <span id="postButtonText">Post</span>
@@ -484,6 +113,11 @@
                     <p>Be the first to share something! Create a post above to get started.</p>
                 </div>
             </div>
+
+            <!-- Load More Button -->
+            <div class="load-more-container" id="loadMoreContainer" style="display: none;">
+                <button class="btn btn-outline" id="loadMoreBtn" onclick="loadMorePosts()">Load More Posts</button>
+            </div>
         </div>
     </main>
 
@@ -491,12 +125,72 @@
         <p>&copy; 2025 OfzHub. All rights reserved. | Developed by Vijay</p>
     </footer>
 
+    <!-- Profile Modal -->
+    <div id="profileModal" class="modal" style="display: none;">
+        <div class="modal-content profile-modal-content">
+            <div class="modal-header">
+                <h2>👤 My Profile</h2>
+                <span class="modal-close" onclick="closeProfileModal()">&times;</span>
+            </div>
+
+            <div class="modal-body">
+                <!-- Profile Photo Section -->
+                <div class="profile-photo-section">
+                    <div class="profile-photo-container">
+                        <img id="profilePhotoPreview" class="profile-photo" src="" alt="Profile Photo">
+                        <div class="profile-photo-placeholder" id="profilePhotoPlaceholder">
+                            <span id="profilePhotoInitial">?</span>
+                        </div>
+                        <label for="profilePhotoInput" class="profile-photo-upload-btn">
+                            📷
+                        </label>
+                        <input type="file" id="profilePhotoInput" accept="image/*" style="display: none;"
+                            onchange="previewProfilePhoto()">
+                    </div>
+                </div>
+
+                <!-- Profile Info Form -->
+                <div class="profile-form">
+                    <div class="form-group">
+                        <label for="displayName">Display Name:</label>
+                        <input type="text" id="displayName" class="form-control" placeholder="Enter your display name"
+                            maxlength="50">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="bio">Bio (optional):</label>
+                        <textarea id="bio" class="form-control" placeholder="Tell us about yourself..." maxlength="200"
+                            rows="3"></textarea>
+                    </div>
+                </div>
+
+                <!-- User Posts Section -->
+                <div class="profile-posts-section">
+                    <h3>📝 My Posts</h3>
+                    <div id="userPostsList" class="user-posts-list">
+                        <div class="loading-spinner">Loading your posts...</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeProfileModal()">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveProfileBtn" onclick="saveProfile()">
+                    <span id="saveProfileText">Save Changes</span>
+                    <span id="saveProfileLoading" style="display: none;">
+                        <span class="loading-spinner"></span>
+                    </span>
+                </button>
+            </div>
+        </div>
+    </div>
 
     <script src="js/modal.js?v=1.0.4"></script>
     <script src="js/utils.js?v=1.0.4"></script>
     <script src="js/auth.js?v=1.0.1"></script>
     <script src="js/storage.js?v=1.0.4"></script>
     <script src="js/common.js?v=1.0.4"></script>
-    <script src="js/auragram.js?v=1.0.0"></script>
+    <script src="js/auragram.js?v=1.0.6"></script>
 </body>
+
 </html>
