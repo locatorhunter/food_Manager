@@ -70,6 +70,17 @@
                 <h1 class="auragram-title">Auragram</h1>
             </div>
 
+            <!-- Search Bar -->
+            <div class="search-container">
+                <div class="search-input-wrapper">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" id="postSearchInput" class="search-input"
+                        placeholder="Search posts by content or username..." oninput="handleSearch()">
+                    <button id="clearSearchBtn" class="clear-search-btn" onclick="clearSearch()"
+                        style="display: none;">✕</button>
+                </div>
+            </div>
+
             <!-- Create Post Card -->
             <div class="create-post-card">
                 <div class="post-input-area">

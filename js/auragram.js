@@ -307,6 +307,9 @@ function compressImage(img, mimeType) {
 
 // Pagination State
 let allPosts = [];
+let filteredPosts = [];
+let searchQuery = '';
+let searchTimeout = null;
 let displayedPostsCount = 0;
 const POSTS_PER_PAGE = 10;
 
@@ -372,6 +375,9 @@ async function loadPosts() {
         displayedPostsCount = 0;
         postsFeed.innerHTML = ''; // Clear skeleton
 
+        // Apply search filter if active
+        applySearchFilter();
+
         await renderNextBatch();
 
     } catch (error) {
@@ -392,7 +398,8 @@ async function renderNextBatch() {
     const loadMoreContainer = document.getElementById('loadMoreContainer');
     const loadMoreBtn = document.getElementById('loadMoreBtn');
 
-    const nextBatch = allPosts.slice(displayedPostsCount, displayedPostsCount + POSTS_PER_PAGE);
+    const postsToRender = searchQuery ? filteredPosts : allPosts;
+    const nextBatch = postsToRender.slice(displayedPostsCount, displayedPostsCount + POSTS_PER_PAGE);
 
     if (nextBatch.length === 0) {
         loadMoreContainer.style.display = 'none';
@@ -425,6 +432,77 @@ async function renderNextBatch() {
     } else {
         loadMoreContainer.style.display = 'none';
     }
+}
+
+// Search and Filter Functionality
+function handleSearch() {
+    const searchInput = document.getElementById('postSearchInput');
+    const clearBtn = document.getElementById('clearSearchBtn');
+    searchQuery = searchInput.value.trim().toLowerCase();
+
+    // Show/hide clear button
+    clearBtn.style.display = searchQuery ? 'flex' : 'none';
+
+    // Debounce search to improve performance
+    if (searchTimeout) clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        performSearch();
+    }, 300); // 300ms debounce
+}
+
+function clearSearch() {
+    const searchInput = document.getElementById('postSearchInput');
+    searchInput.value = '';
+    searchQuery = '';
+    document.getElementById('clearSearchBtn').style.display = 'none';
+    performSearch();
+}
+
+function performSearch() {
+    displayedPostsCount = 0;
+    const postsFeed = document.getElementById('postsFeed');
+    postsFeed.innerHTML = ''; // Clear feed
+
+    applySearchFilter();
+
+    if (searchQuery && filteredPosts.length === 0) {
+        postsFeed.innerHTML = `
+            <div class="empty-state">
+                <span class="empty-state-icon">🔍</span>
+                <h3>No results found</h3>
+                <p>No posts match your search for "${escapeHtml(searchQuery)}".</p>
+                <button class="btn btn-outline btn-small" style="margin-top: 15px;" onclick="clearSearch()">Clear Search</button>
+            </div>
+        `;
+        document.getElementById('loadMoreContainer').style.display = 'none';
+        return;
+    }
+
+    renderNextBatch();
+}
+
+function applySearchFilter() {
+    if (!searchQuery) {
+        filteredPosts = [];
+        return;
+    }
+
+    // Clean query: strip '@' if searching for handles, as usernames/emails don't store the leading @
+    const cleanQuery = searchQuery.startsWith('@') ? searchQuery.substring(1) : searchQuery;
+
+    filteredPosts = allPosts.filter(post => {
+        // Content search should use the full query
+        const contentMatch = post.content && post.content.toLowerCase().includes(searchQuery);
+
+        // Name/Email search should use clean query for better handle support
+        const nameMatch = (post.userName && post.userName.toLowerCase().includes(cleanQuery)) ||
+            (post.displayName && post.displayName.toLowerCase().includes(cleanQuery)) ||
+            (post.name && post.name.toLowerCase().includes(cleanQuery));
+
+        const emailMatch = post.userEmail && post.userEmail.toLowerCase().includes(cleanQuery);
+
+        return contentMatch || nameMatch || emailMatch;
+    });
 }
 
 async function loadMorePosts() {
