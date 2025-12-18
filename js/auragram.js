@@ -518,6 +518,10 @@ async function renderPost(post) {
     const displayHandle = `@${handleResult.toLowerCase()}`;
     const avatarHtml = renderUserAvatar(userProfile, displayNameResult);
 
+    // Render comments asynchronously
+    const commentHtmlPromises = comments.map(comment => renderComment(comment));
+    const commentHtmls = await Promise.all(commentHtmlPromises);
+
     return `
         <div class="post-card" data-post-id="${post.id}">
             <div class="post-header">
@@ -550,9 +554,9 @@ async function renderPost(post) {
                 </button>
             </div>
 
-            <div class="comments-section" id="comments-${post.id}" style="display: none;">
+            <div class="comments-section" id="comments-${post.id}">
                 <div id="comments-list-${post.id}">
-                    ${comments.map(comment => renderComment(comment)).join('')}
+                    ${commentHtmls.join('')}
                 </div>
 
                 <div class="add-comment">
@@ -666,7 +670,7 @@ async function toggleLike(postId) {
 function toggleComments(postId) {
     const commentsSection = document.getElementById(`comments-${postId}`);
     if (commentsSection) {
-        commentsSection.style.display = commentsSection.style.display === 'none' ? 'block' : 'none';
+        commentsSection.classList.toggle('open');
     }
 }
 
@@ -699,8 +703,9 @@ async function addComment(postId) {
         // Re-open comments section
         const commentsSection = document.getElementById(`comments-${postId}`);
         if (commentsSection) {
-            commentsSection.style.display = 'block';
+            commentsSection.classList.add('open');
         }
+
 
         showToast('Comment added!', 'success');
 
