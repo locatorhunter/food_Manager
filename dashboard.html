@@ -1,9 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://*.firebaseio.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://www.gstatic.com https://identitytoolkit.googleapis.com https://firestore.googleapis.com; frame-src https://*.firebaseio.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com;">
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://*.firebaseio.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://www.gstatic.com https://identitytoolkit.googleapis.com https://firestore.googleapis.com; frame-src https://*.firebaseio.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com;">
     <title>OfzHub - Dashboard</title>
     <link rel="stylesheet" href="css/style.css?v=1.0.4">
     <!-- jsPDF for PDF generation -->
@@ -44,126 +46,137 @@
         window.firebaseRemove = (ref) => ref.remove();
     </script>
 </head>
+
 <body>
     <nav id="navbar"></nav>
     <div id="banner"></div>
-    
+
     <main class="dashboard-page">
         <div class="dashboard-container">
-        <h1>Orders Dashboard</h1>
-        
-        <section class="dashboard-section">
-            <!-- Filters & Actions -->
-            <div class="dashboard-filters">
-                <div class="filters-section">
-                    <div class="filter-group">
-                        <label for="dateFilter">📅 Date</label>
-                        <select id="dateFilter" class="filter-select">
-                            <option value="today">Today</option>
-                            <option value="yesterday">Yesterday</option>
-                            <option value="week">This Week</option>
-                            <option value="month">This Month</option>
-                            <option value="custom">Custom Range</option>
-                            <option value="all">All Time</option>
-                        </select>
-                    </div>
+            <h1>Orders Dashboard</h1>
 
-                    <div class="filter-group custom-dates" id="customDateGroup" style="display: none;">
-                        <div class="date-inputs">
-                            <input type="date" id="startDate" class="filter-select">
-                            <span>to</span>
-                            <input type="date" id="endDate" class="filter-select">
-                        </div>
-                    </div>
-
-                    <div class="filter-group">
-                        <label for="hotelFilter">🏨 Hotel</label>
-                        <select id="hotelFilter" class="filter-select">
-                            <option value="all">All Hotels</option>
-                        </select>
-                    </div>
-
-                    <div class="filter-group">
-                        <label for="searchOrders">🔍 Search</label>
-                        <input type="text" id="searchOrders" placeholder="Search orders..." class="search-input">
-                    </div>
-                </div>
-
-                <div class="actions-section">
-                    <button id="refreshBtn" class="btn btn-secondary" title="Refresh data">🔄 Refresh</button>
-                    <button id="exportBtn" class="btn btn-secondary" title="Export to CSV">📥 CSV</button>
-                    <button id="downloadOrdersPDFBtn" class="btn btn-secondary" title="Download Orders as PDF">📄 PDF</button>
-                </div>
-            </div>
-            
-            
-            <!-- Order Summary for Hotels -->
-            <div class="card">
-                <div class="card-header">
-                    <h2>📋 Order Summary for Hotels</h2>
-                    <div class="summary-controls">
-                        <button id="refreshSummaryBtn" class="btn btn-secondary" title="Refresh summary">🔄 Refresh</button>
-                        <button id="printSummaryBtn" class="btn btn-secondary" title="Print summary">🖨️ Print</button>
-                        <button id="downloadSummaryPDFBtn" class="btn btn-secondary" title="Download Summary as PDF">📄 PDF</button>
-                    </div>
-                </div>
-                <div id="orderSummary" class="order-summary-content"></div>
-            </div>
-
-            <!-- Food Distribution Checklist -->
-            <div class="card">
-                <div class="card-header">
-                    <h2>📝 Food Distribution Checklist</h2>
-                    <div class="summary-controls">
+            <section class="dashboard-section">
+                <!-- Filters & Actions -->
+                <div class="dashboard-filters">
+                    <div class="filters-section">
                         <div class="filter-group">
-                            <input type="date" id="checklistDateFilter" class="filter-select">
+                            <label for="dateFilter">📅 Date</label>
+                            <select id="dateFilter" class="filter-select">
+                                <option value="today">Today</option>
+                                <option value="yesterday">Yesterday</option>
+                                <option value="week">This Week</option>
+                                <option value="month">This Month</option>
+                                <option value="custom">Custom Range</option>
+                                <option value="all">All Time</option>
+                            </select>
                         </div>
-                        <button id="refreshChecklistBtn" class="btn btn-secondary" title="Refresh checklist">🔄 Refresh</button>
-                        <button id="printChecklistBtn" class="btn btn-secondary" title="Print checklist">🖨️ Print</button>
-                        <button id="downloadChecklistPDFBtn" class="btn btn-secondary" title="Download Checklist as PDF">📄 PDF</button>
-                    </div>
-                </div>
-                <div id="distributionChecklist" class="checklist-content"></div>
-            </div>
 
-            <!-- Orders Table -->
-            <div class="card">
-                <div class="card-header">
-                    <h2>All Orders</h2>
-                    <div class="table-controls">
-                        <div class="control-group">
-                            <label for="sortBy">Sort by:</label>
-                            <select id="sortBy" class="modern-select">
-                                <option value="time-desc">Latest First</option>
-                                <option value="time-asc">Oldest First</option>
-                                <option value="name-asc">Name (A-Z)</option>
-                                <option value="name-desc">Name (Z-A)</option>
-                                <option value="amount-desc">Amount (High-Low)</option>
-                                <option value="amount-asc">Amount (Low-High)</option>
+                        <div class="filter-group custom-dates" id="customDateGroup" style="display: none;">
+                            <div class="date-inputs">
+                                <input type="date" id="startDate" class="filter-select">
+                                <span>to</span>
+                                <input type="date" id="endDate" class="filter-select">
+                            </div>
+                        </div>
+
+                        <div class="filter-group">
+                            <label for="hotelFilter">🏨 Hotel</label>
+                            <select id="hotelFilter" class="filter-select">
+                                <option value="all">All Hotels</option>
                             </select>
                         </div>
-                        <div class="control-group">
-                            <label for="groupBy">Group by:</label>
-                            <select id="groupBy" class="modern-select">
-                                <option value="none">No Grouping</option>
-                                <option value="hotel">Hotel</option>
-                                <option value="employee">Employee</option>
-                                <option value="date">Date</option>
-                                <option value="item">Food Item</option>
-                            </select>
+
+                        <div class="filter-group">
+                            <label for="searchOrders">🔍 Search</label>
+                            <input type="text" id="searchOrders" placeholder="Search orders..." class="search-input">
                         </div>
                     </div>
+
+                    <div class="actions-section">
+                        <button id="refreshBtn" class="btn btn-secondary" title="Refresh data">🔄 Refresh</button>
+                        <button id="exportBtn" class="btn btn-secondary" title="Export to CSV">📥 CSV</button>
+                        <button id="downloadOrdersPDFBtn" class="btn btn-secondary" title="Download Orders as PDF">📄
+                            PDF</button>
+                    </div>
                 </div>
-                <div id="ordersTable" class="orders-table"></div>
-            </div>
-        </section>
+
+
+                <!-- Order Summary for Hotels -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2>📋 Order Summary for Hotels</h2>
+                        <div class="summary-controls">
+                            <div class="filter-group">
+                                <input type="date" id="summaryDateFilter" class="filter-select">
+                            </div>
+                            <button id="refreshSummaryBtn" class="btn btn-secondary" title="Refresh summary">🔄
+                                Refresh</button>
+                            <button id="printSummaryBtn" class="btn btn-secondary" title="Print summary">🖨️
+                                Print</button>
+                            <button id="downloadSummaryPDFBtn" class="btn btn-secondary"
+                                title="Download Summary as PDF">📄 PDF</button>
+                        </div>
+                    </div>
+                    <div id="orderSummary" class="order-summary-content"></div>
+                </div>
+
+                <!-- Food Distribution Checklist -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2>📝 Food Distribution Checklist</h2>
+                        <div class="summary-controls">
+                            <div class="filter-group">
+                                <input type="date" id="checklistDateFilter" class="filter-select">
+                            </div>
+                            <button id="refreshChecklistBtn" class="btn btn-secondary" title="Refresh checklist">🔄
+                                Refresh</button>
+                            <button id="printChecklistBtn" class="btn btn-secondary" title="Print checklist">🖨️
+                                Print</button>
+                            <button id="downloadChecklistPDFBtn" class="btn btn-secondary"
+                                title="Download Checklist as PDF">📄 PDF</button>
+                        </div>
+                    </div>
+                    <div id="distributionChecklist" class="checklist-content"></div>
+                </div>
+
+                <!-- Orders Table -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2>All Orders</h2>
+                        <div class="table-controls">
+                            <div class="control-group">
+                                <label for="sortBy">Sort by:</label>
+                                <select id="sortBy" class="modern-select">
+                                    <option value="time-desc">Latest First</option>
+                                    <option value="time-asc">Oldest First</option>
+                                    <option value="name-asc">Name (A-Z)</option>
+                                    <option value="name-desc">Name (Z-A)</option>
+                                    <option value="amount-desc">Amount (High-Low)</option>
+                                    <option value="amount-asc">Amount (Low-High)</option>
+                                </select>
+                            </div>
+                            <div class="control-group">
+                                <label for="groupBy">Group by:</label>
+                                <select id="groupBy" class="modern-select">
+                                    <option value="none">No Grouping</option>
+                                    <option value="hotel">Hotel</option>
+                                    <option value="employee">Employee</option>
+                                    <option value="date">Date</option>
+                                    <option value="item">Food Item</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="ordersTable" class="orders-table"></div>
+                </div>
+            </section>
         </div>
     </main>
-    
+
     <footer>
         <p>&copy; 2025 OfzHub. All rights reserved. | Developed by Vijay</p>
     </footer>
-    
+
 
     <script src="js/modal.js?v=1.0.3"></script>
     <script src="js/storage.js?v=1.0.3"></script>
@@ -173,7 +186,7 @@
     <script src="js/dashboard.js?v=1.0.3"></script>
     <script>
         // Dashboard page authentication check
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             // Check authentication status
             const user = window.authService ? window.authService.getCurrentUser() : null;
             if (!user || (user.role !== 'admin' && user.role !== 'manager')) {
@@ -192,4 +205,5 @@
         }
     </script>
 </body>
+
 </html>

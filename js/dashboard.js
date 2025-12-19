@@ -5,7 +5,7 @@
 let currentOrders = [];
 let filteredOrders = [];
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     initializeDashboard();
 });
 
@@ -17,8 +17,10 @@ async function initializeDashboard() {
     await populateHotelFilter();
     await setupControls();
     displayOrders();
-    await displayOrderSummary();
-    await displayDistributionChecklist();
+    const summaryDate = document.getElementById('summaryDateFilter')?.value;
+    await displayOrderSummary(summaryDate);
+    const checklistDate = document.getElementById('checklistDateFilter')?.value;
+    await displayDistributionChecklist(checklistDate);
     await displayPopularItems();
 
     window.addEventListener('orderAdded', refreshDashboard);
@@ -39,7 +41,7 @@ async function loadOrders() {
     today.setHours(0, 0, 0, 0);
 
     try {
-        switch(dateFilter) {
+        switch (dateFilter) {
             case 'today':
                 currentOrders = await StorageManager.getTodaysOrders();
                 break;
@@ -104,11 +106,16 @@ async function populateHotelFilter() {
 }
 
 async function setupControls() {
-    // Set default date for checklist to today
+    // Set default date for summary and checklist to today
+    const summaryDateFilter = document.getElementById('summaryDateFilter');
     const checklistDateFilter = document.getElementById('checklistDateFilter');
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    if (summaryDateFilter) {
+        summaryDateFilter.value = todayStr;
+    }
     if (checklistDateFilter) {
-        const today = new Date().toISOString().split('T')[0];
-        checklistDateFilter.value = today;
+        checklistDateFilter.value = todayStr;
     }
 
     // Date filter with custom range
@@ -138,8 +145,15 @@ async function setupControls() {
 
     document.getElementById('refreshBtn').addEventListener('click', refreshDashboard);
     document.getElementById('refreshSummaryBtn').addEventListener('click', async () => {
-        await displayOrderSummary();
+        const selectedDate = document.getElementById('summaryDateFilter').value;
+        await displayOrderSummary(selectedDate);
         showToast('Order summary refreshed!');
+    });
+
+    document.getElementById('summaryDateFilter').addEventListener('change', async () => {
+        const selectedDate = document.getElementById('summaryDateFilter').value;
+        await displayOrderSummary(selectedDate);
+        showToast('Order summary updated!');
     });
     document.getElementById('printSummaryBtn').addEventListener('click', printOrderSummary);
     document.getElementById('exportBtn').addEventListener('click', exportToCSV);
@@ -166,7 +180,7 @@ function applyFilters() {
     const hotelFilter = document.getElementById('hotelFilter').value;
     const searchTerm = document.getElementById('searchOrders').value.toLowerCase();
     const sortBy = document.getElementById('sortBy').value;
-    
+
     // Filter by hotel
     filteredOrders = currentOrders.filter(order => {
         if (hotelFilter !== 'all' && order.hotelName !== hotelFilter) {
@@ -174,17 +188,17 @@ function applyFilters() {
         }
         return true;
     });
-    
+
     // Filter by search term
     if (searchTerm) {
-        filteredOrders = filteredOrders.filter(order => 
+        filteredOrders = filteredOrders.filter(order =>
             order.employeeName.toLowerCase().includes(searchTerm)
         );
     }
-    
+
     // Sort orders
     filteredOrders.sort((a, b) => {
-        switch(sortBy) {
+        switch (sortBy) {
             case 'time-desc':
                 return new Date(b.timestamp) - new Date(a.timestamp);
             case 'time-asc':
@@ -201,7 +215,7 @@ function applyFilters() {
                 return 0;
         }
     });
-    
+
     displayOrders();
 }
 
@@ -211,13 +225,13 @@ function calculateStatistics(orders) {
     let totalRevenue = 0;
     let totalItems = 0;
     const uniqueEmployees = new Set();
-    
+
     orders.forEach(order => {
         totalRevenue += order.total;
         totalItems += order.items.reduce((sum, item) => sum + item.quantity, 0);
         uniqueEmployees.add(order.employeeName);
     });
-    
+
     return {
         totalOrders,
         totalRevenue,
@@ -229,12 +243,12 @@ function calculateStatistics(orders) {
 function displayOrders() {
     const container = document.getElementById('ordersTable');
     const groupBy = document.getElementById('groupBy').value;
-    
+
     if (filteredOrders.length === 0) {
         container.innerHTML = '<p class="empty-message">No orders found</p>';
         return;
     }
-    
+
     if (groupBy === 'none') {
         displayOrdersTable(filteredOrders, container);
     } else {
@@ -334,7 +348,7 @@ function displayGroupedOrders(orders, groupBy, container) {
         // Original grouping logic for hotel, employee, date
         orders.forEach(order => {
             let key;
-            switch(groupBy) {
+            switch (groupBy) {
                 case 'hotel':
                     key = order.hotelName;
                     break;
@@ -352,13 +366,13 @@ function displayGroupedOrders(orders, groupBy, container) {
             grouped[key].push(order);
         });
     }
-    
+
     let html = '';
-    
+
     Object.entries(grouped).forEach(([groupName, groupOrders]) => {
         const groupTotal = groupOrders.reduce((sum, order) => sum + order.total, 0);
         const groupCount = groupOrders.length;
-        
+
         html += `
             <div class="order-group">
                 <div class="group-header">
@@ -370,7 +384,7 @@ function displayGroupedOrders(orders, groupBy, container) {
                 </div>
                 <div class="group-content">
         `;
-        
+
         html += `<table>
             <thead>
                 <tr>
@@ -395,7 +409,7 @@ function displayGroupedOrders(orders, groupBy, container) {
             const checkedAttr = order.completed ? 'checked' : '';
             const isGroupOrder = order.isGroupOrder;
             const groupOrderBadge = isGroupOrder ? '<span class="group-order-badge">👥 Group</span>' : '';
-    
+
             html += `
                 <tr class="${completedClass} ${isGroupOrder ? 'group-order-row' : ''}">
                     <td>
@@ -427,7 +441,7 @@ function displayGroupedOrders(orders, groupBy, container) {
                 </tr>
             `;
         });
-        
+
         html += '</tbody></table></div></div>';
     });
 
@@ -547,13 +561,29 @@ async function deleteOrderFromDashboard(orderId) {
     }
 }
 
-async function displayOrderSummary() {
+async function displayOrderSummary(selectedDate = null) {
     const container = document.getElementById('orderSummary');
     if (!container) return; // Not on page with order summary
 
     try {
-        const todaysOrders = await StorageManager.getTodaysOrders();
-        const orders = todaysOrders.filter(order => !order.completed);
+        let orders;
+        if (selectedDate) {
+            // Get orders for the selected date
+            const allOrders = await StorageManager.getOrders();
+            const targetDate = new Date(selectedDate);
+            targetDate.setHours(0, 0, 0, 0);
+            const nextDay = new Date(targetDate);
+            nextDay.setDate(nextDay.getDate() + 1);
+
+            orders = allOrders.filter(order => {
+                const orderDate = new Date(order.timestamp);
+                return orderDate >= targetDate && orderDate < nextDay && !order.completed;
+            });
+        } else {
+            // Default to today's orders
+            const todaysOrders = await StorageManager.getTodaysOrders();
+            orders = todaysOrders.filter(order => !order.completed);
+        }
 
         if (orders.length === 0) {
             container.innerHTML = '<p class="empty-message">No pending orders to summarize</p>';
@@ -583,7 +613,7 @@ async function displayOrderSummary() {
         let html = '';
 
         Object.entries(hotelSummaries).forEach(([hotelName, items]) => {
-            const itemEntries = Object.entries(items).sort(([,a], [,b]) => b.quantity - a.quantity); // Sort by quantity descending
+            const itemEntries = Object.entries(items).sort(([, a], [, b]) => b.quantity - a.quantity); // Sort by quantity descending
             const totalItems = itemEntries.reduce((sum, [, itemData]) => sum + itemData.quantity, 0);
             const totalValue = itemEntries.reduce((sum, [, itemData]) => sum + (itemData.quantity * itemData.price), 0);
 
@@ -773,7 +803,7 @@ async function displayDistributionChecklist(selectedDate = null) {
 
         // Add event listeners for distribution checkboxes
         document.querySelectorAll('.distribution-checkbox').forEach(checkbox => {
-            checkbox.addEventListener('change', function() {
+            checkbox.addEventListener('change', function () {
                 const employeeCard = this.closest('.checklist-employee');
                 if (this.checked) {
                     employeeCard.classList.add('distributed');
@@ -792,8 +822,10 @@ async function displayDistributionChecklist(selectedDate = null) {
 async function refreshDashboard() {
     await loadOrders();
     displayOrders();
-    await displayOrderSummary();
-    await displayDistributionChecklist();
+    const summaryDate = document.getElementById('summaryDateFilter')?.value;
+    await displayOrderSummary(summaryDate);
+    const checklistDate = document.getElementById('checklistDateFilter')?.value;
+    await displayDistributionChecklist(checklistDate);
 }
 
 async function handleCustomDate() {
@@ -823,6 +855,9 @@ async function handleCustomDate() {
 
 function printOrderSummary() {
     const summaryElement = document.getElementById('orderSummary');
+    const selectedDate = document.getElementById('summaryDateFilter')?.value;
+    const dateStr = selectedDate ? new Date(selectedDate).toLocaleDateString() : new Date().toLocaleDateString();
+
     if (!summaryElement || summaryElement.innerHTML.includes('No pending orders')) {
         showToast('No orders to print', 'error');
         return;
@@ -833,7 +868,7 @@ function printOrderSummary() {
         <!DOCTYPE html>
         <html>
         <head>
-            <title>Hotel Order Summary - ${new Date().toLocaleDateString()}</title>
+            <title>Hotel Order Summary - ${dateStr}</title>
             <style>
                 body { font-family: Arial, sans-serif; margin: 20px; }
                 .hotel-order-summary { margin-bottom: 30px; border: 1px solid #ddd; padding: 20px; border-radius: 8px; }
@@ -849,7 +884,7 @@ function printOrderSummary() {
         </head>
         <body>
             <h1>🏨 Hotel Order Summary</h1>
-            <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
+            <p><strong>Date:</strong> ${dateStr}</p>
             <p><strong>Time:</strong> ${new Date().toLocaleTimeString()}</p>
             <hr>
             ${summaryElement.innerHTML}
@@ -960,6 +995,9 @@ function exportToCSV() {
 
 async function downloadSummaryPDF() {
     const summaryElement = document.getElementById('orderSummary');
+    const selectedDate = document.getElementById('summaryDateFilter')?.value;
+    const dateStr = selectedDate ? new Date(selectedDate).toLocaleDateString() : new Date().toLocaleDateString();
+
     if (!summaryElement || summaryElement.innerHTML.includes('No pending orders')) {
         showToast('No orders to download', 'error');
         return;
@@ -975,13 +1013,27 @@ async function downloadSummaryPDF() {
 
         // Add date
         doc.setFontSize(12);
-        doc.text(`Date: ${new Date().toLocaleDateString()}`, 20, 45);
+        doc.text(`Date: ${dateStr}`, 20, 45);
 
         let yPosition = 60;
 
         // Get order summary data
-        const todaysOrders = await StorageManager.getTodaysOrders();
-        const orders = todaysOrders.filter(order => !order.completed);
+        let orders;
+        if (selectedDate) {
+            const allOrders = await StorageManager.getOrders();
+            const targetDate = new Date(selectedDate);
+            targetDate.setHours(0, 0, 0, 0);
+            const nextDay = new Date(targetDate);
+            nextDay.setDate(nextDay.getDate() + 1);
+
+            orders = allOrders.filter(order => {
+                const orderDate = new Date(order.timestamp);
+                return orderDate >= targetDate && orderDate < nextDay && !order.completed;
+            });
+        } else {
+            const todaysOrders = await StorageManager.getTodaysOrders();
+            orders = todaysOrders.filter(order => !order.completed);
+        }
 
         // Group orders by hotel
         const hotelSummaries = {};
@@ -1019,7 +1071,7 @@ async function downloadSummaryPDF() {
             doc.setFontSize(12);
             doc.setFont('helvetica', 'normal');
 
-            const itemEntries = Object.entries(items).sort(([,a], [,b]) => b.quantity - a.quantity);
+            const itemEntries = Object.entries(items).sort(([, a], [, b]) => b.quantity - a.quantity);
             const totalItems = itemEntries.reduce((sum, [, itemData]) => sum + itemData.quantity, 0);
 
             // Table headers
@@ -1423,7 +1475,7 @@ async function showGroupOrderDetails(orderId) {
         document.body.appendChild(modal);
 
         // Close on background click
-        modal.addEventListener('click', function(e) {
+        modal.addEventListener('click', function (e) {
             if (e.target === modal) {
                 modal.remove();
             }
