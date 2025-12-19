@@ -1,12 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://*.firebaseio.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://www.gstatic.com https://identitytoolkit.googleapis.com https://firestore.googleapis.com; frame-src https://*.firebaseio.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com;">
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://*.firebaseio.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://www.gstatic.com https://identitytoolkit.googleapis.com https://firestore.googleapis.com; frame-src https://*.firebaseio.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com;">
     <meta name="description" content="OfzHub - Your office social hub">
     <title>OfzHub - Home</title>
-    <link rel="stylesheet" href="css/style.css?v=1.1.0">
+    <link rel="stylesheet" href="shared/styles/style.css?v=1.1.0">
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
@@ -33,11 +35,11 @@
         // Action Code Settings for email verification and password reset
         const currentDomain = window.location.hostname;
         const isLocalhost = currentDomain === 'localhost' || currentDomain === '127.0.0.1';
-        
+
         window.actionCodeSettings = {
-            url: isLocalhost ? 
-                `http://${currentDomain}/login.html` : 
-                `https://${currentDomain}/login.html`,
+            url: isLocalhost ?
+                `http://${currentDomain}/auth/login.html` :
+                `https://${currentDomain}/auth/login.html`,
             handleCodeInApp: false
         };
 
@@ -54,6 +56,7 @@
         window.firebaseRemove = (ref) => ref.remove();
     </script>
 </head>
+
 <body>
     <nav id="navbar"></nav>
     <div id="banner"></div>
@@ -74,9 +77,10 @@
             </div>
 
             <h1>Welcome to OfzHub</h1>
-            <p class="hero-subtitle">Your office social hub - order food, share moments, and connect with colleagues.</p>
+            <p class="hero-subtitle">Your office social hub - order food, share moments, and connect with colleagues.
+            </p>
             <div class="hero-buttons">
-                <a href="menu.html" class="btn btn-secondary btn-large">
+                <a href="menu/menu.html" class="btn btn-secondary btn-large">
                     <span class="btn-icon">🍽️</span>
                     Order Now
                 </a>
@@ -84,7 +88,7 @@
                     <span class="btn-icon">🔥</span>
                     Trending
                 </a>
-                <a href="auragram.html" class="btn btn-secondary btn-large">
+                <a href="auragram/auragram.html" class="btn btn-secondary btn-large">
                     <span class="btn-icon">📸</span>
                     Auragram
                 </a>
@@ -121,21 +125,21 @@
     <footer>
         <p>&copy; 2025 OfzHub. All rights reserved. | Developed by Vijay</p>
     </footer>
-    
-    <script src="js/storage.js?v=1.0.0"></script>
-    <script src="js/utils.js?v=1.0.0"></script>
-    <script src="js/auth.js?v=1.0.0"></script>
-    <script src="js/common.js?v=1.0.0"></script>
-    <script src="js/dashboard.js"></script>
+
+    <script src="shared/scripts/storage.js?v=1.0.0"></script>
+    <script src="shared/scripts/utils.js?v=1.0.0"></script>
+    <script src="auth/auth.js?v=1.0.0"></script>
+    <script src="shared/scripts/common.js?v=1.0.0"></script>
+    <script src="dashboard/dashboard.js"></script>
     <script>
         // Initialize popular items on home page
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             // Wait for auth service to be ready and check authentication status
             const checkAuth = () => {
                 const user = window.authService ? window.authService.getCurrentUser() : null;
                 if (!user) {
                     // Redirect to login if not authenticated
-                    window.location.href = 'login.html';
+                    window.location.href = 'auth/login.html';
                     return;
                 }
 
@@ -160,7 +164,7 @@
                     checkUserData();
                 } else {
                     // User is signed out
-                    window.location.href = 'login.html';
+                    window.location.href = 'auth/login.html';
                 }
                 // Unsubscribe after first check
                 if (unsubscribe) unsubscribe();
@@ -239,4 +243,5 @@
         }
     </script>
 </body>
+
 </html>

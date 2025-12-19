@@ -7,7 +7,7 @@ let passwordStrength = 0;
 
 // Initialize signup page
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
         initializeSignupPage();
     });
 } else {
@@ -21,12 +21,12 @@ function initializeSignupPage() {
     setupPasswordStrengthChecker();
     setupRoleSelection();
     setupModalHandlers();
-    
+
     // Check URL parameters for resend verification
     const urlParams = new URLSearchParams(window.location.search);
     const resendEmail = urlParams.get('email');
     const isResend = urlParams.get('resend') === 'true';
-    
+
     if (resendEmail && isResend) {
         console.log('Handling resend verification for:', resendEmail);
         // Pre-fill the email field
@@ -34,58 +34,60 @@ function initializeSignupPage() {
         if (emailField) {
             emailField.value = resendEmail;
         }
-        
+
         // Show resend verification modal or automatically trigger resend
         setTimeout(() => {
             handleResendVerification(resendEmail);
         }, 500);
-        
+
         // Clean up URL parameters
         window.history.replaceState({}, document.title, window.location.pathname);
     }
-    
+
     // Clear any existing pending verification email when page loads (unless we're resending)
     if (!isResend) {
         sessionStorage.removeItem('pendingVerificationEmail');
     }
-    
+
     console.log('Signup page initialized successfully');
 }
 
 async function handleResendVerification(email) {
     try {
         showLoadingOverlay('Checking account status...');
-        
+
         // Try to check if user exists in Firestore
         const userExists = await checkExistingUser(email);
-        
+
         if (userExists.exists) {
             console.log('User found in Firestore:', userExists.data);
-            
+
             const userData = userExists.data;
-            
+
             if (userData.emailVerified) {
                 // Account is already verified
                 showToast('This email is already verified. Please try logging in.', 'success');
                 setTimeout(() => {
-                    window.location.href = 'login.html';
+                    const prefix = typeof getPathPrefix === 'function' ? getPathPrefix() : '';
+                    window.location.href = `${prefix}auth/login.html`;
                 }, 2000);
             } else {
                 // Account exists but not verified
                 showToast('Account found but not verified. Since you know your password, please use "Forgot Password" on the login page to receive a verification email.', 'info');
-                
+
                 // Store the email for easy access
                 localStorage.setItem('resendVerificationEmail', email);
-                
+
                 setTimeout(() => {
-                    window.location.href = 'login.html';
+                    const prefix = typeof getPathPrefix === 'function' ? getPathPrefix() : '';
+                    window.location.href = `${prefix}auth/login.html`;
                 }, 3000);
             }
         } else {
             // User doesn't exist, this is likely a new signup
             showToast('No account found with this email. Please complete the signup process to create a new account and receive a verification email.', 'info');
         }
-        
+
     } catch (error) {
         console.error('Error handling resend verification:', error);
         showToast('Error checking account status. Please try signing up again.', 'error');
@@ -98,7 +100,7 @@ function setupFormValidation() {
     const signupForm = document.getElementById('signupForm');
     if (!signupForm) return;
 
-    signupForm.addEventListener('submit', async function(e) {
+    signupForm.addEventListener('submit', async function (e) {
         e.preventDefault();
 
         if (currentStep === 2) {
@@ -111,7 +113,7 @@ function setupFormValidation() {
     // Handle Next Step button
     const nextStepBtn = document.getElementById('nextStepBtn');
     if (nextStepBtn) {
-        nextStepBtn.addEventListener('click', function(e) {
+        nextStepBtn.addEventListener('click', function (e) {
             e.preventDefault();
             e.stopPropagation();
             if (validateStep1()) {
@@ -125,7 +127,7 @@ function setupPasswordStrengthChecker() {
     const passwordInput = document.getElementById('signupPassword');
     if (!passwordInput) return;
 
-    passwordInput.addEventListener('input', function() {
+    passwordInput.addEventListener('input', function () {
         const password = this.value;
         const strength = SecurityFramework.validatePassword(password);
 
@@ -171,7 +173,7 @@ function setupRoleSelection() {
     const roleOptions = document.querySelectorAll('.role-option');
 
     roleOptions.forEach(option => {
-        option.addEventListener('click', function() {
+        option.addEventListener('click', function () {
             // Remove selected class from all options
             roleOptions.forEach(opt => opt.classList.remove('selected'));
 
@@ -193,7 +195,7 @@ function setupModalHandlers() {
     const privacyModal = document.getElementById('privacyModal');
 
     // Close modals
-    document.addEventListener('click', function(e) {
+    document.addEventListener('click', function (e) {
         if (e.target.classList.contains('modal-close') || e.target.classList.contains('modal')) {
             termsModal.style.display = 'none';
             privacyModal.style.display = 'none';
@@ -371,15 +373,16 @@ async function submitSignup() {
 
             // Clear form
             document.getElementById('signupForm').reset();
-            
+
             // Show additional guidance for email verification
             setTimeout(() => {
                 showToast('Didn\'t receive the email? Use the "Resend verification email" link on the login page.', 'info', 6000);
             }, 2000);
-            
+
             // Redirect to login after a delay
             setTimeout(() => {
-                window.location.href = 'login.html';
+                const prefix = typeof getPathPrefix === 'function' ? getPathPrefix() : '';
+                window.location.href = `${prefix}auth/login.html`;
             }, 5000);
         } else {
             // Only show error if we haven't already handled the situation
@@ -404,7 +407,7 @@ async function checkExistingUser(email) {
         if (!userQuery.empty) {
             const userDoc = userQuery.docs[0];
             const userData = userDoc.data();
-            
+
             // Return detailed information about the existing user
             return {
                 exists: true,
@@ -430,27 +433,28 @@ async function checkExistingUser(email) {
 async function resendVerificationForExistingUser(existingUser) {
     try {
         console.log('Attempting to resend verification for existing user:', existingUser.email);
-        
+
         // Try to get the current Firebase Auth user by forcing a password reset or sign-in attempt
         // Since we can't directly get a user by email without admin SDK, we'll use a different approach
-        
+
         // For now, we'll show a message that instructs the user to use the login page
         showToast(`We found your existing account (${existingUser.email}). Please go to the login page and click "Resend verification email" to receive a new verification link.`, 'info', 8000);
-        
+
         // Store the email for the resend function on login page
         sessionStorage.setItem('pendingVerificationEmail', existingUser.email);
-        
+
         // Redirect to login page after a delay
         setTimeout(() => {
-            window.location.href = 'login.html';
+            const prefix = typeof getPathPrefix === 'function' ? getPathPrefix() : '';
+            window.location.href = `${prefix}auth/login.html`;
         }, 4000);
-        
+
         return { success: true, message: 'Redirecting to login page for email resend' };
-        
+
     } catch (error) {
         console.error('Error resending verification for existing user:', error);
-        return { 
-            success: false, 
+        return {
+            success: false,
             error: 'Failed to resend verification email. Please contact support or try using the login page.',
             fallbackMessage: `Account exists (${existingUser.email}) but verification resend failed. Please use the login page.`
         };
@@ -465,29 +469,31 @@ function showAccountExistsOptions(existingUser) {
         status: existingUser.emailVerified ? 'verified' : 'unverified',
         role: existingUser.role
     };
-    
+
     let message = `We found your existing account:\n\n`;
     message += `📧 Email: ${options.email}\n`;
     message += `👤 Name: ${options.displayName}\n`;
     message += `📋 Status: ${options.status === 'verified' ? '✅ Verified' : '❌ Not Verified'}\n`;
     message += `👔 Role: ${options.role}\n\n`;
-    
+
     if (!options.status || options.status === 'unverified') {
         message += `Would you like us to send a new verification email?`;
-        
+
         if (confirm(message)) {
             resendVerificationForExistingUser(existingUser);
         } else {
             showToast('You can always resend the verification email from the login page.', 'info');
             setTimeout(() => {
-                window.location.href = 'login.html';
+                const prefix = typeof getPathPrefix === 'function' ? getPathPrefix() : '';
+                window.location.href = `${prefix}auth/login.html`;
             }, 2000);
         }
     } else {
         message += `Your account is already verified. You can sign in directly.`;
         showToast(message, 'success');
         setTimeout(() => {
-            window.location.href = 'login.html';
+            const prefix = typeof getPathPrefix === 'function' ? getPathPrefix() : '';
+            window.location.href = `${prefix}auth/login.html`;
         }, 3000);
     }
 }
@@ -508,17 +514,17 @@ async function createUserAccount(formData) {
         console.log('Sending email verification...');
         let emailSent = false;
         let verificationError = null;
-        
+
         try {
             // Method 1: Try simple email verification without actionCodeSettings
             await user.sendEmailVerification();
             emailSent = true;
             console.log('Email verification sent successfully (simple method)');
-            
+
         } catch (error1) {
             console.warn('Simple method failed, trying with actionCodeSettings:', error1.code);
             verificationError = error1;
-            
+
             try {
                 // Method 2: Try with actionCodeSettings if available
                 if (window.actionCodeSettings) {
@@ -531,15 +537,15 @@ async function createUserAccount(formData) {
                 verificationError = error2;
             }
         }
-        
+
         // Store user email temporarily for resend functionality regardless of success
         sessionStorage.setItem('pendingVerificationEmail', formData.email);
-        
+
         if (!emailSent && verificationError) {
             console.error('Email verification failed completely:', verificationError);
-            
+
             let errorMessage = 'Account created but verification email failed to send. ';
-            
+
             switch (verificationError.code) {
                 case 'auth/unauthorized-continue-uri':
                     errorMessage += 'Domain not authorized. Please contact support.';
@@ -553,7 +559,7 @@ async function createUserAccount(formData) {
                 default:
                     errorMessage += 'You can request a new verification email from the login page.';
             }
-            
+
             console.warn('Email verification error details:', errorMessage);
         }
 
@@ -603,7 +609,7 @@ async function createUserAccount(formData) {
         // Handle email already in use error
         if (error.code === 'auth/email-already-in-use') {
             console.log('Email already in use in Firebase Auth, checking Firestore...');
-            
+
             // Check if user exists in Firestore
             const existingUserCheck = await checkExistingUser(formData.email);
             if (existingUserCheck.exists) {
@@ -615,7 +621,8 @@ async function createUserAccount(formData) {
                 showToast('We found an incomplete registration with this email. Redirecting to login page to complete verification.', 'info');
                 sessionStorage.setItem('pendingVerificationEmail', formData.email);
                 setTimeout(() => {
-                    window.location.href = 'login.html';
+                    const prefix = typeof getPathPrefix === 'function' ? getPathPrefix() : '';
+                    window.location.href = `${prefix}auth/login.html`;
                 }, 3000);
                 return { success: false, handled: true };
             }
@@ -740,9 +747,9 @@ window.showPrivacyPolicy = showPrivacyPolicy;
 window.togglePassword = togglePassword;
 
 // Initialize signup page when DOM is ready
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     console.log('Signup page loaded successfully');
-    
+
     // Test if required functions are available
     setTimeout(() => {
         console.log('SecurityFramework available:', typeof window.SecurityFramework !== 'undefined');

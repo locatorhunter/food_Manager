@@ -1,12 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://*.firebaseio.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://www.gstatic.com https://identitytoolkit.googleapis.com https://firestore.googleapis.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com;">
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://*.firebaseio.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://www.gstatic.com https://identitytoolkit.googleapis.com https://firestore.googleapis.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com;">
     <title>Sign Up - OfzHub</title>
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="../shared/styles/style.css">
 </head>
+
 <body>
     <div class="signup-container">
         <div class="signup-card">
@@ -30,7 +33,8 @@
                         <label for="signupPassword">Password *</label>
                         <div class="password-input-wrapper">
                             <input type="password" id="signupPassword" required>
-                            <button type="button" class="password-toggle" onclick="togglePassword('signupPassword')">👁️</button>
+                            <button type="button" class="password-toggle"
+                                onclick="togglePassword('signupPassword')">👁️</button>
                         </div>
                         <div class="password-strength" id="passwordStrength">
                             <div class="strength-meter">
@@ -44,7 +48,8 @@
                         <label for="signupConfirmPassword">Confirm Password *</label>
                         <div class="password-input-wrapper">
                             <input type="password" id="signupConfirmPassword" required>
-                            <button type="button" class="password-toggle" onclick="togglePassword('signupConfirmPassword')">👁️</button>
+                            <button type="button" class="password-toggle"
+                                onclick="togglePassword('signupConfirmPassword')">👁️</button>
                         </div>
                     </div>
 
@@ -98,7 +103,8 @@
                     <div class="form-group terms-group">
                         <label class="checkbox-label">
                             <input type="checkbox" id="acceptTerms" required>
-                            <span>I accept the <a href="#" onclick="showTermsOfService()">Terms of Service</a> and <a href="#" onclick="showPrivacyPolicy()">Privacy Policy</a> *</span>
+                            <span>I accept the <a href="#" onclick="showTermsOfService()">Terms of Service</a> and <a
+                                    href="#" onclick="showPrivacyPolicy()">Privacy Policy</a> *</span>
                         </label>
                     </div>
 
@@ -119,10 +125,13 @@
             <div class="signup-footer">
                 <p>Already have an account? <a href="login.html">Sign In</a></p>
                 <p class="signup-help">Having trouble? <a href="#" onclick="showSignupHelp()">Get Help</a></p>
-                <div class="email-verification-help" style="margin-top: 15px; padding: 10px; background: #e3f2fd; border-radius: 5px; border-left: 4px solid #2196f3;">
+                <div class="email-verification-help"
+                    style="margin-top: 15px; padding: 10px; background: #e3f2fd; border-radius: 5px; border-left: 4px solid #2196f3;">
                     <p style="margin: 0; font-size: 0.9em; color: #1565c0;">
-                        <strong>📧 Email Verification:</strong> After creating your account, we'll send a verification email. 
-                        Check your inbox and spam folder. If you don't receive it, use the "Resend verification email" link on the login page.
+                        <strong>📧 Email Verification:</strong> After creating your account, we'll send a verification
+                        email.
+                        Check your inbox and spam folder. If you don't receive it, use the "Resend verification email"
+                        link on the login page.
                     </p>
                 </div>
             </div>
@@ -172,10 +181,12 @@ For technical issues, contact your administrator.`;
             <h2>Terms of Service</h2>
             <div class="terms-content">
                 <h3>1. Acceptance of Terms</h3>
-                <p>By accessing and using OfzHub, you accept and agree to be bound by the terms and provision of this agreement.</p>
+                <p>By accessing and using OfzHub, you accept and agree to be bound by the terms and provision of this
+                    agreement.</p>
 
                 <h3>2. Use License</h3>
-                <p>Permission is granted to temporarily use OfzHub for personal, non-commercial transitory viewing only.</p>
+                <p>Permission is granted to temporarily use OfzHub for personal, non-commercial transitory viewing only.
+                </p>
 
                 <h3>3. Account Responsibilities</h3>
                 <ul>
@@ -195,7 +206,8 @@ For technical issues, contact your administrator.`;
                 <p>Your personal information is protected and will only be used for lunch ordering purposes.</p>
 
                 <h3>6. Termination</h3>
-                <p>We may terminate or suspend access to our service immediately, without prior notice, for any reason.</p>
+                <p>We may terminate or suspend access to our service immediately, without prior notice, for any reason.
+                </p>
             </div>
         </div>
     </div>
@@ -223,10 +235,12 @@ For technical issues, contact your administrator.`;
                 </ul>
 
                 <h3>Information Sharing</h3>
-                <p>We do not sell, trade, or otherwise transfer your personal information to third parties without your consent, except as described in this policy.</p>
+                <p>We do not sell, trade, or otherwise transfer your personal information to third parties without your
+                    consent, except as described in this policy.</p>
 
                 <h3>Data Security</h3>
-                <p>We implement appropriate security measures to protect your personal information against unauthorized access, alteration, disclosure, or destruction.</p>
+                <p>We implement appropriate security measures to protect your personal information against unauthorized
+                    access, alteration, disclosure, or destruction.</p>
             </div>
         </div>
     </div>
@@ -266,11 +280,11 @@ For technical issues, contact your administrator.`;
         // Action Code Settings for email verification and password reset
         const currentDomain = window.location.hostname;
         const isLocalhost = currentDomain === 'localhost' || currentDomain === '127.0.0.1';
-        
+
         window.actionCodeSettings = {
-            url: isLocalhost ? 
-                `http://${currentDomain}/login.html` : 
-                `https://${currentDomain}/login.html`,
+            url: isLocalhost ?
+                `http://${currentDomain}/auth/login.html` :
+                `https://${currentDomain}/auth/login.html`,
             handleCodeInApp: false
         };
 
@@ -280,9 +294,10 @@ For technical issues, contact your administrator.`;
         window.db = db;
     </script>
 
-    <script src="js/common.js"></script>
-    <script src="js/utils.js"></script>
-    <script src="js/auth.js"></script>
-    <script src="js/signup.js"></script>
+    <script src="../shared/scripts/common.js"></script>
+    <script src="../shared/scripts/utils.js"></script>
+    <script src="auth.js"></script>
+    <script src="signup.js"></script>
 </body>
+
 </html>

@@ -7,7 +7,7 @@
     <meta http-equiv="Content-Security-Policy"
         content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://*.firebaseio.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://www.gstatic.com https://identitytoolkit.googleapis.com https://firestore.googleapis.com; frame-src https://*.firebaseio.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com;">
     <title>OfzHub - Dashboard</title>
-    <link rel="stylesheet" href="css/style.css?v=1.0.4">
+    <link rel="stylesheet" href="../shared/styles/style.css?v=1.0.4">
     <!-- jsPDF for PDF generation -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <!-- Firebase SDK -->
@@ -178,12 +178,12 @@
     </footer>
 
 
-    <script src="js/modal.js?v=1.0.3"></script>
-    <script src="js/storage.js?v=1.0.3"></script>
-    <script src="js/common.js?v=1.0.3"></script>
-    <script src="js/utils.js?v=1.0.3"></script>
-    <script src="js/auth.js?v=1.0.0"></script>
-    <script src="js/dashboard.js?v=1.0.3"></script>
+    <script src="../shared/scripts/modal.js?v=1.0.3"></script>
+    <script src="../shared/scripts/storage.js?v=1.0.3"></script>
+    <script src="../shared/scripts/common.js?v=1.0.3"></script>
+    <script src="../shared/scripts/utils.js?v=1.0.3"></script>
+    <script src="../auth/auth.js?v=1.0.0"></script>
+    <script src="dashboard.js?v=1.0.3"></script>
     <script>
         // Dashboard page authentication check
         document.addEventListener('DOMContentLoaded', function () {
@@ -191,7 +191,7 @@
             const user = window.authService ? window.authService.getCurrentUser() : null;
             if (!user || (user.role !== 'admin' && user.role !== 'manager')) {
                 // Redirect to login if not authenticated or not admin/manager
-                window.location.href = 'login.html';
+                window.location.href = '../auth/login.html';
                 return;
             }
 

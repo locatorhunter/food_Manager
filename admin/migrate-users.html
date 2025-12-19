@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://*.firebaseio.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://www.gstatic.com https://identitytoolkit.googleapis.com https://firestore.googleapis.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com;">
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://*.firebaseio.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://www.gstatic.com https://identitytoolkit.googleapis.com https://firestore.googleapis.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com;">
     <title>OfzHub - Migrate Users to Firestore</title>
-    <link rel="stylesheet" href="css/style.css?v=1.0.4">
+    <link rel="stylesheet" href="../shared/styles/style.css?v=1.0.4">
     <style>
         /* Advanced Options Styles */
         .advanced-options-card {
@@ -13,27 +15,27 @@
             color: white;
             border: 2px solid #ff4757;
         }
-        
+
         .advanced-options-card h2 {
             color: white;
-            border-bottom: 2px solid rgba(255,255,255,0.3);
+            border-bottom: 2px solid rgba(255, 255, 255, 0.3);
             padding-bottom: 10px;
         }
-        
+
         .advanced-section {
-            background: rgba(255,255,255,0.1);
+            background: rgba(255, 255, 255, 0.1);
             margin: 20px 0;
             padding: 25px;
             border-radius: 12px;
-            border: 1px solid rgba(255,255,255,0.2);
+            border: 1px solid rgba(255, 255, 255, 0.2);
             transition: all 0.3s ease;
         }
-        
+
         .advanced-section:hover {
-            background: rgba(255,255,255,0.15);
+            background: rgba(255, 255, 255, 0.15);
             transform: translateY(-2px);
         }
-        
+
         .advanced-section h3 {
             color: white;
             margin-top: 0;
@@ -42,23 +44,23 @@
             align-items: center;
             gap: 10px;
         }
-        
+
         .advanced-description {
-            color: rgba(255,255,255,0.9);
+            color: rgba(255, 255, 255, 0.9);
             margin-bottom: 20px;
             line-height: 1.6;
         }
-        
+
         .advanced-controls {
             display: flex;
             gap: 15px;
             flex-wrap: wrap;
             margin-bottom: 15px;
         }
-        
+
         .advanced-btn {
-            background: rgba(255,255,255,0.2);
-            border: 2px solid rgba(255,255,255,0.3);
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
             color: white;
             padding: 12px 24px;
             border-radius: 8px;
@@ -72,108 +74,113 @@
             text-decoration: none;
             justify-content: center;
         }
-        
+
         .advanced-btn:hover {
-            background: rgba(255,255,255,0.3);
+            background: rgba(255, 255, 255, 0.3);
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
         }
-        
+
         .advanced-btn.danger {
             background: rgba(255, 59, 48, 0.8);
             border-color: rgba(255, 59, 48, 1);
         }
-        
+
         .advanced-btn.danger:hover {
             background: rgba(255, 59, 48, 1);
             box-shadow: 0 6px 20px rgba(255, 59, 48, 0.4);
         }
-        
+
         .advanced-btn.warning {
             background: rgba(255, 159, 67, 0.8);
             border-color: rgba(255, 159, 67, 1);
         }
-        
+
         .advanced-btn.warning:hover {
             background: rgba(255, 159, 67, 1);
             box-shadow: 0 6px 20px rgba(255, 159, 67, 0.4);
         }
-        
+
         .advanced-btn.info {
             background: rgba(52, 152, 219, 0.8);
             border-color: rgba(52, 152, 219, 1);
         }
-        
+
         .advanced-btn.info:hover {
             background: rgba(52, 152, 219, 1);
             box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
         }
-        
+
         .advanced-result {
-            background: rgba(0,0,0,0.3);
+            background: rgba(0, 0, 0, 0.3);
             padding: 15px;
             border-radius: 8px;
             margin-top: 15px;
-            border-left: 4px solid rgba(255,255,255,0.5);
+            border-left: 4px solid rgba(255, 255, 255, 0.5);
         }
-        
+
         .advanced-result.success {
             border-left-color: #2ed573;
             background: rgba(46, 213, 115, 0.1);
         }
-        
+
         .advanced-result.error {
             border-left-color: #ff3838;
             background: rgba(255, 56, 56, 0.1);
         }
-        
+
         .advanced-result.warning {
             border-left-color: #ff9f43;
             background: rgba(255, 159, 67, 0.1);
         }
-        
+
         .advanced-result.info {
             border-left-color: #3742fa;
             background: rgba(55, 66, 250, 0.1);
         }
-        
+
         .progress-indicator {
             display: flex;
             align-items: center;
             gap: 10px;
             margin: 15px 0;
             padding: 15px;
-            background: rgba(0,0,0,0.2);
+            background: rgba(0, 0, 0, 0.2);
             border-radius: 8px;
         }
-        
+
         .progress-spinner {
             width: 20px;
             height: 20px;
-            border: 2px solid rgba(255,255,255,0.3);
+            border: 2px solid rgba(255, 255, 255, 0.3);
             border-top: 2px solid white;
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
-        
+
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
-        
+
         .modal-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.7);
+            background: rgba(0, 0, 0, 0.7);
             display: none;
             align-items: center;
             justify-content: center;
             z-index: 1000;
         }
-        
+
         .modal-content {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
@@ -181,26 +188,26 @@
             border-radius: 15px;
             max-width: 500px;
             width: 90%;
-            border: 2px solid rgba(255,255,255,0.3);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
         }
-        
+
         .modal-buttons {
             display: flex;
             gap: 15px;
             justify-content: center;
             margin-top: 25px;
         }
-        
+
         @media (max-width: 768px) {
             .advanced-controls {
                 flex-direction: column;
             }
-            
+
             .advanced-btn {
                 width: 100%;
             }
-            
+
             .modal-buttons {
                 flex-direction: column;
             }
@@ -232,6 +239,7 @@
         window.db = db;
     </script>
 </head>
+
 <body>
     <nav id="navbar"></nav>
     <div id="banner"></div>
@@ -257,7 +265,8 @@
             <div class="migration-section">
                 <h3>Step 1: Enable Firestore (if not already done)</h3>
                 <p>If you haven't enabled Firestore yet, click the button below:</p>
-                <a href="https://console.firebase.google.com/project/foodmanager-19cbb/firestore" target="_blank" class="btn btn-primary">
+                <a href="https://console.firebase.google.com/project/foodmanager-19cbb/firestore" target="_blank"
+                    class="btn btn-primary">
                     🚀 Enable Firestore Database
                 </a>
                 <p><small>After enabling, refresh this page and check the status above.</small></p>
@@ -266,9 +275,11 @@
             <div class="migration-section">
                 <h3>Step 2: Manual User Migration</h3>
                 <div class="migration-notice">
-                    <strong>Important:</strong> Start by adding yourself (the admin) first with role "admin", then add your other users.
+                    <strong>Important:</strong> Start by adding yourself (the admin) first with role "admin", then add
+                    your other users.
                 </div>
-                <p>Since we can't automatically list all Firebase Auth users from client-side, please enter the details of each user you created:</p>
+                <p>Since we can't automatically list all Firebase Auth users from client-side, please enter the details
+                    of each user you created:</p>
 
                 <div id="userMigrationForm">
                     <div class="form-group">
@@ -329,12 +340,13 @@
         <div class="card advanced-options-card">
             <h2>⚠️ Advanced Options</h2>
             <p class="card-description">Powerful tools for advanced users. Use with extreme caution.</p>
-            
+
             <!-- Danger Zone -->
             <div class="advanced-section">
                 <h3>🗑️ Data Management</h3>
                 <p class="advanced-description">
-                    Permanently remove all migrated user data from Firestore. This action cannot be undone and will affect all user management functionality.
+                    Permanently remove all migrated user data from Firestore. This action cannot be undone and will
+                    affect all user management functionality.
                 </p>
                 <div class="advanced-controls">
                     <button onclick="clearFirestoreUsers()" class="advanced-btn danger">
@@ -349,7 +361,7 @@
                 </div>
                 <div id="dataManagementResult" class="advanced-result" style="display: none;"></div>
             </div>
-            
+
             <!-- System Maintenance -->
             <div class="advanced-section">
                 <h3>🔧 System Maintenance</h3>
@@ -369,7 +381,7 @@
                 </div>
                 <div id="maintenanceResult" class="advanced-result" style="display: none;"></div>
             </div>
-            
+
             <!-- Advanced Tools -->
             <div class="advanced-section">
                 <h3>🛠️ Advanced Tools</h3>
@@ -390,7 +402,7 @@
                 <div id="advancedToolsResult" class="advanced-result" style="display: none;"></div>
             </div>
         </div>
-        
+
         <!-- Confirmation Modal -->
         <div id="confirmationModal" class="modal-overlay">
             <div class="modal-content">
@@ -405,7 +417,7 @@
                 </div>
             </div>
         </div>
-        
+
         <!-- Progress Modal -->
         <div id="progressModal" class="modal-overlay">
             <div class="modal-content">
@@ -422,22 +434,22 @@
         <p>&copy; 2025 OfzHub. All rights reserved. | Developed by Vijay</p>
     </footer>
 
-    <script src="js/modal.js?v=1.0.3"></script>
-    <script src="js/utils.js?v=1.0.3"></script>
-    <script src="js/common.js?v=1.0.3"></script>
-    <script src="js/auth.js?v=1.0.0"></script>
+    <script src="../shared/scripts/modal.js?v=1.0.3"></script>
+    <script src="../shared/scripts/utils.js?v=1.0.3"></script>
+    <script src="../shared/scripts/common.js?v=1.0.3"></script>
+    <script src="../auth/auth.js?v=1.0.0"></script>
     <script>
         // Global variables for modal management
         let currentAction = null;
         let currentResultElement = null;
 
         // Migration page authentication check
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             // Check authentication status - allow access if authenticated (role check is lenient for migration)
             const user = window.authService ? window.authService.getCurrentUser() : null;
             if (!user) {
                 // Redirect to login if not authenticated
-                window.location.href = 'login.html';
+                window.location.href = '../auth/login.html';
                 return;
             }
 
@@ -589,7 +601,7 @@
             document.getElementById('modalMessage').textContent = message;
             document.getElementById('modalWarning').style.display = warning ? 'block' : 'none';
             document.getElementById('confirmationModal').style.display = 'flex';
-            
+
             if (confirmCallback) {
                 currentAction = confirmCallback;
             }
@@ -623,7 +635,7 @@
                 element.style.display = 'block';
                 element.className = `advanced-result ${type}`;
                 element.innerHTML = message;
-                
+
                 // Auto-hide after 5 seconds for non-error messages
                 if (type !== 'error') {
                     setTimeout(() => {
@@ -643,10 +655,10 @@
                 async () => {
                     try {
                         showProgressModal('Clearing Users', 'Deleting all users from Firestore... This may take a moment.');
-                        
+
                         const usersRef = db.collection('users');
                         const snapshot = await usersRef.get();
-                        
+
                         if (snapshot.empty) {
                             hideProgressModal();
                             showAdvancedResult('dataManagementResult', 'ℹ️ No users found to clear.', 'info');
@@ -688,10 +700,10 @@
         async function exportUserData() {
             try {
                 showProgressModal('Exporting Data', 'Preparing user data export...');
-                
+
                 const usersRef = db.collection('users');
                 const snapshot = await usersRef.get();
-                
+
                 if (snapshot.empty) {
                     hideProgressModal();
                     showAdvancedResult('dataManagementResult', 'ℹ️ No user data to export.', 'info');
@@ -704,13 +716,13 @@
                 });
 
                 const dataStr = JSON.stringify(usersData, null, 2);
-                const dataBlob = new Blob([dataStr], {type: 'application/json'});
-                
+                const dataBlob = new Blob([dataStr], { type: 'application/json' });
+
                 const link = document.createElement('a');
                 link.href = URL.createObjectURL(dataBlob);
                 link.download = `firestore-users-export-${new Date().toISOString().split('T')[0]}.json`;
                 link.click();
-                
+
                 hideProgressModal();
                 showAdvancedResult('dataManagementResult', `📥 Successfully exported ${usersData.length} users to JSON file`, 'success');
 
@@ -724,10 +736,10 @@
         async function showDataStats() {
             try {
                 showProgressModal('Analyzing Data', 'Collecting database statistics...');
-                
+
                 const usersRef = db.collection('users');
                 const approvalsRef = db.collection('userApprovals');
-                
+
                 const [usersSnapshot, approvalsSnapshot] = await Promise.all([
                     usersRef.get(),
                     approvalsRef.get()
@@ -749,14 +761,14 @@
                 });
 
                 hideProgressModal();
-                
+
                 let statsHtml = '📊 <strong>Database Statistics:</strong><br>';
                 statsHtml += `• Total Users: ${stats.totalUsers}<br>`;
                 statsHtml += `• Total Approval Requests: ${stats.totalApprovals}<br>`;
                 statsHtml += `• Verified Users: ${stats.verifiedUsers}<br>`;
                 statsHtml += `• Pending Users: ${stats.pendingUsers}<br>`;
                 statsHtml += '<br><strong>Users by Role:</strong><br>';
-                
+
                 Object.entries(stats.usersByRole).forEach(([role, count]) => {
                     const roleEmoji = role === 'admin' ? '⚡' : role === 'manager' ? '👔' : '👤';
                     statsHtml += `• ${roleEmoji} ${role}: ${count}<br>`;
@@ -792,12 +804,12 @@
                     const cacheNames = await caches.keys();
                     await Promise.all(cacheNames.map(name => caches.delete(name)));
                 }
-                
+
                 // Clear localStorage
                 localStorage.clear();
-                
+
                 showAdvancedResult('maintenanceResult', '🧹 Browser cache and localStorage cleared successfully. Please refresh the page.', 'success');
-                
+
             } catch (error) {
                 console.error('Error clearing cache:', error);
                 showAdvancedResult('maintenanceResult', `⚠️ Cache cleared with some errors: ${error.message}`, 'warning');
@@ -807,9 +819,9 @@
         async function validateSystemHealth() {
             try {
                 showProgressModal('Health Check', 'Running system diagnostics...');
-                
+
                 const healthReport = [];
-                
+
                 // Check Firestore connection
                 try {
                     await db.collection('test').doc('health-check').get();
@@ -817,14 +829,14 @@
                 } catch (error) {
                     healthReport.push('❌ Firestore: Connection failed');
                 }
-                
+
                 // Check Authentication
                 if (auth.currentUser) {
                     healthReport.push('✅ Authentication: User signed in');
                 } else {
                     healthReport.push('⚠️ Authentication: No user signed in');
                 }
-                
+
                 // Check collections exist
                 try {
                     const usersCount = (await db.collection('users').limit(1).get()).size;
@@ -832,10 +844,10 @@
                 } catch (error) {
                     healthReport.push('❌ Users Collection: Not accessible');
                 }
-                
+
                 hideProgressModal();
                 showAdvancedResult('maintenanceResult', `🏥 <strong>System Health Report:</strong><br>${healthReport.join('<br>')}`, 'info');
-                
+
             } catch (error) {
                 hideProgressModal();
                 console.error('Health check error:', error);
@@ -853,13 +865,13 @@
                 async () => {
                     try {
                         showProgressModal('Repairing Database', 'Scanning and repairing database...');
-                        
+
                         // Simulate repair operations
                         await new Promise(resolve => setTimeout(resolve, 2000));
-                        
+
                         hideProgressModal();
                         showAdvancedResult('advancedToolsResult', '🔧 Database repair completed successfully! All inconsistencies have been resolved.', 'success');
-                        
+
                     } catch (error) {
                         hideProgressModal();
                         console.error('Repair error:', error);
@@ -872,10 +884,10 @@
         async function runDiagnostics() {
             try {
                 showProgressModal('Running Diagnostics', 'Performing comprehensive system diagnostics...');
-                
+
                 // Simulate comprehensive diagnostics
                 await new Promise(resolve => setTimeout(resolve, 3000));
-                
+
                 const diagnostics = [
                     '✅ Firebase Configuration: Valid',
                     '✅ Firestore Rules: Properly configured',
@@ -884,10 +896,10 @@
                     '⚠️ Large Dataset: Consider archiving old data',
                     '✅ Security Rules: Enforced properly'
                 ];
-                
+
                 hideProgressModal();
                 showAdvancedResult('advancedToolsResult', `🔍 <strong>Diagnostic Report:</strong><br>${diagnostics.join('<br>')}`, 'info');
-                
+
             } catch (error) {
                 hideProgressModal();
                 console.error('Diagnostics error:', error);
@@ -898,13 +910,13 @@
         async function optimizeDatabase() {
             try {
                 showProgressModal('Optimizing Database', 'Optimizing database performance...');
-                
+
                 // Simulate optimization
                 await new Promise(resolve => setTimeout(resolve, 2500));
-                
+
                 hideProgressModal();
                 showAdvancedResult('advancedToolsResult', '⚡ Database optimization completed! Performance improvements applied.', 'success');
-                
+
             } catch (error) {
                 hideProgressModal();
                 console.error('Optimization error:', error);
@@ -913,4 +925,5 @@
         }
     </script>
 </body>
+
 </html>

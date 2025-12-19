@@ -1,12 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://*.firebaseio.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://www.gstatic.com https://identitytoolkit.googleapis.com https://firestore.googleapis.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com;">
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://*.firebaseio.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://www.gstatic.com https://identitytoolkit.googleapis.com https://firestore.googleapis.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com;">
     <title>Login - OfzHub</title>
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="../shared/styles/style.css">
 </head>
+
 <body>
     <div class="login-container">
         <div class="login-card">
@@ -34,7 +37,8 @@
                 </div>
 
                 <div class="form-footer">
-                    <a href="signup.html">Create an account</a> | <a href="#" onclick="showForgotPassword()">Forgot password?</a>
+                    <a href="signup.html">Create an account</a> | <a href="#" onclick="showForgotPassword()">Forgot
+                        password?</a>
                 </div>
             </form>
         </div>
@@ -67,11 +71,11 @@
         // Action Code Settings for email verification and password reset
         const currentDomain = window.location.hostname;
         const isLocalhost = currentDomain === 'localhost' || currentDomain === '127.0.0.1';
-        
+
         window.actionCodeSettings = {
-            url: isLocalhost ? 
-                `http://${currentDomain}/login.html` : 
-                `https://${currentDomain}/login.html`,
+            url: isLocalhost ?
+                `http://${currentDomain}/auth/login.html` :
+                `https://${currentDomain}/auth/login.html`,
             handleCodeInApp: false
         };
 
@@ -81,7 +85,8 @@
         window.db = db;
     </script>
 
-    <script src="js/common.js"></script>
-    <script src="js/auth.js"></script>
+    <script src="../shared/scripts/common.js"></script>
+    <script src="auth.js"></script>
 </body>
+
 </html>

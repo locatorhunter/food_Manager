@@ -9,7 +9,8 @@ document.addEventListener('DOMContentLoaded', function () {
     // Check authentication
     const user = window.authService ? window.authService.getCurrentUser() : null;
     if (!user) {
-        window.location.href = 'login.html';
+        const prefix = typeof getPathPrefix === 'function' ? getPathPrefix() : '';
+        window.location.href = `${prefix}auth/login.html`;
         return;
     }
 

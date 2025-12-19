@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://*.firebaseio.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://www.gstatic.com https://identitytoolkit.googleapis.com https://firestore.googleapis.com; frame-src https://*.firebaseio.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com;">
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://*.firebaseio.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://www.gstatic.com https://identitytoolkit.googleapis.com https://firestore.googleapis.com; frame-src https://*.firebaseio.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com;">
     <title>OfzHub - Menu</title>
-    <link rel="stylesheet" href="css/style.css?v=1.0.0">
+    <link rel="stylesheet" href="../shared/styles/style.css?v=1.0.0">
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
@@ -44,13 +46,14 @@
         window.db = db;
     </script>
 </head>
+
 <body>
     <nav id="navbar"></nav>
     <div id="banner"></div>
-    
+
     <main class="container">
         <h1>Today's Menu</h1>
-        
+
         <section class="menu-section">
             <!-- Compact Search and Filter Bar -->
             <div class="menu-controls">
@@ -82,11 +85,11 @@
             <div id="hotelsMenuContainer"></div>
         </section>
     </main>
-    
+
     <footer>
         <p>&copy; 2025 OfzHub. All rights reserved. | Developed by Vijay</p>
     </footer>
-    
+
     <!-- Item Modal -->
     <div id="itemModal" class="modal" style="display: none;">
         <div class="modal-content item-modal-content">
@@ -125,7 +128,8 @@
                 <h3>How many people are sharing this order?</h3>
                 <div class="participant-count-selector">
                     <button class="count-btn" onclick="adjustGroupOrderParticipantCount(-1)">−</button>
-                    <input type="number" id="groupOrderParticipantCount" class="participant-count-input" value="2" min="2" max="20" readonly>
+                    <input type="number" id="groupOrderParticipantCount" class="participant-count-input" value="2"
+                        min="2" max="20" readonly>
                     <button class="count-btn" onclick="adjustGroupOrderParticipantCount(1)">+</button>
                     <span class="count-label">people</span>
                 </div>
@@ -143,7 +147,8 @@
                 </div>
             </div>
             <div class="modal-actions">
-                <button id="confirmGroupOrderBtn" class="btn btn-primary" onclick="confirmGroupOrder()" style="display: none;">Confirm Group Order</button>
+                <button id="confirmGroupOrderBtn" class="btn btn-primary" onclick="confirmGroupOrder()"
+                    style="display: none;">Confirm Group Order</button>
                 <button class="btn btn-secondary" onclick="closeGroupOrderModal()">Cancel</button>
             </div>
         </div>
@@ -161,7 +166,8 @@
                 <h3>How many people are ordering together?</h3>
                 <div class="participant-count-selector">
                     <button class="count-btn" onclick="adjustParticipantCount(-1)">−</button>
-                    <input type="number" id="participantCount" class="participant-count-input" value="2" min="2" max="20" readonly>
+                    <input type="number" id="participantCount" class="participant-count-input" value="2" min="2"
+                        max="20" readonly>
                     <button class="count-btn" onclick="adjustParticipantCount(1)">+</button>
                     <span class="count-label">people</span>
                 </div>
@@ -179,16 +185,18 @@
                 </div>
             </div>
             <div class="modal-actions">
-                <button id="confirmGroupOrderingBtn" class="btn btn-primary" onclick="confirmGroupOrdering()" style="display: none;">Place Group Order</button>
+                <button id="confirmGroupOrderingBtn" class="btn btn-primary" onclick="confirmGroupOrdering()"
+                    style="display: none;">Place Group Order</button>
                 <button class="btn btn-secondary" onclick="closeGroupOrderingModal()">Cancel</button>
             </div>
         </div>
     </div>
 
-    <script src="js/storage.js?v=1.0.0"></script>
-    <script src="js/common.js?v=1.0.0"></script>
-    <script src="js/utils.js?v=1.0.0"></script>
-    <script src="js/auth.js?v=1.0.0"></script>
-    <script src="js/menu.js?v=1.0.0"></script>
+    <script src="../shared/scripts/storage.js?v=1.0.0"></script>
+    <script src="../shared/scripts/common.js?v=1.0.0"></script>
+    <script src="../shared/scripts/utils.js?v=1.0.0"></script>
+    <script src="../auth/auth.js?v=1.0.0"></script>
+    <script src="menu.js?v=1.0.0"></script>
 </body>
+
 </html>

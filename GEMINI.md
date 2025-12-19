@@ -34,32 +34,34 @@ This is a Firebase-powered web application for managing lunch orders and user ad
 ## File Structure
 
 ```
-d:/SAT_LUNCH/
-├── index.html              # Main landing page
-├── login.html              # User login page  
-├── signup.html             # User registration page
-├── admin.html              # Admin dashboard
-├── dashboard.html          # User dashboard
-├── menu.html               # Menu viewing/ordering
-├── migrate-users.html      # User migration tool
-├── user-deletion-test.html # User deletion testing
-├── toast-demo.html         # Toast notification demo
+/home/vijays/food_Manager/
+├── index.html              # Main landing page (root)
+├── auth/                   # Authentication pages
+│   ├── login.html          # User login page
+│   ├── signup.html         # User registration page
+│   └── auth.js             # Authentication logic
+├── dashboard/              # User dashboard
+│   ├── dashboard.html      # Main user dashboard
+│   ├── user-orders.html    # Past orders view
+│   ├── dashboard.js        # Dashboard logic
+│   └── user-orders.js      # User orders logic
+├── admin/                  # Admin functionality
+│   ├── admin.html          # Main admin panel
+│   ├── migrate-users.html  # User migration tool
+│   ├── admin.js            # Admin functionality
+│   └── tests/              # Test files and diagnostics
+├── menu/                   # Menu management
+│   ├── menu.html           # Menu viewing/ordering
+│   └── menu.js             # Menu logic
+├── auragram/               # Auragram feature
+│   ├── auragram.html       # Auragram social feed
+│   └── auragram.js         # Auragram logic
+├── shared/                 # Shared assets and utilities
+│   ├── scripts/            # Shared JavaScript (common.js, utils.js, etc.)
+│   └── styles/             # Shared CSS (style.css)
 ├── .gemini/                # Gemini AI configuration
-│   ├── settings.json       # MCP servers configuration
-│   └── extensions/         # Extension configurations
-├── js/                     # JavaScript modules
-│   ├── auth.js            # Authentication logic
-│   ├── admin.js           # Admin functionality
-│   ├── common.js          # Shared utilities
-│   ├── dashboard.js       # Dashboard logic
-│   ├── menu.js            # Menu management
-│   ├── modal.js           # Modal dialogs
-│   ├── signup.js          # User registration
-│   ├── storage.js         # Local storage utilities
-│   └── utils.js           # General utilities
-├── css/
-│   └── style.css          # Main stylesheet
-└── firebase.json          # Firebase configuration
+├── firebase.json           # Firebase configuration
+└── firestore.rules         # Firestore security rules
 ```
 
 ## MCP Servers Configuration

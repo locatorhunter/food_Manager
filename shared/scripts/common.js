@@ -2,7 +2,7 @@
 // Common functionality for all pages
 // ========================================
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     initializeNavbar();
     initializeBanner();
     setActivePage();
@@ -10,10 +10,23 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeTheme();
 });
 
+function getPathPrefix() {
+    const path = window.location.pathname;
+    if (path.includes('/admin/tests/')) return '../../';
+    if (path.includes('/auth/') ||
+        path.includes('/dashboard/') ||
+        path.includes('/admin/') ||
+        path.includes('/menu/') ||
+        path.includes('/auragram/')) {
+        return '../';
+    }
+    return '';
+}
+
 function initializeMobileUX() {
     // Prevent zoom on double-tap for iOS
     let lastTouchEnd = 0;
-    document.addEventListener('touchend', function(event) {
+    document.addEventListener('touchend', function (event) {
         const now = Date.now();
         if (now - lastTouchEnd <= 300) {
             event.preventDefault();
@@ -38,11 +51,11 @@ function initializeMobileUX() {
     let touchStartX = 0;
     let touchEndX = 0;
 
-    document.addEventListener('touchstart', function(e) {
+    document.addEventListener('touchstart', function (e) {
         touchStartX = e.changedTouches[0].screenX;
     }, false);
 
-    document.addEventListener('touchend', function(e) {
+    document.addEventListener('touchend', function (e) {
         touchEndX = e.changedTouches[0].screenX;
         handleSwipe();
     }, false);
@@ -66,11 +79,12 @@ function initializeMobileUX() {
 function initializeNavbar() {
     const user = window.authService ? window.authService.getCurrentUser() : null;
     const isAdmin = user && user.role === 'admin';
+    const prefix = getPathPrefix();
 
     const navbarHtml = `
         <div class="navbar" role="navigation" aria-label="Main navigation">
             <div class="navbar-container">
-                <a href="index.html" class="navbar-brand" aria-label="OfzHub Home">
+                <a href="${prefix}index.html" class="navbar-brand" aria-label="OfzHub Home">
                     <div class="navbar-logo" aria-hidden="true">🏢</div>
                     <span>OfzHub</span>
                 </a>
@@ -82,32 +96,32 @@ function initializeNavbar() {
                         aria-controls="navbarNav">☰</button>
 
                 <ul class="navbar-nav" id="navbarNav" role="menubar">
-                    <li role="none"><a href="index.html"
+                    <li role="none"><a href="${prefix}index.html"
                                         class="nav-link"
                                         data-page="index"
                                         role="menuitem"
                                         aria-label="Home page">Home</a></li>
-                    <li role="none"><a href="menu.html"
+                    <li role="none"><a href="${prefix}menu/menu.html"
                                         class="nav-link"
                                         data-page="menu"
                                         role="menuitem"
                                         aria-label="View menu and place orders">Menu</a></li>
-                    ${user ? `<li role="none"><a href="user-orders.html"
+                    ${user ? `<li role="none"><a href="${prefix}dashboard/user-orders.html"
                                         class="nav-link"
                                         data-page="user-orders"
                                         role="menuitem"
                                         aria-label="View my order history">My Orders</a></li>
-                    <li role="none"><a href="auragram.html"
+                    <li role="none"><a href="${prefix}auragram/auragram.html"
                                          class="nav-link"
                                          data-page="auragram"
                                          role="menuitem"
                                          aria-label="View social feed and share posts">Auragram</a></li>` : ''}
-                    ${isAdmin ? `<li role="none"><a href="dashboard.html"
+                    ${isAdmin ? `<li role="none"><a href="${prefix}dashboard/dashboard.html"
                                         class="nav-link"
                                         data-page="dashboard"
                                         role="menuitem"
                                         aria-label="View order dashboard and analytics">Dashboard</a></li>
-                    <li role="none"><a href="admin.html"
+                    <li role="none"><a href="${prefix}admin/admin.html"
                                         class="nav-link"
                                         data-page="admin"
                                         role="menuitem"
@@ -270,7 +284,7 @@ async function toggleTheme() {
     }
 
     setTheme(newTheme);
-    
+
     // Save theme - try StorageManager first, fallback to localStorage
     try {
         if (typeof StorageManager !== 'undefined' && typeof StorageManager.setTheme === 'function') {
@@ -416,7 +430,7 @@ function showBannerSkeleton(container) {
 function setActivePage() {
     const currentPage = window.location.pathname.split('/').pop() || 'index.html';
     const pageName = currentPage.replace('.html', '') || 'index';
-    
+
     const navLinks = document.querySelectorAll('.nav-link');
     navLinks.forEach(link => {
         const linkPage = link.getAttribute('data-page');
@@ -540,22 +554,22 @@ function positionToast(toast, position = 'auto') {
     // Get current scroll position and viewport dimensions
     const viewportHeight = window.innerHeight;
     const viewportWidth = window.innerWidth;
-    
+
     // Count existing toasts to avoid overlap
     const existingToasts = document.querySelectorAll('.toast:not(.toast-hide)');
     const toastIndex = existingToasts.length;
     const toastHeight = 80; // Approximate toast height
     const spacing = 10; // Space between toasts
-    
+
     // Check if there's an active modal to avoid overlapping
     const hasModal = document.querySelector('.modal[aria-hidden="false"]') !== null;
-    
+
     // Calculate corner positioning
     let topPosition;
     let leftPosition;
     let rightPosition;
     let bottomPosition;
-    
+
     if (position === 'top-right' || (position === 'auto' && !hasModal)) {
         // Top-right corner (default preferred position)
         topPosition = 90; // Below navbar
@@ -581,7 +595,7 @@ function positionToast(toast, position = 'auto') {
         topPosition = 'auto';
         rightPosition = 'auto';
     }
-    
+
     // Apply stacking for multiple toasts in the same corner
     if (position === 'top-right' || (position === 'auto' && !hasModal)) {
         topPosition = 90 + (toastIndex * (toastHeight + spacing));
@@ -592,7 +606,7 @@ function positionToast(toast, position = 'auto') {
     } else if (position === 'bottom-left') {
         bottomPosition = 20 + (toastIndex * (toastHeight + spacing));
     }
-    
+
     // Ensure toasts don't go off-screen on mobile (use full width in mobile)
     if (viewportWidth <= 768) {
         leftPosition = 10;
@@ -603,7 +617,7 @@ function positionToast(toast, position = 'auto') {
             bottomPosition = 20 + (toastIndex * (toastHeight + spacing));
         }
     }
-    
+
     // Apply positioning styles with fixed positioning for corner display
     // Skip fixed positioning for notice banners (they use inline positioning)
     if (!toast.classList.contains('notice-banner')) {
@@ -760,7 +774,7 @@ window.toggleTheme = toggleTheme;
 window.setTheme = setTheme;
 
 // Wrapper function for async toggleTheme to work with onclick handlers
-window.toggleThemeClick = function() {
+window.toggleThemeClick = function () {
     toggleTheme().catch(error => {
         console.error('Error toggling theme:', error);
         showToast('Error changing theme. Please try again.', 'error');

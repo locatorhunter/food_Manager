@@ -1497,7 +1497,8 @@ function scrollToMenu() {
         }
     } else {
         // On other pages, redirect to menu page
-        window.location.href = 'menu.html';
+        const prefix = typeof getPathPrefix === 'function' ? getPathPrefix() : '';
+        window.location.href = `${prefix}menu/menu.html`;
     }
 }
 

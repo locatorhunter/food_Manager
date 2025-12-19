@@ -16,7 +16,7 @@ class AuthService {
             if (user) {
                 // User is signed in
                 console.log('User signed in:', user.email);
-                
+
                 // Check if email is verified BEFORE allowing access
                 if (!user.emailVerified) {
                     console.log('Email not verified, signing out user');
@@ -25,16 +25,17 @@ class AuthService {
                     this.currentUser = null;
                     this.clearSession();
                     this.clearInactivityTimer();
-                    
+
                     // Redirect to login page with verification message
                     if (!window.location.pathname.includes('login.html')) {
-                        window.location.href = 'login.html?message=verify-email';
+                        const prefix = typeof getPathPrefix === 'function' ? getPathPrefix() : '';
+                        window.location.href = `${prefix}auth/login.html?message=verify-email`;
                     }
                     return;
                 }
-                
+
                 const userData = await this.getUserProfile(user.uid);
-                
+
                 // Handle case where userData might be null
                 if (userData) {
                     // Update role for specific user if needed
@@ -132,8 +133,8 @@ class AuthService {
             // Check if email is verified
             if (!user.emailVerified) {
                 hideLoadingOverlay();
-                return { 
-                    success: false, 
+                return {
+                    success: false,
                     error: 'Please verify your email address before signing in. Check your inbox for a verification email.',
                     requiresVerification: true,
                     email: email
@@ -150,8 +151,8 @@ class AuthService {
             // Check if user is pending approval (for managers)
             if (userData && userData.pendingApproval) {
                 hideLoadingOverlay();
-                return { 
-                    success: false, 
+                return {
+                    success: false,
                     error: 'Your account is pending approval. Please check back later or contact an administrator.',
                     pendingApproval: true
                 };
@@ -175,7 +176,8 @@ class AuthService {
             await window.auth.signOut();
             this.clearSession();
             showToast('Logged out successfully');
-            window.location.href = 'login.html';
+            const prefix = typeof getPathPrefix === 'function' ? getPathPrefix() : '';
+            window.location.href = `${prefix}auth/login.html`;
         } catch (error) {
             showToast('Error logging out', 'error');
         }
@@ -195,7 +197,7 @@ class AuthService {
         try {
             const userRef = window.db.collection('users').doc(uid);
             const userDoc = await userRef.get();
-            
+
             if (userDoc.exists) {
                 // Document exists, update it
                 await userRef.update({
@@ -249,7 +251,8 @@ class AuthService {
         }
 
         // Redirect both admin and employees to home page
-        window.location.href = 'index.html';
+        const prefix = typeof getPathPrefix === 'function' ? getPathPrefix() : '';
+        window.location.href = `${prefix}index.html`;
     }
 
     showLoginRequired() {
@@ -257,16 +260,17 @@ class AuthService {
         const currentPath = window.location.pathname;
         const publicPages = ['login.html', 'index.html', 'signup.html'];
         const authenticatedPages = ['menu.html', 'dashboard.html', 'admin.html'];
-        
+
         const isPublicPage = publicPages.some(page => currentPath.includes(page));
         const isAuthenticatedPage = authenticatedPages.some(page => currentPath.includes(page));
-        
+
         // Only redirect if not on a public page and not already on an authenticated page
+        const prefix = typeof getPathPrefix === 'function' ? getPathPrefix() : '';
         if (!isPublicPage && !isAuthenticatedPage) {
-            window.location.href = 'login.html';
+            window.location.href = `${prefix}auth/login.html`;
         } else if (!isPublicPage && isAuthenticatedPage) {
             // User is on an authenticated page but not signed in - redirect to login
-            window.location.href = 'login.html';
+            window.location.href = `${prefix}auth/login.html`;
         }
     }
 
@@ -327,10 +331,10 @@ class AuthService {
 window.authService = new AuthService();
 
 // Login form handling
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     const loginForm = document.getElementById('loginForm');
     if (loginForm) {
-        loginForm.addEventListener('submit', async function(e) {
+        loginForm.addEventListener('submit', async function (e) {
             e.preventDefault();
 
             const email = document.getElementById('email').value.trim();
@@ -370,7 +374,7 @@ function togglePassword() {
 async function showForgotPassword() {
     const emailInput = document.getElementById('email');
     const email = emailInput ? emailInput.value.trim() : '';
-    
+
     if (!email) {
         showToast('Please enter your email address first', 'warning');
         emailInput?.focus();
@@ -397,24 +401,24 @@ async function showForgotPassword() {
 
     try {
         showLoadingOverlay('Sending password reset email...');
-        
+
         // Send password reset email using Firebase Auth
         await window.auth.sendPasswordResetEmail(email, window.actionCodeSettings);
-        
+
         hideLoadingOverlay();
         showToast('Password reset email sent! Check your inbox and spam folder. You can also use this to verify your email address.', 'success');
-        
+
         // Clear the email field
         if (emailInput) {
             emailInput.value = '';
         }
-        
+
     } catch (error) {
         hideLoadingOverlay();
         console.error('Password reset error:', error);
-        
+
         let errorMessage = 'Failed to send password reset email. Please try again.';
-        
+
         switch (error.code) {
             case 'auth/user-not-found':
                 errorMessage = 'No account found with this email address.';
@@ -429,7 +433,7 @@ async function showForgotPassword() {
                 errorMessage = 'Network error. Please check your connection.';
                 break;
         }
-        
+
         showToast(errorMessage, 'error');
     }
 }
@@ -437,12 +441,12 @@ async function showForgotPassword() {
 async function resendVerificationEmail() {
     // Check multiple sources for pending email
     let pendingEmail = sessionStorage.getItem('pendingVerificationEmail');
-    
+
     // Also check localStorage as backup
     if (!pendingEmail) {
         pendingEmail = localStorage.getItem('resendVerificationEmail');
     }
-    
+
     // If still no email, check if user is logged in but unverified
     if (!pendingEmail) {
         try {
@@ -457,12 +461,12 @@ async function resendVerificationEmail() {
             console.error('Error checking current user:', error);
         }
     }
-    
+
     if (!pendingEmail) {
         // No pending verification found - provide user with clear options
         hideLoadingOverlay();
         showToast('No pending verification found.', 'warning');
-        
+
         // Offer multiple options to the user
         setTimeout(() => {
             const email = prompt('Enter your email address to send verification, or click Cancel to use the signup page:');
@@ -472,53 +476,56 @@ async function resendVerificationEmail() {
                 // User cancelled or entered nothing - guide to signup
                 showToast('Redirecting to signup page where you can enter your email and receive verification.', 'info');
                 setTimeout(() => {
-                    window.location.href = 'signup.html';
+                    const prefix = typeof getPathPrefix === 'function' ? getPathPrefix() : '';
+                    window.location.href = `${prefix}auth/signup.html`;
                 }, 1500);
             }
         }, 500);
         return;
     }
-    
+
     // We have a pending email
     try {
         showLoadingOverlay('Sending verification email...');
-        
+
         console.log('Resending verification for email:', pendingEmail);
-        
+
         // Use the working password reset method to send verification email
         try {
             await window.auth.sendPasswordResetEmail(pendingEmail, window.actionCodeSettings);
             hideLoadingOverlay();
             showToast(`Verification email sent to ${pendingEmail}! Check your inbox and spam folder.`, 'success');
-            
+
             // Update storage
             localStorage.setItem('resendVerificationEmail', pendingEmail);
             sessionStorage.setItem('pendingVerificationEmail', pendingEmail);
-            
+
             return;
-            
+
         } catch (resetError) {
             console.log('Password reset failed, trying signup approach:', resetError.code);
-            
+
             // If password reset fails with user-not-found, guide to signup
             if (resetError.code === 'auth/user-not-found') {
                 hideLoadingOverlay();
                 showToast('No account found. Please sign up to create an account.', 'info');
                 setTimeout(() => {
-                    window.location.href = `signup.html?email=${encodeURIComponent(pendingEmail)}`;
+                    const prefix = typeof getPathPrefix === 'function' ? getPathPrefix() : '';
+                    window.location.href = `${prefix}auth/signup.html?email=${encodeURIComponent(pendingEmail)}`;
                 }, 2000);
                 return;
             }
-            
+
             // Other errors - try signup redirect
             hideLoadingOverlay();
             showToast('Preparing verification email...', 'info');
-            
+
             setTimeout(() => {
-                window.location.href = `signup.html?email=${encodeURIComponent(pendingEmail)}&resend=true`;
+                const prefix = typeof getPathPrefix === 'function' ? getPathPrefix() : '';
+                window.location.href = `${prefix}auth/signup.html?email=${encodeURIComponent(pendingEmail)}&resend=true`;
             }, 1000);
         }
-        
+
     } catch (error) {
         console.error('Resend verification error:', error);
         hideLoadingOverlay();
@@ -530,11 +537,11 @@ async function resendVerificationEmail() {
 async function sendVerificationEmailToUser(user) {
     try {
         showLoadingOverlay('Sending verification email...');
-        
+
         await user.sendEmailVerification(window.actionCodeSettings);
         hideLoadingOverlay();
         showToast('Verification email sent! Please check your inbox and spam folder.', 'success');
-        
+
     } catch (error) {
         hideLoadingOverlay();
         console.error('Error sending verification email to user:', error);
@@ -546,52 +553,54 @@ async function sendVerificationEmailToUser(user) {
 async function sendVerificationByEmail(email) {
     try {
         showLoadingOverlay('Sending verification email...');
-        
+
         console.log('sendVerificationByEmail called for:', email);
-        
+
         // Check if we have a valid email
         if (!email || !email.includes('@')) {
             hideLoadingOverlay();
             showToast('Please provide a valid email address.', 'error');
             return;
         }
-        
+
         // Method 1: Try to send password reset email (which works reliably)
         // This serves as a verification email for unverified accounts
         try {
             await window.auth.sendPasswordResetEmail(email, window.actionCodeSettings);
             hideLoadingOverlay();
             showToast(`Verification email sent to ${email}! Check your inbox and spam folder.`, 'success');
-            
+
             // Store the email for tracking
             localStorage.setItem('resendVerificationEmail', email);
             sessionStorage.setItem('pendingVerificationEmail', email);
-            
+
             return;
-            
+
         } catch (resetError) {
             console.log('Password reset failed, trying alternative method:', resetError.code);
-            
+
             // Method 2: If password reset fails, try to create a temporary verification flow
             if (resetError.code === 'auth/user-not-found') {
                 // User doesn't exist, guide to signup
                 hideLoadingOverlay();
                 showToast('No account found with this email. Please sign up to create an account and receive a verification email.', 'info');
                 setTimeout(() => {
-                    window.location.href = `signup.html?email=${encodeURIComponent(email)}`;
+                    const prefix = typeof getPathPrefix === 'function' ? getPathPrefix() : '';
+                    window.location.href = `${prefix}auth/signup.html?email=${encodeURIComponent(email)}`;
                 }, 2000);
                 return;
             }
-            
+
             // Other errors - try the signup redirect approach
             hideLoadingOverlay();
             showToast('Sending verification through secure method...', 'info');
-            
+
             setTimeout(() => {
-                window.location.href = `signup.html?email=${encodeURIComponent(email)}&verify=true`;
+                const prefix = typeof getPathPrefix === 'function' ? getPathPrefix() : '';
+                window.location.href = `${prefix}auth/signup.html?email=${encodeURIComponent(email)}&verify=true`;
             }, 1000);
         }
-        
+
     } catch (error) {
         hideLoadingOverlay();
         console.error('Error sending verification by email:', error);
@@ -604,10 +613,10 @@ async function debugEmailVerification() {
     console.log('=== EMAIL VERIFICATION DEBUG ===');
     console.log('1. Checking sessionStorage...');
     console.log('   pendingVerificationEmail:', sessionStorage.getItem('pendingVerificationEmail'));
-    
+
     console.log('2. Checking localStorage...');
     console.log('   resendVerificationEmail:', localStorage.getItem('resendVerificationEmail'));
-    
+
     console.log('3. Checking current user...');
     const currentUser = window.auth.currentUser;
     if (currentUser) {
@@ -617,10 +626,10 @@ async function debugEmailVerification() {
     } else {
         console.log('   No current user signed in');
     }
-    
+
     console.log('4. Checking actionCodeSettings...');
     console.log('   actionCodeSettings:', window.actionCodeSettings);
-    
+
     console.log('=== END DEBUG ===');
 }
 
@@ -630,18 +639,18 @@ window.debugEmailVerification = debugEmailVerification;
 // Test function for email verification
 async function testEmailVerification() {
     console.log('🧪 TESTING EMAIL VERIFICATION SYSTEM 🧪');
-    
+
     try {
         // Test 1: Check if Firebase auth is working
         console.log('✅ Test 1: Firebase Auth status:', window.auth ? 'Available' : 'Not available');
-        
+
         // Test 2: Check actionCodeSettings
         console.log('✅ Test 2: Action Code Settings:', window.actionCodeSettings ? 'Configured' : 'Not configured');
-        
+
         // Test 3: Test password reset functionality (should work)
         const testEmail = 'test@example.com';
         console.log('📧 Test 3: Testing password reset email...');
-        
+
         try {
             await window.auth.sendPasswordResetEmail(testEmail);
             console.log('✅ Test 3: Password reset email sent successfully (test@example.com)');
@@ -652,17 +661,17 @@ async function testEmailVerification() {
                 console.log('❌ Test 3: Password reset failed:', error.code);
             }
         }
-        
+
         // Test 4: Check storage
         console.log('✅ Test 4: Session Storage - pendingVerificationEmail:', sessionStorage.getItem('pendingVerificationEmail') || 'Not set');
         console.log('✅ Test 4: Local Storage - resendVerificationEmail:', localStorage.getItem('resendVerificationEmail') || 'Not set');
-        
+
         console.log('🎯 RECOMMENDATION: If password reset works but verification doesn\'t, use "Forgot Password" for email verification!');
-        
+
     } catch (error) {
         console.error('❌ Test failed:', error);
     }
-    
+
     console.log('🧪 END EMAIL VERIFICATION TEST 🧪');
 }
 
