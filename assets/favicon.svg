@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FF8C00;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#FF4500;stop-opacity:1" />
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+  <circle cx="50" cy="50" r="48" fill="white" />
+  <circle cx="50" cy="50" r="42" fill="url(#grad)" filter="url(#shadow)" />
+  <!-- Stylized plate/bowl -->
+  <path d="M30 60 Q50 80 70 60 L75 55 Q50 70 25 55 Z" fill="white" opacity="0.8" />
+  <!-- Steam lines -->
+  <path d="M40 35 Q45 25 50 35" stroke="white" stroke-width="3" fill="none" stroke-linecap="round" />
+  <path d="M50 30 Q55 20 60 30" stroke="white" stroke-width="3" fill="none" stroke-linecap="round" />
+</svg>
